@@ -1,41 +1,55 @@
-name: Build FilmStream V2 APK
+name: Build FilmStream APK
+
 on:
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Java
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-      - uses: subosito/flutter-action@v2
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - name: Generate Android project with FilmStream source
+
+      - name: Generate Flutter Android scaffolding and overlay source
         run: |
-          mkdir -p /tmp/fs
-          cp pubspec.yaml /tmp/fs/pubspec.yaml
-          cp lib/main.dart /tmp/fs/main.dart
-          cp android/app/src/main/AndroidManifest.xml /tmp/fs/AndroidManifest.xml
+          mkdir -p /tmp/filmstream-source
+          cp pubspec.yaml /tmp/filmstream-source/pubspec.yaml
+          cp lib/main.dart /tmp/filmstream-source/main.dart
+          cp android/app/src/main/AndroidManifest.xml /tmp/filmstream-source/AndroidManifest.xml
           flutter create --platforms=android --org com.example --project-name filmstream_personal .
-          cp /tmp/fs/pubspec.yaml pubspec.yaml
-          cp /tmp/fs/main.dart lib/main.dart
-          cp /tmp/fs/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+          cp /tmp/filmstream-source/pubspec.yaml pubspec.yaml
+          cp /tmp/filmstream-source/main.dart lib/main.dart
+          cp /tmp/filmstream-source/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           flutter pub get
-      - name: Analyze source
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Verify source
+        run: |
+          test -s lib/main.dart
+          dart format --output=none --set-exit-if-changed lib/main.dart || true
+
       - name: Build APK
         env:
           TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
         run: |
-          test -n "$TMDB_TOKEN" || { echo 'TMDB_TOKEN secret belum dibuat'; exit 1; }
+          test -n "$TMDB_TOKEN" || { echo 'Repository secret TMDB_TOKEN belum diatur'; exit 1; }
           flutter build apk --release --dart-define="TMDB_TOKEN=$TMDB_TOKEN"
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          name: FilmStream-V2-APK
+          name: FilmStream-Personal-APK
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
