@@ -1,50 +1,36 @@
-
-name: Build FilmStream APK
-
+name: Build FilmStream APK (Tanpa Flutter Create)
 on:
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-
-      - name: Install Java
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Install Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           channel: stable
-
-      - name: Generate Flutter Android scaffolding and overlay source
+      - name: Pastikan struktur Android permanen sudah ada
+        shell: bash
         run: |
-          mkdir -p /tmp/filmstream-source
-          cp pubspec.yaml /tmp/filmstream-source/pubspec.yaml
-          cp lib/main.dart /tmp/filmstream-source/main.dart
-          cp android/app/src/main/AndroidManifest.xml /tmp/filmstream-source/AndroidManifest.xml
-          flutter create --platforms=android --org com.example --project-name filmstream_personal .
-          cp /tmp/filmstream-source/pubspec.yaml pubspec.yaml
-          cp /tmp/filmstream-source/main.dart lib/main.dart
-          cp /tmp/filmstream-source/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
-          flutter pub get
-
+          test -s lib/main.dart
+          test -f android/gradle/wrapper/gradle-wrapper.properties || { echo 'Jalankan workflow 01 - Siapkan Android Permanen terlebih dahulu'; exit 1; }
+          test -f android/app/build.gradle.kts -o -f android/app/build.gradle
+      - name: Install dependency
+        run: flutter pub get
       - name: Build APK
         env:
           TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+        shell: bash
         run: |
-          test -n "$TMDB_TOKEN" || { echo 'Repository secret TMDB_TOKEN belum diatur'; exit 1; }
+          test -n "$TMDB_TOKEN" || { echo 'Secret TMDB_TOKEN belum diatur'; exit 1; }
           flutter build apk --release --dart-define="TMDB_TOKEN=$TMDB_TOKEN"
-
-      - name: Upload APK
+      - name: Unggah APK
         uses: actions/upload-artifact@v4
         with:
           name: FilmStream-Personal-APK
