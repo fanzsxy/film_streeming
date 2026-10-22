@@ -8,11 +8,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const tmdbToken = String.fromEnvironment('TMDB_TOKEN');
 const imageRoot = 'https://image.tmdb.org/t/p/w500';
-Future<void> main() async {WidgetsFlutterBinding.ensureInitialized();await WatchStore.init();runApp(const FilmStream());}
+void main() {WidgetsFlutterBinding.ensureInitialized();runApp(const FilmStream());}
+class StartupGate extends StatefulWidget {const StartupGate({super.key});@override State<StartupGate> createState()=>_StartupGateState();}
+class _StartupGateState extends State<StartupGate> {
+ late Future<void> loading;
+ @override void initState(){super.initState();loading=WatchStore.init().timeout(const Duration(seconds:10));}
+ void retry(){setState((){loading=WatchStore.init().timeout(const Duration(seconds:10));});}
+ @override Widget build(BuildContext context)=>FutureBuilder<void>(future:loading,builder:(context,s){
+  if(s.connectionState!=ConnectionState.done)return const Scaffold(body:Center(child:Column(mainAxisSize:MainAxisSize.min,children:[CircularProgressIndicator(),SizedBox(height:18),Text('Menyiapkan riwayat tontonan...')])));
+  if(s.hasError)return Scaffold(body:Center(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.error_outline,size:46),const SizedBox(height:12),const Text('Gagal memuat riwayat lokal',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),const SizedBox(height:8),Text('${s.error}',textAlign:TextAlign.center),const SizedBox(height:16),FilledButton(onPressed:retry,child:const Text('Coba lagi')),TextButton(onPressed:()=>Navigator.of(context).pushReplacement(MaterialPageRoute(builder:(_)=>const HomePage())),child:const Text('Buka katalog tanpa riwayat'))]))));
+  return const HomePage();
+ });
+}
 class FilmStream extends StatelessWidget {
   const FilmStream({super.key});
   @override Widget build(BuildContext context) => MaterialApp(title:'FilmStream Personal',debugShowCheckedModeBanner:false,
-    theme:ThemeData.dark(useMaterial3:true).copyWith(scaffoldBackgroundColor:const Color(0xff101014),colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xffed625a),brightness:Brightness.dark)),home:const HomePage());
+    theme:ThemeData.dark(useMaterial3:true).copyWith(scaffoldBackgroundColor:const Color(0xff101014),colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xffed625a),brightness:Brightness.dark)),home:const StartupGate());
 }
 class Movie {
  final int id; final String title,overview,poster,backdrop,release,type; final double rating; final List<int> genres;
