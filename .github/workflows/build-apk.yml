@@ -29,6 +29,8 @@ jobs:
         shell: bash
         run: |
           test -n "$TMDB_TOKEN" || { echo 'Secret TMDB_TOKEN belum diatur'; exit 1; }
+          flutter clean
+          flutter pub get
           flutter build apk --release --dart-define="TMDB_TOKEN=$TMDB_TOKEN"
       - name: Unggah APK
         uses: actions/upload-artifact@v4
