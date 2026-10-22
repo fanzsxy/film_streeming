@@ -1,14 +1,10 @@
-# FilmStream Personal — GitHub Actions APK build
+# FilmStream Personal v2
 
-Unggah isi folder ini ke ROOT repository GitHub PRIVAT, termasuk folder tersembunyi `.github/workflows`.
+Upgrade dari v1: beranda rail trending/film/series, navigasi bawah (Beranda, Film, Series, Genre, Favorit), genre TMDB, pencarian film + TV, pagination 50 halaman, detail series dengan season & episode, favorit selama aplikasi aktif. Favorit belum persistent setelah aplikasi ditutup. Player HTTPS MP4/HLS + subtitle SRT eksternal seperti versi sebelumnya. Player LK21 belum terintegrasi otomatis.
 
-1. Buat repository GitHub Private dengan nama misalnya `filmstream-personal`.
-2. Upload isi paket (bukan direktori luarnya). GitHub browser upload mungkin menyulitkan folder tersembunyi `.github`: bila tidak ikut, buat file `.github/workflows/build-apk.yml` lewat GitHub web editor dan tempel isinya.
-3. Dapatkan **TMDB API Read Access Token** di https://www.themoviedb.org/settings/api
-4. GitHub repo → Settings → Secrets and variables → Actions → New repository secret. Name: `TMDB_TOKEN`; Secret: token Anda.
-5. Actions → Build FilmStream APK → Run workflow → main → Run workflow.
-6. Setelah status success, buka run yang sama, bagian Artifacts → unduh `FilmStream-Personal-APK`, ekstrak ZIP artifact, lalu instal `app-release.apk` di HP Android.
+## Upgrade repository existing
+Di GitHub repository yang lama, ganti `lib/main.dart` dengan file dalam paket ini. Opsional ganti `.github/workflows/build-apk.yml` dengan workflow baru. Jangan upload seluruh ZIP dan jangan mengubah repository secrets. Secret `TMDB_TOKEN` tetap digunakan. Jalankan Actions > Build FilmStream V2 APK > Run workflow. Unduh artifact `FilmStream-V2-APK` dan ekstrak `app-release.apk`.
 
-Workflow akan membuat folder proyek Android yang belum tersedia dalam source starter dan mengompilasi APK menggunakan Flutter stable. Ini belum diuji melalui runner GitHub di sesi ini, sehingga bila gagal, periksa log step yang berwarna merah. APK build template memakai konfigurasi signing default dari template Flutter (untuk sideload/pribadi saja); sebelum distribusi rilis resmi, siapkan keystore signing produksi yang dikelola sendiri.
+Apabila hanya mengganti `main.dart` dan mempertahankan workflow v1, build v1 masih bisa digunakan, hasil APK akan mempunyai antarmuka v2 karena main.dart-nya baru.
 
-Penting: TMDB_TOKEN di-inject saat compile dan bisa diekstrak dari APK. Repository private dan GitHub secret hanya melindungi token dalam repo/log, bukan di APK. Jangan sebarkan APK ke publik; untuk produksi gunakan backend proxy. Aplikasi berisi katalog TMDB, input URL video MP4/HLS yang berizin, subtitle SRT HTTPS, dan buka halaman sumber di browser, BUKAN auto scraping atau native player LK21.
+CATATAN: ini source code untuk build via GitHub Actions, bukan APK yang sudah dikompilasi. Token yang disematkan via dart-define ke APK bukan rahasia kuat, jangan distribusikan secara publik. Jika pernah terlihat di screenshot, putar kembali kredensial di TMDB.
