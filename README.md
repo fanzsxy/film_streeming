@@ -1,10 +1,9 @@
-# FilmStream Personal v2
+# FilmStream V3 — Riwayat & Lanjutkan Menonton
 
-Upgrade dari v1: beranda rail trending/film/series, navigasi bawah (Beranda, Film, Series, Genre, Favorit), genre TMDB, pencarian film + TV, pagination 50 halaman, detail series dengan season & episode, favorit selama aplikasi aktif. Favorit belum persistent setelah aplikasi ditutup. Player HTTPS MP4/HLS + subtitle SRT eksternal seperti versi sebelumnya. Player LK21 belum terintegrasi otomatis.
+Unggah/ganti **dua file** ke root repo GitHub yang sama: `lib/main.dart` dan `pubspec.yaml`. Pastikan perubahan `pubspec.yaml` ikut diunggah karena versi ini menggunakan `shared_preferences`. Workflow lama menjalankan `flutter pub get` dan `flutter build apk` sehingga tidak perlu diubah.
 
-## Upgrade repository existing
-Di GitHub repository yang lama, ganti `lib/main.dart` dengan file dalam paket ini. Opsional ganti `.github/workflows/build-apk.yml` dengan workflow baru. Jangan upload seluruh ZIP dan jangan mengubah repository secrets. Secret `TMDB_TOKEN` tetap digunakan. Jalankan Actions > Build FilmStream V2 APK > Run workflow. Unduh artifact `FilmStream-V2-APK` dan ekstrak `app-release.apk`.
+Fitur: ikon riwayat di kanan atas, daftar tontonan dengan progress bar, durasi terakhir, simpan posisi otomatis sekitar setiap 5 detik dan pada pause/keluar/background, lanjut dari posisi tersimpan, putar ulang setelah selesai, hapus riwayat. Film memakai key type + TMDB ID; dukungan key episode sudah ada pada player untuk integrasi sumber episode kelak, tetapi V2 masih belum punya player episode.
 
-Apabila hanya mengganti `main.dart` dan mempertahankan workflow v1, build v1 masih bisa digunakan, hasil APK akan mempunyai antarmuka v2 karena main.dart-nya baru.
+Data hanya tersimpan di perangkat (SharedPreferences); bisa hilang bila data aplikasi dihapus/uninstall. Update APK dengan identitas paket yang sama seharusnya mempertahankan data aplikasi. Tautan URL video yang sudah kedaluwarsa mungkin gagal saat dilanjutkan; ganti URL di halaman detail. Riwayat hanya tercatat jika memutar lewat player FilmStream, tidak untuk halaman sumber yang dibuka di browser.
 
-CATATAN: ini source code untuk build via GitHub Actions, bukan APK yang sudah dikompilasi. Token yang disematkan via dart-define ke APK bukan rahasia kuat, jangan distribusikan secara publik. Jika pernah terlihat di screenshot, putar kembali kredensial di TMDB.
+Belum diuji build Flutter di lingkungan pembuatan ini: jalankan Actions dan kirim log error bila ada.
