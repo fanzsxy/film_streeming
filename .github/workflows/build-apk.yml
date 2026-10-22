@@ -1,4 +1,4 @@
-name: Build FilmStream APK (Tanpa Flutter Create)
+name: Build FilmStream APK V4 (Android Permanen)
 on:
   workflow_dispatch:
 jobs:
@@ -15,26 +15,26 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - name: Pastikan struktur Android permanen sudah ada
+      - name: Periksa Android permanen
         shell: bash
         run: |
           test -s lib/main.dart
-          test -f android/gradle/wrapper/gradle-wrapper.properties || { echo 'Jalankan workflow 01 - Siapkan Android Permanen terlebih dahulu'; exit 1; }
+          test -f android/gradle/wrapper/gradle-wrapper.properties || { echo 'Struktur Android lengkap belum ada. Jalankan workflow migrasi satu kali dahulu.'; exit 1; }
           test -f android/app/build.gradle.kts -o -f android/app/build.gradle
-      - name: Install dependency
-        run: flutter pub get
+      - name: Install dependensi dan cek sintaks
+        run: |
+          flutter pub get
+          dart format --output=none --set-exit-if-changed lib/main.dart || true
       - name: Build APK
         env:
           TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+          LK21_API_BASE: ${{ vars.LK21_API_BASE }}
         shell: bash
         run: |
           test -n "$TMDB_TOKEN" || { echo 'Secret TMDB_TOKEN belum diatur'; exit 1; }
-          flutter clean
-          flutter pub get
-          flutter build apk --release --dart-define="TMDB_TOKEN=$TMDB_TOKEN"
-      - name: Unggah APK
-        uses: actions/upload-artifact@v4
+          flutter build apk --release --dart-define="TMDB_TOKEN=$TMDB_TOKEN" --dart-define="LK21_API_BASE=$LK21_API_BASE"
+      - uses: actions/upload-artifact@v4
         with:
-          name: FilmStream-Personal-APK
+          name: FilmStream-V4-APK
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
