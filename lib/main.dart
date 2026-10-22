@@ -167,7 +167,99 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
  @override void initState(){super.initState();favorite=widget.isFavorite;details=Tmdb.get('${widget.movie.type}/${widget.movie.id}');}
  @override void dispose(){videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();super.dispose();}
  bool https(String input){final u=Uri.tryParse(input.trim());return u!=null&&u.scheme=='https'&&u.host.isNotEmpty;}
- @override Widget build(BuildContext context){final m=widget.movie;return Scaffold(appBar:AppBar(title:Text(m.title,maxLines:1),actions:[IconButton(icon:Icon(favorite?Icons.favorite:Icons.favorite_border),onPressed:(){widget.onFavorite();setState(()=>favorite=!favorite);})]),body:ListView(padding:const EdgeInsets.all(16),children:[if(m.backdrop.isNotEmpty)ClipRRect(borderRadius:BorderRadius.circular(12),child:Image.network('$imageRoot${m.backdrop}',height:190,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink())),const SizedBox(height:14),Text(m.title,style:const TextStyle(fontSize:26,fontWeight:FontWeight.bold)),Text('${m.type=='tv'?'Series':'Film'} • ${m.year} • ★ ${m.rating.toStringAsFixed(1)}',style:const TextStyle(color:Colors.white70)),const SizedBox(height:14),Text(m.overview.isEmpty?'Sinopsis Bahasa Indonesia belum tersedia.':m.overview),if(m.type=='tv')FutureBuilder<Map<String,dynamic>>(future:details,builder:(context,s){if(!s.hasData)return const Padding(padding:EdgeInsets.all(12),child:LinearProgressIndicator());final seasons=(s.data!['seasons'] as List? ?? []);return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const SizedBox(height:20),const Text('Season & Episode',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),...seasons.whereType<Map<String,dynamic>>().where((x)=>(x['season_number'] as num? ?? 0)>=1).map((x)=>ExpansionTile(title:Text('${x['name']??'Season ${x['season_number']}'}'),subtitle:Text('${x['episode_count']??0} episode'),children:[FutureBuilder<Map<String,dynamic>>(future:Tmdb.get('tv/${m.id}/season/${x['season_number']}'),builder:(context,ep){if(!ep.hasData)return const LinearProgressIndicator();return Column(children:(ep.data!['episodes'] as List? ?? []).whereType<Map<String,dynamic>>().map((e)=>ListTile(leading:const Icon(Icons.play_circle_outline),title:Text('${e['episode_number']}. ${e['name']??'Episode'}'),subtitle:Text((e['overview']??'').toString(),maxLines:2,overflow:TextOverflow.ellipsis),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>Scaffold(appBar:AppBar(title:Text('Episode ${e['episode_number']}')),body:Padding(padding:const EdgeInsets.all(20),child:AutoSourceButton(movie:m,season:(x['season_number'] as num).toInt(),episode:(e['episode_number'] as num).toInt())))))))).toList());})]))]);}),const SizedBox(height:22),ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,builder:(context,_,__) {final e=WatchStore.find('${m.type}:${m.id}');if(e==null)return const SizedBox.shrink();return Card(child:ListTile(leading:const Icon(Icons.history),title:Text(e.completed?'Sudah ditonton • Putar ulang':'Lanjutkan dari ${clock(e.positionMs)}'),subtitle:LinearProgressIndicator(value:e.progress),onTap:(){videoUrl.text=e.url;subtitleUrl.text=e.subtitle;Navigator.push(context,MaterialPageRoute(builder:(_)=>PlayerPage(url:e.url,subtitle:e.subtitle,title:m.title,historyKey:e.key,poster:m.poster,type:m.type,tmdbId:m.id)));}));}),const SizedBox(height:22),if(m.type=='movie') AutoSourceButton(movie:m),const SizedBox(height:12),OutlinedButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>ExternalSourcePage(movie:m))),icon:const Icon(Icons.travel_explore),label:const Text('Cari informasi halaman melalui API sumber (percobaan)')),const SizedBox(height:12),const Text('Hasil API pihak ketiga hanya tautan halaman. Tidak ada ekstraksi atau pemutaran LK21 otomatis.',style:TextStyle(color:Colors.white70,fontSize:12)),const SizedBox(height:22),const Text('Pemutar video pribadi',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),const Text('Masukkan URL HTTPS video MP4/HLS yang dapat Anda gunakan. TMDB tidak menyediakan video film lengkap.',style:TextStyle(color:Colors.white70)),const SizedBox(height:10),TextField(controller:videoUrl,decoration:const InputDecoration(labelText:'URL video HTTPS',border:OutlineInputBorder()),keyboardType:TextInputType.url),const SizedBox(height:10),TextField(controller:subtitleUrl,decoration:const InputDecoration(labelText:'URL subtitle .srt (opsional)',border:OutlineInputBorder()),keyboardType:TextInputType.url),const SizedBox(height:10),FilledButton.icon(onPressed:(){if(!https(videoUrl.text)||(subtitleUrl.text.trim().isNotEmpty&&!https(subtitleUrl.text))){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Masukkan URL HTTPS yang valid.')));return;}Navigator.push(context,MaterialPageRoute(builder:(_)=>PlayerPage(url:videoUrl.text.trim(),subtitle:subtitleUrl.text.trim(),title:m.title,historyKey:'${m.type}:${m.id}',poster:m.poster,type:m.type,tmdbId:m.id)));},icon:const Icon(Icons.play_arrow),label:const Text('Putar video')),const SizedBox(height:18),TextField(controller:sourcePage,decoration:const InputDecoration(labelText:'Tautan halaman sumber eksternal',border:OutlineInputBorder()),keyboardType:TextInputType.url),OutlinedButton.icon(onPressed:()async{if(!https(sourcePage.text)){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Masukkan URL HTTPS yang valid.')));return;}if(!context.mounted)return;Navigator.push(context,MaterialPageRoute(builder:(_)=>WebSourcePage(title:m.title,url:Uri.parse(sourcePage.text.trim()))));},icon:const Icon(Icons.open_in_browser),label:const Text('Buka di WebView')),const SizedBox(height:20),const Text('Metadata oleh TMDB. Aplikasi tidak berafiliasi dengan TMDB. Sumber video LK21 tidak terintegrasi otomatis.',style:TextStyle(color:Colors.white54,fontSize:12))]));}
+ @override
+ Widget build(BuildContext context) {
+  final m = widget.movie;
+  return Scaffold(
+   appBar: AppBar(title: Text(m.title, maxLines: 1), actions: [
+    IconButton(icon: Icon(favorite ? Icons.favorite : Icons.favorite_border), onPressed: () {widget.onFavorite(); setState(() => favorite = !favorite);})
+   ]),
+   body: ListView(padding: const EdgeInsets.all(16), children: [
+    if (m.backdrop.isNotEmpty) ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network('$imageRoot${m.backdrop}', height: 190, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.shrink())),
+    const SizedBox(height:14),
+    Text(m.title, style: const TextStyle(fontSize:26,fontWeight:FontWeight.bold)),
+    Text('${m.type == 'tv' ? 'Series' : 'Film'} • ${m.year} • ★ ${m.rating.toStringAsFixed(1)}', style: const TextStyle(color:Colors.white70)),
+    const SizedBox(height:14),
+    Text(m.overview.isEmpty ? 'Sinopsis Bahasa Indonesia belum tersedia.' : m.overview),
+    if (m.type == 'tv') FutureBuilder<Map<String,dynamic>>(
+     future: details,
+     builder: (context,s) {
+      if (!s.hasData) return const Padding(padding:EdgeInsets.all(12),child:LinearProgressIndicator());
+      final seasons = (s.data!['seasons'] as List? ?? []);
+      return Column(crossAxisAlignment:CrossAxisAlignment.start, children: [
+       const SizedBox(height:20),
+       const Text('Season & Episode',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
+       ...seasons.whereType<Map<String,dynamic>>().where((x) => (x['season_number'] as num? ?? 0) >= 1).map((x) =>
+        ExpansionTile(
+         title: Text((x['name'] ?? 'Season ${x['season_number']}').toString()),
+         subtitle: Text('${x['episode_count'] ?? 0} episode'),
+         children: [FutureBuilder<Map<String,dynamic>>(
+          future: Tmdb.get('tv/${m.id}/season/${x['season_number']}'),
+          builder: (context,ep) {
+           if (!ep.hasData) return const LinearProgressIndicator();
+           final episodes = (ep.data!['episodes'] as List? ?? []);
+           return Column(children: episodes.whereType<Map<String,dynamic>>().map<Widget>((e) =>
+            ListTile(
+             leading: const Icon(Icons.play_circle_outline),
+             title: Text('${e['episode_number']}. ${e['name'] ?? 'Episode'}'),
+             subtitle: Text((e['overview'] ?? '').toString(),maxLines:2,overflow:TextOverflow.ellipsis),
+             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
+              appBar: AppBar(title:Text('Episode ${e['episode_number']}')),
+              body: Padding(padding:const EdgeInsets.all(20), child:AutoSourceButton(movie:m,season:(x['season_number'] as num).toInt(),episode:(e['episode_number'] as num).toInt()))
+             )))
+            )).toList());
+          }
+         )]
+        )
+       )
+      ]);
+     }
+    ),
+    const SizedBox(height:22),
+    ValueListenableBuilder<List<WatchEntry>>(
+     valueListenable:WatchStore.entries,
+     builder:(context,_,__) {
+      final e=WatchStore.find('${m.type}:${m.id}');
+      if(e==null)return const SizedBox.shrink();
+      return Card(child:ListTile(
+       leading:const Icon(Icons.history),
+       title:Text(e.completed ? 'Sudah ditonton • Putar ulang' : 'Lanjutkan dari ${clock(e.positionMs)}'),
+       subtitle:LinearProgressIndicator(value:e.progress),
+       onTap:(){videoUrl.text=e.url;subtitleUrl.text=e.subtitle;Navigator.push(context,MaterialPageRoute(builder:(_)=>PlayerPage(url:e.url,subtitle:e.subtitle,title:m.title,historyKey:e.key,poster:m.poster,type:m.type,tmdbId:m.id)));}
+      ));
+     }
+    ),
+    const SizedBox(height:22),
+    if(m.type=='movie') AutoSourceButton(movie:m),
+    const SizedBox(height:12),
+    OutlinedButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>ExternalSourcePage(movie:m))),icon:const Icon(Icons.travel_explore),label:const Text('Cari informasi halaman melalui API sumber (percobaan)')),
+    const SizedBox(height:12),
+    const Text('Hasil API pihak ketiga hanya tautan halaman. Tidak ada ekstraksi atau pemutaran LK21 otomatis.',style:TextStyle(color:Colors.white70,fontSize:12)),
+    const SizedBox(height:22),
+    const Text('Pemutar video pribadi',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
+    const Text('Masukkan URL HTTPS video MP4/HLS yang dapat Anda gunakan. TMDB tidak menyediakan video film lengkap.',style:TextStyle(color:Colors.white70)),
+    const SizedBox(height:10),
+    TextField(controller:videoUrl,decoration:const InputDecoration(labelText:'URL video HTTPS',border:OutlineInputBorder()),keyboardType:TextInputType.url),
+    const SizedBox(height:10),
+    TextField(controller:subtitleUrl,decoration:const InputDecoration(labelText:'URL subtitle .srt (opsional)',border:OutlineInputBorder()),keyboardType:TextInputType.url),
+    const SizedBox(height:10),
+    FilledButton.icon(onPressed:(){
+     if(!https(videoUrl.text)||(subtitleUrl.text.trim().isNotEmpty&&!https(subtitleUrl.text))){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Masukkan URL HTTPS yang valid.')));return;}
+     Navigator.push(context,MaterialPageRoute(builder:(_)=>PlayerPage(url:videoUrl.text.trim(),subtitle:subtitleUrl.text.trim(),title:m.title,historyKey:'${m.type}:${m.id}',poster:m.poster,type:m.type,tmdbId:m.id)));
+    },icon:const Icon(Icons.play_arrow),label:const Text('Putar video')),
+    const SizedBox(height:18),
+    TextField(controller:sourcePage,decoration:const InputDecoration(labelText:'Tautan halaman sumber eksternal',border:OutlineInputBorder()),keyboardType:TextInputType.url),
+    OutlinedButton.icon(onPressed:()async{
+     if(!https(sourcePage.text)){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Masukkan URL HTTPS yang valid.')));return;}
+     if(!context.mounted)return;
+     Navigator.push(context,MaterialPageRoute(builder:(_)=>WebSourcePage(title:m.title,url:Uri.parse(sourcePage.text.trim()))));
+    },icon:const Icon(Icons.open_in_browser),label:const Text('Buka di WebView')),
+    const SizedBox(height:20),
+    const Text('Metadata oleh TMDB. Aplikasi tidak berafiliasi dengan TMDB. Sumber video LK21 tidak terintegrasi otomatis.',style:TextStyle(color:Colors.white54,fontSize:12))
+   ])
+  );
+ }
+
 }
 class Cue {final Duration start,end;final String text;Cue(this.start,this.end,this.text);}
 Duration? parseTime(String input){final parts=input.trim().replaceAll(',','.').split(':');if(parts.length!=3)return null;final h=int.tryParse(parts[0]),m=int.tryParse(parts[1]),sec=double.tryParse(parts[2]);if(h==null||m==null||sec==null)return null;return Duration(milliseconds:(((h*3600+m*60)+sec)*1000).round());}

@@ -1,0 +1,1 @@
+FilmStream V5 build fix: DetailPage rewritten with valid Flutter widget structure. Replace lib/main.dart and keep the remaining V5 files. Build has not been compiled locally; use GitHub Actions to verify.
