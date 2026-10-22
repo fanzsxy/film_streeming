@@ -1,4 +1,4 @@
-name: Build FilmStream APK V4 (Android Permanen)
+name: Build FilmStream APK V5 (Android Permanen)
 on:
   workflow_dispatch:
 jobs:
@@ -29,10 +29,11 @@ jobs:
         env:
           TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
           LK21_API_BASE: ${{ vars.LK21_API_BASE }}
+          SOURCE_API_BASE: ${{ vars.SOURCE_API_BASE }}
         shell: bash
         run: |
           test -n "$TMDB_TOKEN" || { echo 'Secret TMDB_TOKEN belum diatur'; exit 1; }
-          flutter build apk --release --dart-define="TMDB_TOKEN=$TMDB_TOKEN" --dart-define="LK21_API_BASE=$LK21_API_BASE"
+          flutter build apk --release --dart-define="TMDB_TOKEN=$TMDB_TOKEN" --dart-define="LK21_API_BASE=$LK21_API_BASE" --dart-define="SOURCE_API_BASE=$SOURCE_API_BASE"
       - uses: actions/upload-artifact@v4
         with:
           name: FilmStream-V4-APK

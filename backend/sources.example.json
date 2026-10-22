@@ -1,0 +1,12 @@
+[
+  {
+    "tmdb_id": 12345,
+    "type": "movie",
+    "season": 0,
+    "episode": 0,
+    "provider": "Penyedia berizin (contoh)",
+    "playback_type": "hls",
+    "url": "https://media.example.com/film/master.m3u8",
+    "subtitle_url": "https://media.example.com/film/id.srt"
+  }
+]

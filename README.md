@@ -1,18 +1,31 @@
-# FilmStream Personal V3 — Paket lengkap
+# FilmStream V5 — Automatic Source Manager
 
-**Ini source code, bukan APK jadi.** Paket ini berisi SEMUA file utama untuk mengganti unggahan lama pada repo GitHub yang menggunakan workflow generate-scaffolding.
+Pembaharuan dari FilmStream V4.1, mempertahankan katalog TMDB, genre, series, WebView opsional, Native Player, dan riwayat. Menambahkan `Tonton Otomatis` untuk film serta pada pilihan episode series. Pemutar hanya menerima URL HTTPS MP4/HLS dari backend yang dikonfigurasi.
 
-Struktur:
-- `.github/workflows/build-apk.yml` — workflow build otomatis
-- `android/app/src/main/AndroidManifest.xml` — Android internet + app config
-- `lib/main.dart` — V3 katalog, series, genre, history & startup gate
-- `pubspec.yaml` — dependencies & version 1.0.3+3
+**Belum termasuk film komersial atau integrasi stream LK21.** `backend/sources.json` sengaja kosong. Jangan memasukkan tautan halaman HTML, iframe, atau stream yang tidak berhak Anda gunakan. API tidak menyediakan atau mengekstrak video secara otomatis tanpa sumber yang dimasukkan/dikonfigurasi.
 
-## Penting: upload ke PATH yang benar
-File `lib/main.dart` harus berada di `lib/main.dart`, BUKAN `/main.dart`. Jangan unggah zip sebagai satu file. GitHub web uploader kadang tak mempertahankan folder `.github` ketika di-drag; buat `.github/workflows/build-apk.yml` via **Add file > Create new file** jika perlu. Jika mengunggah via Git/GitHub Desktop, replace file sesuai path lalu commit/push.
+## File yang diubah
+- `lib/main.dart`: tombol pencarian sumber, juga untuk episode.
+- `lib/source_manager.dart`: pemanggil Source API, validasi respons, status tidak tersedia/error.
+- `pubspec.yaml`: versi aplikasi V5 dan dependensi V4.1 dipertahankan.
+- `.github/workflows/build-apk.yml`: menambahkan repository variable `SOURCE_API_BASE`.
+- `backend/`: server contoh FastAPI dan registry JSON sumber berizin.
 
-Sebelum build: set repository Action secret `TMDB_TOKEN` dengan token yang tidak pernah dipublikasikan. Build via Actions > Build FilmStream APK > Run workflow. Download artifact terbaru.
+## Backend
 
-Pemutar hanya memutar URL video yang dapat Anda gunakan. Riwayat tersimpan untuk player internal saja, bukan browser eksternal. V3 belum otomatis menghubungkan player LK21.
+```bash
+cd backend
+python -m pip install -r requirements.txt
+uvicorn main:app --reload
+```
 
-Paket dirakit dari file startup-fix terbaru dan workflow proyek awal. Belum dilakukan build Flutter di lingkungan ini; keberhasilan APK perlu diperiksa lewat GitHub Actions.
+`GET /health` dan `GET /resolve?tmdb_id=123&type=movie&season=0&episode=0`.
+Sumber yang tidak tercatat mengembalikan `{ "available": false }`. Format contoh tersedia pada `sources.example.json` (placeholder, bukan video aktif). Isi `sources.json` dengan hanya URL video yang memang diizinkan dan cocok dengan TMDB ID serta episode.
+
+Untuk digunakan APK, deploy API ke endpoint **HTTPS** yang dapat diakses HP; `localhost` di laptop tidak dapat langsung dipakai pada APK di HP. Tetapkan GitHub Repository Variables → Actions → `SOURCE_API_BASE` ke URL dasar backend, misalnya `https://api.domain-anda.com` (bukan halaman LK21). `TMDB_TOKEN` tetap berada di Secrets.
+
+## Update repository tanpa merusak Android permanen
+Upload/ganti `lib/main.dart`, `lib/source_manager.dart`, `pubspec.yaml`, `.github/workflows/build-apk.yml`. Folder `backend` opsional jika akan deploy Source API. **Jangan hapus folder android/gradle permanen**. Workflow kemudian dijalankan lewat Actions. Perhatikan bahwa browser upload Github kadang tidak mempertahankan dot-folder; edit `.github/workflows/build-apk.yml` langsung jika perlu.
+
+## Catatan pengujian
+File ZIP dan sintaks Python telah diperiksa. Flutter SDK/Android SDK tidak tersedia di lingkungan pembuatan paket; kompilasi APK belum diverifikasi. Jika ada error, ambil baris `lib/...: Error` dari Actions.
