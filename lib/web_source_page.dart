@@ -272,7 +272,13 @@ class _WebSourcePageState extends State<WebSourcePage> {
     if (u.scheme != 'https') return false;
     final origin = widget.url.host.toLowerCase();
     // Keep navigation within the original website. Embed frames load separately.
-    return _isTv || u.host.toLowerCase() == origin;
+    final host = u.host.toLowerCase();
+    if (host == origin) return true;
+    if (!_isTv) return false;
+    // Only known source site families may redirect the TOP-LEVEL series page.
+    // Do not allow an arbitrary HTTPS advertising/gambling page to replace it.
+    const sources = ['nontondrama.my', 'layanfilem.my', 'lk21.de', 'lk21official.cc'];
+    return sources.any((base) => host == base || host.endsWith('.$base'));
   }
 
   Future<void> _applyCleanPlayer() async {
@@ -367,8 +373,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
           final next = Uri.tryParse(r.url);
           if (next == null || (next.scheme != 'https' && next.scheme != 'about')) return NavigationDecision.prevent;
           if (r.isMainFrame && !_allowedMainNavigation(r.url)) {
-            // Only movie pages keep the original-host navigation restriction.
-            // Series HTTPS redirects are handled directly by the navigation rule.
+            // Reject off-site top-level redirects, including gambling landing pages.
+            // Embedded video frames are not affected by this top-level rule.
             return NavigationDecision.prevent;
           }
           if (r.isMainFrame && _isSearchUrl(widget.url.toString()) && _search && next.host == widget.url.host && !_isSearchUrl(next.toString()) && next.path != '/') { _candidateUrl = next.toString(); }
@@ -415,8 +421,15 @@ class _WebSourcePageState extends State<WebSourcePage> {
             html.fs-focus-v53 .player-left { width:100%!important; max-width:100%!important;
               margin:0!important; padding:0!important; box-sizing:border-box!important; }
             html.fs-focus-v53 .player-section-wrapper .player-action { display:none!important; }
-            html.fs-focus-v53 .player-options, html.fs-focus-v53 #player-list,
-            html.fs-focus-v53 #player-select { display:block!important; visibility:visible!important; }
+            html.fs-focus-v53 .player-options {display:block!important;visibility:visible!important;
+              padding:10px 12px!important; min-height:64px!important; background:#222225!important;
+              box-sizing:border-box!important; overflow:visible!important;}
+            html.fs-focus-v53 #player-list {display:none!important;}
+            html.fs-focus-v53 #player-select {display:block!important;visibility:visible!important;
+              width:100%!important; max-width:100%!important; min-height:46px!important;
+              color:#fff!important; background:#303034!important; border:1px solid #68686d!important;
+              font-size:15px!important; border-radius:8px!important; padding:8px!important;}
+            html.fs-focus-v53 .player-options select option {background:#29292d!important;color:#fff!important;}
             html.fs-focus-v53 .main-player, html.fs-focus-v53 .player-options {
               max-width:100%!important; width:100%!important; margin-left:0!important; margin-right:0!important; }
           `;

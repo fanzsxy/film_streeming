@@ -231,7 +231,7 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
       if (!snapshot.hasData) return const SizedBox(height: 340,
         child: ColoredBox(color: Color(0xff101014), child: Center(child: CircularProgressIndicator())));
       return LayoutBuilder(builder: (context, constraints) => SizedBox(
-        height: constraints.maxWidth * 9 / 16 + 112, child: WebSourcePage(
+        height: constraints.maxWidth * 9 / 16 + 88, child: WebSourcePage(
         key: ValueKey('${movie.type}:${movie.id}:$season:$episode'),
         title: movie.title, url: snapshot.data!, focused: true, embedded: true,
         tmdbId: movie.id, mediaType: movie.type, year: movie.year,
@@ -254,6 +254,7 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
  bool https(String input){final u=Uri.tryParse(input.trim());return u!=null&&u.scheme=='https'&&u.host.isNotEmpty;}
 
  int? selectedSeason;
+ int? playingSeason, playingEpisode;
  final Map<int, Future<Map<String, dynamic>>> episodeFutures = {};
  Widget _seasonSection(Movie m) {
    return FutureBuilder<Map<String, dynamic>>(
@@ -314,15 +315,7 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
                    title: Text((episode['name'] ?? 'Episode $number').toString(), maxLines: 2),
                    subtitle: Text((episode['overview'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
                    trailing: const Icon(Icons.play_circle_outline),
-                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
-                     appBar: AppBar(title: Text('${m.title} • S${active}E$number')),
-                     body: ListView(children: [
-                       inlineSource(m, season: active, episode: number),
-                       Padding(padding: const EdgeInsets.all(16), child: Text(
-                         '${episode['name'] ?? 'Episode $number'}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
-                       Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Text((episode['overview'] ?? '').toString())),
-                     ]),
-                   ))),
+                   onTap: () { setState(() { playingSeason = active; playingEpisode = number; }); },
                  ));
              }).toList());
            },
@@ -339,6 +332,8 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
          onPressed: () { widget.onFavorite(); setState(() => favorite = !favorite); })]),
      body: ListView(children: [
        if (m.type == 'movie') inlineSource(m, resolved: sourceFuture)
+       else if (m.type == 'tv' && playingSeason != null && playingEpisode != null)
+         inlineSource(m, season: playingSeason!, episode: playingEpisode!)
        else if (m.backdrop.isNotEmpty) Image.network('$imageRoot${m.backdrop}',
          height: 190, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.shrink()),
        Padding(padding: const EdgeInsets.all(16), child: Column(
