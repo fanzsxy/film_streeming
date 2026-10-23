@@ -28,7 +28,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
   int _progress = 0;
   bool _matching = false;
   String? _candidateUrl;
-  Uri? _seriesDestination;
+  // Follow normal HTTPS series redirects without a confirmation dialog.
+  // Pop-up windows remain disabled by the Clean Player script.
+  bool get _isTv => widget.mediaType == 'tv' || widget.mediaType == 'series';
   String get _cacheKey => 'fs_detail_v54_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
   bool get _canMatch => widget.tmdbId > 0 && widget.mediaType == 'movie' && widget.year.length == 4;
   bool _isSearchUrl(String? url) { final u = Uri.tryParse(url ?? ''); return u != null &&
@@ -102,7 +104,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
     if (u.scheme != 'https') return false;
     final origin = widget.url.host.toLowerCase();
     // Keep navigation within the original website. Embed frames load separately.
-    return u.host.toLowerCase() == origin;
+    return _isTv || u.host.toLowerCase() == origin;
   }
 
   Future<void> _applyCleanPlayer() async {
@@ -133,7 +135,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
       ..setBackgroundColor(const Color(0xff101014))
       ..setNavigationDelegate(NavigationDelegate(
         onPageStarted: (_) {
-          if (mounted) setState(() { _loading = true; _revealed = false; _error = null; _progress = 0; _seriesDestination = null; });
+          if (mounted) setState(() { _loading = true; _revealed = false; _error = null; _progress = 0; });
         },
         onProgress: (p) { if (mounted) setState(() => _progress = p); },
         onPageFinished: (url) async {
@@ -157,11 +159,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
           final next = Uri.tryParse(r.url);
           if (next == null || (next.scheme != 'https' && next.scheme != 'about')) return NavigationDecision.prevent;
           if (r.isMainFrame && !_allowedMainNavigation(r.url)) {
-            // Never silently follow an off-site redirect. For TV pages,
-            // show the destination as an explicit user choice instead.
-            if (widget.mediaType == 'tv' && next.scheme == 'https' && mounted) {
-              setState(() { _seriesDestination = next; _loading = false; _revealed = true; });
-            }
+            // Only movie pages keep the original-host navigation restriction.
+            // Series HTTPS redirects are handled directly by the navigation rule.
             return NavigationDecision.prevent;
           }
           if (r.isMainFrame && _isSearchUrl(widget.url.toString()) && _search && next.host == widget.url.host && !_isSearchUrl(next.toString()) && next.path != '/') { _candidateUrl = next.toString(); }
@@ -230,12 +229,6 @@ class _WebSourcePageState extends State<WebSourcePage> {
   Future<void> _siteBack() async {
     if (await _controller.canGoBack()) await _controller.goBack();
   }
-  Future<void> _openSeriesDestination() async {
-    final uri = _seriesDestination;
-    if (uri != null && uri.scheme == 'https') {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
   Future<void> _external() async {
     final current = Uri.tryParse(await _controller.currentUrl() ?? '') ?? widget.url;
     if (current.scheme == 'https') await launchUrl(current, mode: LaunchMode.externalApplication);
@@ -278,20 +271,10 @@ class _WebSourcePageState extends State<WebSourcePage> {
                 FilledButton(onPressed: () => _controller.reload(), child: const Text('Coba lagi')),
                 TextButton(onPressed: _external, child: const Text('Buka di browser')),
               ]))))),
-        if (_seriesDestination != null && widget.mediaType == 'tv' && _error == null)
-          Positioned(left: 12, right: 12, top: 20, child: Card(child: Padding(
-            padding: const EdgeInsets.all(14), child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Text('Sumber series mengalihkan ke situs episode lain. FilmStream tidak dapat memastikan episode ini tersedia atau aman diputar otomatis.', textAlign: TextAlign.center),
-              const SizedBox(height: 10),
-              Text(_seriesDestination!.host, style: const TextStyle(fontSize: 12)),
-              const SizedBox(height: 10),
-              FilledButton(onPressed: _openSeriesDestination, child: const Text('Buka tujuan di browser')),
-              TextButton(onPressed: _back, child: const Text('Kembali ke katalog')),
-            ])))),
-        if (_revealed && _search && _focused && _error == null && _seriesDestination == null)
+        if (_revealed && _search && _focused && _error == null)
           Positioned(left: 10, right: 10, bottom: 14, child: Card(child: Padding(
             padding: const EdgeInsets.all(10), child: Text(
-              'Ini masih halaman pencarian. Pilih hasil film yang tepat; tampilan fokus aktif saat halaman player terbuka.',
+              _isTv ? 'Halaman belum menampilkan player.' : 'Ini masih halaman pencarian. Pilih hasil film yang tepat; tampilan fokus aktif saat halaman player terbuka.',
               textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall,
             )))),
       ]),
