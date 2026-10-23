@@ -252,7 +252,7 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
       if (!snapshot.hasData) return const SizedBox(height: 340,
         child: ColoredBox(color: Color(0xff101014), child: Center(child: CircularProgressIndicator())));
       return LayoutBuilder(builder: (context, constraints) => SizedBox(
-        height: constraints.maxWidth * 9 / 16 + 88, child: WebSourcePage(
+        height: constraints.maxWidth * 9 / 16 + 116, child: WebSourcePage(
         key: ValueKey('${movie.type}:${movie.id}:$season:$episode'),
         title: movie.title, url: snapshot.data!, focused: true, embedded: true,
         tmdbId: movie.id, mediaType: movie.type, year: movie.year,
@@ -340,13 +340,16 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
                  WatchEntry? viewed;
                  for (final h in history) { if (h.key == key) { viewed = h; break; } }
                  final isActive = playingSeason == active && playingEpisode == number;
-                 return Card(margin: const EdgeInsets.symmetric(vertical: 5), color: isActive ? const Color(0xff422c32) : const Color(0xff222229),
+                 final cardColor = viewed?.completed == true ? const Color(0xff20443a)
+                     : isActive || (viewed != null && viewed.durationMs > 0 && viewed.positionMs > 0)
+                         ? const Color(0xff263d52)
+                         : const Color(0xff24242b);
+                 return Card(margin: const EdgeInsets.symmetric(vertical: 5), color: cardColor,
                  child: ListTile(
                    leading: SizedBox(width: 42, child: Center(child: Text('$number', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)))),
                    title: Text((episode['name'] ?? 'Episode $number').toString(), maxLines: 2),
-                   subtitle: Text(isActive ? 'Sedang dipilih' : viewed?.completed == true ? '✓ Sudah ditonton' : viewed != null && viewed.durationMs > 0 ? '◉ Progres ${(viewed.progress*100).round()}%' : viewed != null ? '◉ Pernah dibuka' : (episode['overview'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
+                   subtitle: viewed == null && !isActive ? Text((episode['overview'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis) : null,
                    trailing: Row(mainAxisSize:MainAxisSize.min,children:[
-                     if (viewed?.completed == true) const Icon(Icons.check_circle, color: Color(0xffffb5b0)),
                      const Icon(Icons.play_circle_outline),
                    ]),
                    onTap: () { setState(() { playingSeason = active; playingEpisode = number; });

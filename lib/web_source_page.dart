@@ -464,7 +464,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
             if (_focused) {
               await Future<void>.delayed(const Duration(milliseconds: 250));
               await _applyFocus();
-              try { await _controller.runJavaScript("window.scrollTo({top:0,left:0,behavior:'instant'});"); } catch (_) {}
+              try { await _controller.runJavaScript("window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0;"); } catch (_) {}
               widget.onFullscreenExit?.call();
             }
           });
@@ -497,7 +497,10 @@ class _WebSourcePageState extends State<WebSourcePage> {
             document.head.appendChild(style);
           }
           style.textContent = `
-            html.fs-focus-v53, html.fs-focus-v53 body { margin:0!important; background:#101014!important; }
+            html.fs-focus-v53, html.fs-focus-v53 body { margin:0!important; background:#101014!important;
+              overflow-x:hidden!important; overscroll-behavior:none!important; }
+            html.fs-focus-v53 body { position:relative!important; top:0!important; left:0!important; }
+            html.fs-focus-v53 .player-section-wrapper { top:0!important; transform:none!important; }
             html.fs-focus-v53 body > nav, html.fs-focus-v53 body > header,
             html.fs-focus-v53 body > footer, html.fs-focus-v53 .sub-header,
             html.fs-focus-v53 .main-header, html.fs-focus-v53 .main-section,
@@ -513,7 +516,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
               margin:0!important; padding:0!important; box-sizing:border-box!important; }
             html.fs-focus-v53 .player-section-wrapper .player-action { display:none!important; }
             html.fs-focus-v53 .player-options {display:block!important;visibility:visible!important;position:relative!important;transform:none!important;
-              padding:10px 12px!important; min-height:64px!important; background:#222225!important;
+              padding:8px 12px!important; min-height:80px!important; background:#222225!important;
               box-sizing:border-box!important; overflow:visible!important;}
             html.fs-focus-v53 #player-list {display:none!important;}
             html.fs-focus-v53 #player-select {display:block!important;visibility:visible!important;position:relative!important;transform:none!important;
@@ -526,7 +529,19 @@ class _WebSourcePageState extends State<WebSourcePage> {
           `;
           document.documentElement.classList.add('fs-focus-v53');
           const player = document.querySelector('.main-player');
-          if (player) window.scrollTo(0, 0);
+          if (player) {
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+            // Ensure the embedded WebView cannot drift between player and server control.
+            if (!window.__fsFocusScrollGuard) {
+              window.__fsFocusScrollGuard = true;
+              window.addEventListener('scroll', () => {
+                if (document.documentElement.classList.contains('fs-focus-v53') && window.scrollY !== 0)
+                  window.scrollTo(0, 0);
+              }, {passive:true});
+            }
+          }
           return true;
         })();
       ''');
