@@ -1,0 +1,1 @@
+FilmStream V5 Build Fix — memperbaiki sintaks daftar episode pada lib/main.dart. Ganti file lib/main.dart dan .github/workflows/build-apk.yml. Pertahankan folder android dan secret TMDB_TOKEN. LK21_API_BASE dan SOURCE_API_BASE kosong tidak menyebabkan error kompilasi, tetapi memerlukan backend jika ingin dipakai. Build Flutter belum diuji lokal; verifikasi melalui GitHub Actions.

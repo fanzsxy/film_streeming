@@ -24,7 +24,7 @@ jobs:
       - name: Install dependensi dan cek sintaks
         run: |
           flutter pub get
-          dart format --output=none --set-exit-if-changed lib/main.dart || true
+          dart format --output=none lib/main.dart lib/source_manager.dart lib/web_source_page.dart
       - name: Build APK
         env:
           TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
