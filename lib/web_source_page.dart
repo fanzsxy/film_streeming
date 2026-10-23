@@ -40,6 +40,10 @@ class _WebSourcePageState extends State<WebSourcePage> {
   bool _fullScreenRouteOpen = false;
   bool _fullScreenHiding = false;
   bool _readyNotified = false;
+  List<String> _serverNames = const [];
+  String _selectedServer = '';
+  bool _changingServer = false;
+
   // Follow normal HTTPS series redirects without a confirmation dialog.
   // Pop-up windows remain disabled by the Clean Player script.
   String get _matchTitle => widget.title.split(' • S').first.trim();
@@ -308,6 +312,92 @@ class _WebSourcePageState extends State<WebSourcePage> {
     } catch (_) { /* Site may reject script injection; keep original player available. */ }
   }
 
+  // Controls are native Flutter widgets. The original page owns the iframe and
+  // performs server switching; no embed URL is reconstructed or loaded top-level.
+  Future<void> _readServers() async {
+    if (!_focused) return;
+    try {
+      final raw = await _controller.runJavaScriptReturningResult(r'''(() => {
+        const select = document.querySelector('#player-select');
+        const opts = select ? [...select.options].map(o => ({name:(o.textContent||'').trim(), value:o.value, selected:o.selected})) : [];
+        const anchors = [...document.querySelectorAll('#player-list a[data-server],.player-options a[data-server]')].map(a => ({name:(a.getAttribute('data-server')||a.textContent||'').trim(), value:a.getAttribute('data-url')||a.href, selected:a.classList.contains('active')}));
+        const data = [...opts,...anchors].filter(x => x.name && x.value && !/^(select|pilih|choose|ganti player)/i.test(x.name));
+        const unique = new Map(); data.forEach(x => { const key=x.name.toUpperCase(); if (!unique.has(key)) unique.set(key,{name:key,selected:x.selected}); });
+        return JSON.stringify([...unique.values()]);
+      })()''');
+      dynamic data = raw;
+      if (data is String) { try { data = jsonDecode(data); } catch (_) {} }
+      if (data is String) { try { data = jsonDecode(data); } catch (_) {} }
+      if (data is! List || !mounted) return;
+      final names = <String>[];
+      String selected = '';
+      for (final item in data) {
+        if (item is! Map) continue;
+        final name = (item['name'] ?? '').toString().trim().toUpperCase();
+        if (name.isEmpty || names.contains(name)) continue;
+        names.add(name);
+        if (item['selected'] == true) selected = name;
+      }
+      setState(() {
+        _serverNames = names;
+        if (selected.isNotEmpty) _selectedServer = selected;
+        else if (!names.contains(_selectedServer)) _selectedServer = names.isEmpty ? '' : names.first;
+      });
+    } catch (_) { /* Site DOM may not expose a server chooser. */ }
+  }
+
+  Future<void> _switchServer(String name) async {
+    if (_changingServer || !_serverNames.contains(name)) return;
+    setState(() => _changingServer = true);
+    try {
+      final script = r'''(() => {
+        const name = TARGET_NAME;
+        const norm = x => (x || '').trim().toUpperCase();
+        const select = document.querySelector('#player-select');
+        const option = select && [...select.options].find(o => norm(o.textContent) === name);
+        if (option) {
+          select.value = option.value;
+          select.dispatchEvent(new Event('input',{bubbles:true}));
+          select.dispatchEvent(new Event('change',{bubbles:true}));
+          return true;
+        }
+        const a = [...document.querySelectorAll('#player-list a[data-server],.player-options a[data-server]')].find(x => norm(x.getAttribute('data-server') || x.textContent) === name);
+        if (a) { a.click(); return true; }
+        return false;
+      })()'''.replaceAll('TARGET_NAME', jsonEncode(name));
+      final result = await _controller.runJavaScriptReturningResult(script);
+      if (mounted && (result == true || result.toString() == 'true')) setState(() => _selectedServer = name);
+      // Some site scripts swap the iframe asynchronously.
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      if (mounted) { await _applyFocus(); await _readServers(); }
+    } catch (_) { /* Preserve currently playing video on switch failure. */ }
+    finally { if (mounted) setState(() => _changingServer = false); }
+  }
+
+  Widget _flutterServers() {
+    if (!_focused || !_revealed || _search || _serverNames.isEmpty) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity, color: const Color(0xff17171c),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+        const Text('Pilih Server', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white70)),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: _serverNames.map((name) {
+          final active = name == _selectedServer;
+          return ChoiceChip(
+            label: Text(name, style: TextStyle(color: active ? Colors.white : Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+            selected: active,
+            showCheckmark: active,
+            selectedColor: const Color(0xff70404a),
+            backgroundColor: const Color(0xff292a30),
+            side: BorderSide(color: active ? const Color(0xffedabae) : Colors.white24),
+            onSelected: _changingServer ? null : (_) => _switchServer(name),
+          );
+        }).toList()),
+      ]),
+    );
+  }
+
   Future<void> _installProgressObserver() async {
     if (widget.onVideoProgress == null) return;
     try {
@@ -350,7 +440,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
         onPageStarted: (_) {
           _navigationGeneration++;
           _episodeAttempts = 0; // Each new document gets its own resolution attempts.
-          if (mounted) setState(() { _loading = true; _revealed = false; _error = null; _progress = 0; });
+          if (mounted) setState(() { _loading = true; _revealed = false; _error = null; _progress = 0; _serverNames = const []; _selectedServer = ''; });
         },
         onProgress: (p) { if (mounted) setState(() => _progress = p); },
         onPageFinished: (url) async {
@@ -398,6 +488,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           if (_focused) found = await _applyFocus();
           if (!mounted || generation != _navigationGeneration) return;
           if (found) {
+            await _readServers();
             await _rememberDetail();
             if (!_readyNotified && widget.onPlayerReady != null) {
               _readyNotified = true;
@@ -464,6 +555,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
             if (_focused) {
               await Future<void>.delayed(const Duration(milliseconds: 250));
               await _applyFocus();
+              await _readServers();
               try { await _controller.runJavaScript("window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0;"); } catch (_) {}
               widget.onFullscreenExit?.call();
             }
@@ -515,15 +607,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
             html.fs-focus-v53 .player-left { width:100%!important; max-width:100%!important;
               margin:0!important; padding:0!important; box-sizing:border-box!important; }
             html.fs-focus-v53 .player-section-wrapper .player-action { display:none!important; }
-            html.fs-focus-v53 .player-options {display:block!important;visibility:visible!important;position:relative!important;transform:none!important;
-              padding:8px 12px!important; min-height:80px!important; background:#222225!important;
-              box-sizing:border-box!important; overflow:visible!important;}
-            html.fs-focus-v53 #player-list {display:none!important;}
-            html.fs-focus-v53 #player-select {display:block!important;visibility:visible!important;position:relative!important;transform:none!important;
-              width:100%!important; max-width:100%!important; min-height:46px!important;
-              color:#fff!important; background:#303034!important; border:1px solid #68686d!important;
-              font-size:15px!important; border-radius:8px!important; padding:8px!important;}
-            html.fs-focus-v53 .player-options select option {background:#29292d!important;color:#fff!important;}
+            /* Only Flutter renders the server controls; preserve original DOM for JS. */
+            html.fs-focus-v53 .player-options {position:absolute!important;left:-20000px!important;top:0!important;
+              width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important;}
             html.fs-focus-v53 .main-player, html.fs-focus-v53 .player-options {
               max-width:100%!important; width:100%!important; margin-left:0!important; margin-right:0!important; }
           `;
@@ -598,7 +684,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.embedded) return ClipRect(child: _playerBody());
+    if (widget.embedded) return ClipRect(child: Column(children: [Expanded(child: _playerBody()), _flutterServers()]));
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) { if (!didPop) _back(); },
@@ -613,7 +699,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
             IconButton(tooltip: 'Buka browser', icon: const Icon(Icons.open_in_browser), onPressed: _external),
           ],
         ),
-        body: _playerBody(),
+        body: Column(children: [Expanded(child: _playerBody()), _flutterServers()]),
       ),
     );
   }
