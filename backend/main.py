@@ -128,3 +128,38 @@ def source_manager_inspect(payload: SourceManagerInspectInput):
         "status": "inspection_only",
         "note": "No automatic fetching or storage. Media candidates are not verified; /resolve uses separately configured authorized MP4/HLS sources."
     }
+
+# Read-only, versioned inspection catalog. Commit reviewed records to GitHub;
+# do not write runtime state to Vercel's ephemeral filesystem.
+INSPECTION_DB_PATH = Path(__file__).with_name('inspected_sources.json')
+
+@app.get('/source-manager/catalog')
+def source_manager_catalog(tmdb_id: int = Query(ge=1), media_type: Literal['movie', 'tv'] = 'movie', season: int = Query(default=0, ge=0), episode: int = Query(default=0, ge=0)):
+    try:
+        records = json.loads(INSPECTION_DB_PATH.read_text(encoding='utf-8'))
+    except (FileNotFoundError, ValueError):
+        raise HTTPException(500, 'Inspection catalog is missing or invalid')
+    if not isinstance(records, list):
+        raise HTTPException(500, 'Inspection catalog must be a list')
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        if (record.get('tmdb_id'), record.get('media_type'), record.get('season', 0), record.get('episode', 0)) != (tmdb_id, media_type, season, episode):
+            continue
+        sources = [
+            {'name': s['name'], 'type': 'embed', 'url': s['url'],
+             'status': 'unverified', 'native_player_ready': False}
+            for s in record.get('sources', [])
+            if isinstance(s, dict) and s.get('type') == 'embed'
+            and isinstance(s.get('name'), str) and isinstance(s.get('url'), str)
+            and s['url'].startswith('https://')
+        ]
+        return {'found': True, 'tmdb_id': tmdb_id, 'media_type': media_type,
+                'season': season, 'episode': episode, 'title': record.get('title', ''),
+                'page_url': record.get('page_url', ''), 'source_count': len(sources),
+                'sources': sources, 'available_for_native_playback': False,
+                'status': 'inspection_only',
+                'note': 'Archived, manually inspected embed metadata; not a live availability check or playable stream.'}
+    return {'found': False, 'tmdb_id': tmdb_id, 'media_type': media_type,
+            'season': season, 'episode': episode, 'source_count': 0, 'sources': [],
+            'available_for_native_playback': False, 'status': 'not_inspected'}
