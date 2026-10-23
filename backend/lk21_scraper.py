@@ -27,7 +27,16 @@ def get_html(path: str):
             if not rp.can_fetch(USER_AGENT, url):
                 raise HTTPException(403, 'Disallowed by robots.txt')
         elif r.status_code not in (404, 410):
-            raise HTTPException(503, 'Cannot establish robots.txt policy')
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    'error': 'Cannot establish robots.txt policy',
+                    'upstream_status': r.status_code,
+                    'redirect': r.headers.get('Location')
+                    if r.status_code in (301, 302, 303, 307, 308)
+                    else None,
+                },
+            )
         response = requests.get(url, headers={'User-Agent': USER_AGENT, 'Accept': 'text/html'}, timeout=12, allow_redirects=False)
         if response.status_code in (301,302,303,307,308):
             raise HTTPException(502, 'Page redirects; no cross-domain redirects followed')
