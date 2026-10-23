@@ -1,7 +1,19 @@
-# FilmStream LK21 403 Handling
+# FilmStream — Offline Player HTML Parser
 
-Replace ONLY `backend/main.py` and `backend/lk21_scraper.py` in your existing GitHub repository. Preserve `backend/requirements.txt`, `backend/sources.json`, Flutter sources, and Android directory. Commit and push; Vercel deploys the backend if linked to this branch.
+## Pemasangan
+Salin isi folder `backend/` ke folder `backend/` repo FilmStream (jangan hapus file lain). Commit/push; Vercel otomatis deploy jika GitHub terhubung. Root Directory Vercel tetap `backend`. Tidak perlu build APK.
 
-Change: `/search/{title}` catches LK21 upstream 403/502/503 and responds with `results: []`, `status: source_unavailable`, diagnostic, rather than presenting an opaque HTTP 503. This response means searching was not completed, NOT that the film has no source. `/lk21/latest` continues to emit diagnostic status (such as `upstream_status: 403`). Root `/` displays API pointers. `/resolve` remains unchanged.
+Endpoint baru: `POST /inspect/player-html` (lihat `/docs`). Input contoh:
 
-IMPORTANT: This patch does not bypass robots.txt / upstream 403, and does not make videos available. Check `https://film-streeming-api.vercel.app/search/Test` after Vercel redeploys. No APK rebuild needed for backend changes. The existing Flutter UI may show an empty result list if it ignores `status`, in which case a future Flutter UI update will be needed to display the specific source-unavailable text.
+```json
+{
+  "page_url": "https://example.com/movie",
+  "html": "<html><h1>Contoh</h1><iframe title=\"SERVER\" src=\"https://example.org/embed/abc\"></iframe></html>"
+}
+```
+
+Keluaran mengklasifikasi `embed`, `file_candidate`, `manifest_candidate`, atau `unknown_candidate`. Semua `status=unverified`; `direct_video_verified=false`. Ini bukan sumber playback otomatis, tidak mengambil halaman dari Vercel, tidak melewati 403, dan tidak mengeksekusi JavaScript. Player yang dibuat dinamis dengan JavaScript mungkin tidak muncul dalam HTML statis.
+
+Untuk pengujian halaman publik yang boleh Anda akses, gunakan HTML yang Anda simpan sendiri dan tempel sebagai input POST melalui `/docs`; jangan kirim cookie/token. Hasilnya bisa digunakan untuk menentukan apakah integrasi embed resmi atau URL media yang tersedia cocok untuk player. Endpoint ini untuk pengujian pribadi: jangan publikasikan HTML sensitif di server terbuka.
+
+Uji lokal: `python tests/test_parser.py` (dari root paket, setelah memasang requirements).

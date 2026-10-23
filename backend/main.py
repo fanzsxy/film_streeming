@@ -77,3 +77,17 @@ def search_public_pages(title: str):
 @app.get("/")
 def root():
     return {"app": "FilmStream Source API", "health": "/health", "docs": "/docs"}
+
+# Offline parser: paste HTML saved from a page you can access. Does not fetch LK21.
+from player_parser import parse_player_html
+
+class PlayerHtmlInput(BaseModel):
+    html: str
+    page_url: str
+
+@app.post('/inspect/player-html')
+def inspect_player_html(payload: PlayerHtmlInput):
+    try:
+        return parse_player_html(payload.html, payload.page_url)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
