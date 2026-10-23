@@ -194,7 +194,7 @@ class _ExternalSourcePageState extends State<ExternalSourcePage> {
  }));
 }
 // Opens the known film page, or a catalogued page, or the site's normal search UI.
-Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0, int episode = 0}) async {
+Future<Uri> resolveSourcePage(Movie movie) async {
   Uri? page;
   // A previously inspected, exact title match. No guessed embed URLs.
   if (movie.type == 'movie' && movie.id == 762509) {
@@ -221,14 +221,34 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0,
     }
   }
   page ??= Uri.https('tv12.lk21official.cc', '/search', {'s': movie.title});
+  return page;
+}
+
+Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? resolved}) =>
+  FutureBuilder<Uri>(
+    future: resolved ?? resolveSourcePage(movie),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) return const AspectRatio(aspectRatio: 16 / 9,
+        child: ColoredBox(color: Color(0xff101014), child: Center(child: CircularProgressIndicator())));
+      return AspectRatio(aspectRatio: 16 / 9, child: WebSourcePage(
+        key: ValueKey('${movie.type}:${movie.id}:$season:$episode'),
+        title: movie.title, url: snapshot.data!, focused: true, embedded: true,
+        tmdbId: movie.id, mediaType: movie.type, year: movie.year,
+        season: season, episode: episode));
+    },
+  );
+
+Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0, int episode = 0}) async {
+  final page = await resolveSourcePage(movie);
   if (!context.mounted) return;
-  Navigator.push(context, MaterialPageRoute(builder: (_) =>
-    WebSourcePage(title: movie.type == 'tv' && episode > 0 ? '${movie.title} • S${season}E${episode}' : movie.title, url: page!, focused: true, tmdbId: movie.id, mediaType: movie.type, year: movie.year, season: season, episode: episode)));
+  Navigator.push(context, MaterialPageRoute(builder: (_) => WebSourcePage(
+    title: movie.title, url: page, focused: true, tmdbId: movie.id,
+    mediaType: movie.type, year: movie.year, season: season, episode: episode)));
 }
 
 class DetailPage extends StatefulWidget {final Movie movie;final bool isFavorite;final VoidCallback onFavorite;const DetailPage({super.key,required this.movie,required this.isFavorite,required this.onFavorite});@override State<DetailPage> createState()=>_DetailPageState();}
-class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingController(),subtitleUrl=TextEditingController(),sourcePage=TextEditingController();late bool favorite;late Future<Map<String,dynamic>> details;
- @override void initState(){super.initState();favorite=widget.isFavorite;details=Tmdb.get('${widget.movie.type}/${widget.movie.id}');}
+class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingController(),subtitleUrl=TextEditingController(),sourcePage=TextEditingController();late bool favorite;late Future<Map<String,dynamic>> details; late Future<Uri> sourceFuture;
+ @override void initState(){super.initState();favorite=widget.isFavorite;details=Tmdb.get('${widget.movie.type}/${widget.movie.id}'); sourceFuture=resolveSourcePage(widget.movie);}
  @override void dispose(){videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();super.dispose();}
  bool https(String input){final u=Uri.tryParse(input.trim());return u!=null&&u.scheme=='https'&&u.host.isNotEmpty;}
 
@@ -266,22 +286,19 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
                            leading: const Icon(Icons.play_circle_outline),
                            title: Text('$episodeNumber. ${episode['name'] ?? 'Episode'}'),
                            subtitle: Text((episode['overview'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
-                           onTap: () => Navigator.push(
-                             context,
-                             MaterialPageRoute(
-                               builder: (_) => Scaffold(
-                                 appBar: AppBar(title: Text('Episode $episodeNumber')),
-                                 body: Padding(
-                                   padding: const EdgeInsets.all(20),
-                                   child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                                     FilledButton.icon(onPressed: () => openFocusedFilm(context, m, season: seasonNumber, episode: episodeNumber), icon: const Icon(Icons.smart_display), label: const Text('Cari episode di Web Player')),
-                                     const SizedBox(height: 12),
-                                     AutoSourceButton(movie: m, season: seasonNumber, episode: episodeNumber),
-                                   ]),
-                                 ),
-                               ),
+                           onTap: () => Navigator.push(context, MaterialPageRoute(
+                             builder: (_) => Scaffold(
+                               appBar: AppBar(title: Text('${m.title} • S${seasonNumber}E$episodeNumber')),
+                               body: ListView(children: [
+                                 inlineSource(m, season: seasonNumber, episode: episodeNumber),
+                                 Padding(padding: const EdgeInsets.all(16), child: Text(
+                                   '${episode['name'] ?? 'Episode $episodeNumber'}',
+                                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
+                                 Padding(padding: const EdgeInsets.symmetric(horizontal: 16),
+                                   child: Text((episode['overview'] ?? '').toString())),
+                               ]),
                              ),
-                           ),
+                           )),
                          );
                        }).toList(),
                      );
@@ -295,7 +312,30 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
      },
    );
  }
- @override Widget build(BuildContext context){final m=widget.movie;return Scaffold(appBar:AppBar(title:Text(m.title,maxLines:1),actions:[IconButton(icon:Icon(favorite?Icons.favorite:Icons.favorite_border),onPressed:(){widget.onFavorite();setState(()=>favorite=!favorite);})]),body:ListView(padding:const EdgeInsets.all(16),children:[if(m.backdrop.isNotEmpty)ClipRRect(borderRadius:BorderRadius.circular(12),child:Image.network('$imageRoot${m.backdrop}',height:190,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink())),const SizedBox(height:14),Text(m.title,style:const TextStyle(fontSize:26,fontWeight:FontWeight.bold)),Text('${m.type=='tv'?'Series':'Film'} • ${m.year} • ★ ${m.rating.toStringAsFixed(1)}',style:const TextStyle(color:Colors.white70)),const SizedBox(height:14),Text(m.overview.isEmpty?'Sinopsis Bahasa Indonesia belum tersedia.':m.overview),if(m.type=='tv') _seasonSection(m),const SizedBox(height:22),ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,builder:(context,_,__) {final e=WatchStore.find('${m.type}:${m.id}');if(e==null)return const SizedBox.shrink();return Card(child:ListTile(leading:const Icon(Icons.history),title:Text(e.completed?'Sudah ditonton • Putar ulang':'Lanjutkan dari ${clock(e.positionMs)}'),subtitle:LinearProgressIndicator(value:e.progress),onTap:(){videoUrl.text=e.url;subtitleUrl.text=e.subtitle;Navigator.push(context,MaterialPageRoute(builder:(_)=>PlayerPage(url:e.url,subtitle:e.subtitle,title:m.title,historyKey:e.key,poster:m.poster,type:m.type,tmdbId:m.id)));}));}),const SizedBox(height:22),if(m.type=='movie') FilledButton.icon(onPressed:()=>openFocusedFilm(context,m),icon:const Icon(Icons.smart_display),label:const Text('Tonton di Web Player')),const SizedBox(height:12),if(m.type=='movie') AutoSourceButton(movie:m),const SizedBox(height:12),OutlinedButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>ExternalSourcePage(movie:m))),icon:const Icon(Icons.travel_explore),label:const Text('Lihat katalog sumber terinspeksi')),const SizedBox(height:12),const Text('Katalog menampilkan arsip inspeksi, bukan pengecekan live atau jaminan pemutaran.',style:TextStyle(color:Colors.white70,fontSize:12)),const SizedBox(height:22),const Text('Pemutar video pribadi',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),const Text('Masukkan URL HTTPS video MP4/HLS yang dapat Anda gunakan. TMDB tidak menyediakan video film lengkap.',style:TextStyle(color:Colors.white70)),const SizedBox(height:10),TextField(controller:videoUrl,decoration:const InputDecoration(labelText:'URL video HTTPS',border:OutlineInputBorder()),keyboardType:TextInputType.url),const SizedBox(height:10),TextField(controller:subtitleUrl,decoration:const InputDecoration(labelText:'URL subtitle .srt (opsional)',border:OutlineInputBorder()),keyboardType:TextInputType.url),const SizedBox(height:10),FilledButton.icon(onPressed:(){if(!https(videoUrl.text)||(subtitleUrl.text.trim().isNotEmpty&&!https(subtitleUrl.text))){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Masukkan URL HTTPS yang valid.')));return;}Navigator.push(context,MaterialPageRoute(builder:(_)=>PlayerPage(url:videoUrl.text.trim(),subtitle:subtitleUrl.text.trim(),title:m.title,historyKey:'${m.type}:${m.id}',poster:m.poster,type:m.type,tmdbId:m.id)));},icon:const Icon(Icons.play_arrow),label:const Text('Putar video')),const SizedBox(height:18),TextField(controller:sourcePage,decoration:const InputDecoration(labelText:'Tautan halaman sumber eksternal',border:OutlineInputBorder()),keyboardType:TextInputType.url),OutlinedButton.icon(onPressed:()async{if(!https(sourcePage.text)){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Masukkan URL HTTPS yang valid.')));return;}if(!context.mounted)return;Navigator.push(context,MaterialPageRoute(builder:(_)=>WebSourcePage(title:m.title,url:Uri.parse(sourcePage.text.trim()))));},icon:const Icon(Icons.open_in_browser),label:const Text('Buka di WebView')),const SizedBox(height:20),const Text('Metadata oleh TMDB. Aplikasi tidak berafiliasi dengan TMDB. Sumber video LK21 tidak terintegrasi otomatis.',style:TextStyle(color:Colors.white54,fontSize:12))]));}
+ @override Widget build(BuildContext context) {
+   final m = widget.movie;
+   return Scaffold(
+     appBar: AppBar(title: Text(m.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+       actions: [IconButton(icon: Icon(favorite ? Icons.favorite : Icons.favorite_border),
+         onPressed: () { widget.onFavorite(); setState(() => favorite = !favorite); })]),
+     body: ListView(children: [
+       if (m.type == 'movie') inlineSource(m, resolved: sourceFuture)
+       else if (m.backdrop.isNotEmpty) Image.network('$imageRoot${m.backdrop}',
+         height: 190, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+       Padding(padding: const EdgeInsets.all(16), child: Column(
+         crossAxisAlignment: CrossAxisAlignment.start, children: [
+           Text(m.title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+           const SizedBox(height: 8),
+           Text('${m.type == 'tv' ? 'Series' : 'Film'} • ${m.year} • ★ ${m.rating.toStringAsFixed(1)}',
+             style: const TextStyle(color: Colors.white70)),
+           const SizedBox(height: 14),
+           Text(m.overview.isEmpty ? 'Sinopsis belum tersedia.' : m.overview),
+           if (m.type == 'tv') _seasonSection(m),
+         ],
+       )),
+     ]),
+   );
+ }
 }
 class Cue {final Duration start,end;final String text;Cue(this.start,this.end,this.text);}
 Duration? parseTime(String input){final parts=input.trim().replaceAll(',','.').split(':');if(parts.length!=3)return null;final h=int.tryParse(parts[0]),m=int.tryParse(parts[1]),sec=double.tryParse(parts[2]);if(h==null||m==null||sec==null)return null;return Duration(milliseconds:(((h*3600+m*60)+sec)*1000).round());}

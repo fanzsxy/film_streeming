@@ -10,10 +10,11 @@ class WebSourcePage extends StatefulWidget {
   final String title;
   final Uri url;
   final bool focused;
+  final bool embedded;
   final int tmdbId, season, episode;
   final String mediaType, year;
   const WebSourcePage({super.key, required this.title, required this.url, this.focused = false,
-    this.tmdbId = 0, this.mediaType = 'movie', this.year = '', this.season = 0, this.episode = 0});
+    this.embedded = false, this.tmdbId = 0, this.mediaType = 'movie', this.year = '', this.season = 0, this.episode = 0});
   @override
   State<WebSourcePage> createState() => _WebSourcePageState();
 }
@@ -445,26 +446,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
     if (current.scheme == 'https') await launchUrl(current, mode: LaunchMode.externalApplication);
   }
 
-  @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: false,
-    onPopInvokedWithResult: (didPop, _) { if (!didPop) _back(); },
-    child: Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-        leading: IconButton(tooltip: 'Kembali ke katalog', icon: const Icon(Icons.arrow_back), onPressed: _back),
-        actions: [
-          IconButton(tooltip: 'Kembali satu halaman situs', icon: const Icon(Icons.history), onPressed: _siteBack),
-          IconButton(tooltip: _focused ? 'Halaman lengkap' : 'Fokus player',
-            icon: Icon(_focused ? Icons.crop_free : Icons.smart_display_outlined),
-            onPressed: () => _setFocused(!_focused)),
-          IconButton(tooltip: 'Refresh', icon: const Icon(Icons.refresh), onPressed: () => _controller.reload()),
-          IconButton(tooltip: 'Buka browser', icon: const Icon(Icons.open_in_browser), onPressed: _external),
-        ],
-        bottom: _loading ? PreferredSize(preferredSize: const Size.fromHeight(3),
-          child: LinearProgressIndicator(value: _progress == 0 ? null : _progress / 100)) : null,
-      ),
-      body: Stack(children: [
+  Widget _playerBody() => Stack(children: [
         WebViewWidget(controller: _controller),
         if (!_revealed && _error == null)
           Positioned.fill(child: ColoredBox(color: const Color(0xff101014),
@@ -488,7 +470,28 @@ class _WebSourcePageState extends State<WebSourcePage> {
               _isTv ? 'Halaman belum menampilkan player.' : 'Ini masih halaman pencarian. Pilih hasil film yang tepat; tampilan fokus aktif saat halaman player terbuka.',
               textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall,
             )))),
-      ]),
-    ),
-  );
+      ]);
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.embedded) return ClipRect(child: _playerBody());
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) { if (!didPop) _back(); },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          leading: IconButton(tooltip: 'Kembali ke katalog', icon: const Icon(Icons.arrow_back), onPressed: _back),
+          actions: [
+            IconButton(tooltip: 'Kembali satu halaman situs', icon: const Icon(Icons.history), onPressed: _siteBack),
+            IconButton(tooltip: _focused ? 'Halaman lengkap' : 'Fokus player', icon: Icon(_focused ? Icons.crop_free : Icons.smart_display_outlined), onPressed: () => _setFocused(!_focused)),
+            IconButton(tooltip: 'Refresh', icon: const Icon(Icons.refresh), onPressed: () => _controller.reload()),
+            IconButton(tooltip: 'Buka browser', icon: const Icon(Icons.open_in_browser), onPressed: _external),
+          ],
+        ),
+        body: _playerBody(),
+      ),
+    );
+  }
+
 }
