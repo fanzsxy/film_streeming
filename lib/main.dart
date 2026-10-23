@@ -209,7 +209,7 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie) async {
       }
     } catch (_) { /* Site search is a deliberate fallback, not a playback success. */ }
   }
-  page ??= Uri.https('tv12.lk21official.cc', '/search/', {'s': movie.title});
+  page ??= Uri.https('tv12.lk21official.cc', '/search', {'s': movie.title});
   if (!context.mounted) return;
   Navigator.push(context, MaterialPageRoute(builder: (_) =>
     WebSourcePage(title: movie.title, url: page!, focused: true)));

@@ -39,32 +39,56 @@ class _WebSourcePageState extends State<WebSourcePage> {
       ))
       ..loadRequest(widget.url);
   }
-  // Only applies to the known page's own layout. Search results remain intact.
+  // Only display the existing page's player section. The page and iframe
+  // remain on their real HTTPS origins; this is a visual layout change.
   Future<void> _applyFocus() async {
     try {
       await _controller.runJavaScript(r'''
         (() => {
-          if (!document.querySelector('.main-player iframe')) return;
-          if (document.getElementById('filmstream-focus-style')) return;
-          const css = document.createElement('style');
-          css.id='filmstream-focus-style';
-          css.textContent = `
-            body { background:#101014 !important; }
-            header, nav, .mobile-nav, .sub-header, .player-right,
-            .related-content, .mob-related-video, footer, .simple-box,
-            .player-action, .movie-action, .content-wrapper > .content-right
-            { display:none !important; }
-            .container, .container2, .player-area, .player-wrapper,
-            .player-left, .main-player, .player-section-wrapper
-            { max-width:100% !important; width:100% !important; margin:0 !important; padding:0 !important; }
-            .main-player iframe { width:100% !important; aspect-ratio:16 / 9; min-height:220px; }
-            .player-options { display:block !important; }
+          const player = document.querySelector('.player-section-wrapper .main-player');
+          if (!player) return; // Search/listing pages stay fully navigable.
+          let style = document.getElementById('filmstream-focus-style');
+          if (!style) {
+            style = document.createElement('style');
+            style.id = 'filmstream-focus-style';
+            document.head.appendChild(style);
+          }
+          style.textContent = `
+            html, body { margin:0!important; padding:0!important; width:100%!important;
+              overflow-x:hidden!important; background:#101014!important; }
+            body > :not(main):not(script):not(style),
+            main.site-content > :not(.player-section-wrapper),
+            .player-right, .related-content, .mob-related-video,
+            .player-action, .iframe-loader + .cinema-toggle,
+            .simple-box, #nativeAds, .bottom-nav, .mobile-bottom-nav,
+            .sticky-bottom, .floating-ads, .ads-container,
+            .player-section-wrapper .player-right { display:none!important; }
+            main.site-content, .player-section-wrapper, .player-section-wrapper .container,
+            .player-area, .player-wrapper, .player-left, .main-player,
+            .main-section, .player-section-wrapper .player-options {
+              display:block!important; position:relative!important; float:none!important;
+              box-sizing:border-box!important; width:100%!important; max-width:100%!important;
+              min-width:0!important; margin:0!important; padding:0!important;
+              height:auto!important; min-height:0!important; overflow:visible!important;
+              background:#101014!important; color:#fff!important;
+            }
+            .player-wrapper { display:block!important; }
+            .main-player iframe#main-player, .main-player iframe {
+              display:block!important; width:100%!important; max-width:100%!important;
+              height:56.25vw!important; min-height:210px!important; max-height:65vh!important;
+              border:0!important; margin:0!important;
+            }
+            .player-options { padding:12px 10px!important; background:#211a1a!important; }
+            .player-options #player-list, .player-options #player-select { max-width:100%!important; }
+            .player-options select { display:block!important; width:100%!important;
+              min-height:45px!important; color:#fff!important; background:#302626!important; }
           `;
-          document.head.appendChild(css);
-          document.querySelector('.main-player')?.scrollIntoView({block:'start'});
+          document.documentElement.scrollTop=0;
+          document.body.scrollTop=0;
+          window.scrollTo(0,0);
         })();
       ''');
-    } catch (_) { /* Preserve full original page when injection is unavailable. */ }
+    } catch (_) { /* If unavailable, preserve original page and full-view toggle. */ }
   }
   Future<void> _setFocused(bool next) async {
     setState(() => _focused=next);
