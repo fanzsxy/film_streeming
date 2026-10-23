@@ -252,7 +252,7 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
       if (!snapshot.hasData) return const SizedBox(height: 340,
         child: ColoredBox(color: Color(0xff101014), child: Center(child: CircularProgressIndicator())));
       return LayoutBuilder(builder: (context, constraints) => SizedBox(
-        height: constraints.maxWidth * 9 / 16 + 116, child: WebSourcePage(
+        height: constraints.maxWidth * 0.85 + 120, child: WebSourcePage(
         key: ValueKey('${movie.type}:${movie.id}:$season:$episode'),
         title: movie.title, url: snapshot.data!, focused: true, embedded: true,
         tmdbId: movie.id, mediaType: movie.type, year: movie.year,

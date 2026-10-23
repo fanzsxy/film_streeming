@@ -684,7 +684,12 @@ class _WebSourcePageState extends State<WebSourcePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.embedded) return ClipRect(child: Column(children: [Expanded(child: _playerBody()), _flutterServers()]));
+    if (widget.embedded) return ClipRect(child: Column(children: [
+      // Reserve all remaining height for the actual WebView. Flutter server chips
+      // take their own space below it instead of overlaying video controls.
+      Expanded(child: SizedBox(width: double.infinity, child: _playerBody())),
+      _flutterServers(),
+    ]));
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) { if (!didPop) _back(); },
