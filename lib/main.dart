@@ -214,8 +214,10 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0,
   // because the search site indexes a show landing page first.
   if (movie.type == 'tv') {
     page = null;
-    if (movie.title.trim().toLowerCase() == 'the mentalist' && season == 1 && episode == 1) {
-      page = Uri.parse('https://tv9.nontondrama.my/the-mentalist-season-1-episode-1-2008');
+    // Known show landing URL from the user's browser; resolve any selected
+    // season/episode from links on that page instead of hardcoding S1E1.
+    if (movie.title.trim().toLowerCase() == 'the mentalist') {
+      page = Uri.parse('https://tv9.nontondrama.my/the-mentalist-2008');
     }
   }
   page ??= Uri.https('tv12.lk21official.cc', '/search', {'s': movie.title});

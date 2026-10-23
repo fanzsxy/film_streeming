@@ -27,6 +27,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
   String? _error;
   int _progress = 0;
   bool _matching = false;
+  bool _resolvingEpisode = false;
+  int _episodeAttempts = 0;
   String? _candidateUrl;
   // Follow normal HTTPS series redirects without a confirmation dialog.
   // Pop-up windows remain disabled by the Clean Player script.
@@ -97,6 +99,72 @@ class _WebSourcePageState extends State<WebSourcePage> {
     finally { _matching = false; }
     return false;
   }
+  // The series landing page contains the real season selector and episode links.
+  // Resolve them from the loaded page instead of constructing speculative URLs.
+  Future<bool> _resolveEpisode() async {
+    if (!_isTv || widget.season < 1 || widget.episode < 1 || _resolvingEpisode || _episodeAttempts >= 3) return false;
+    _resolvingEpisode = true;
+    _episodeAttempts++;
+    try {
+      final js = r'''(() => {
+        const season = TARGET_SEASON, episode = TARGET_EPISODE;
+        const selected = new RegExp('(?:season|musim)[\\s-]*' + season + '(?![0-9])','i');
+        const episodePattern = new RegExp('(?:episode|eps?|ep)[\\s-]*0*' + episode + '(?![0-9])','i');
+        const current = location.href;
+        if (selected.test(current) && episodePattern.test(current)) return JSON.stringify({state:'ready'});
+        // A season selector may swap the episode list without changing the URL.
+        const selectors = [...document.querySelectorAll('select')];
+        let seasonSelect = selectors.find(s => [...s.options].some(o => selected.test((o.textContent || '')+' '+o.value)));
+        if (seasonSelect) {
+          const option = [...seasonSelect.options].find(o => selected.test((o.textContent || '')+' '+o.value));
+          if (option && seasonSelect.value !== option.value) {
+            seasonSelect.value = option.value;
+            seasonSelect.dispatchEvent(new Event('change',{bubbles:true}));
+            return JSON.stringify({state:'changed'});
+          }
+        }
+        const links = [...document.querySelectorAll('a[href]')].filter(a => {
+          const text = (a.textContent || '').trim();
+          const href = a.getAttribute('href') || '';
+          if (!href || /^(#|javascript:)/i.test(href)) return false;
+          let u; try { u = new URL(href,location.href); } catch (_) { return false; }
+          if (u.protocol !== 'https:') return false;
+          const combined = (text + ' ' + u.pathname).toLowerCase();
+          const explicit = selected.test(combined) && episodePattern.test(combined);
+          const inEpisodePanel = !!a.closest('.episode, .episodes, .episode-list, .episode-grid, .ep-list, .server-episode, .series-episode');
+          const numeric = new RegExp('^0*' + episode + '$').test(text);
+          const onCorrectSeason = seasonSelect && selected.test((seasonSelect.selectedOptions[0]?.textContent || '')+' '+seasonSelect.value);
+          return explicit || (inEpisodePanel && numeric && onCorrectSeason);
+        });
+        const unique = [...new Set(links.map(a => new URL(a.getAttribute('href'),location.href).href))];
+        if (unique.length === 1) return JSON.stringify({state:'found',url:unique[0]});
+        return JSON.stringify({state:'missing'});
+      })()'''.replaceAll('TARGET_SEASON', widget.season.toString()).replaceAll('TARGET_EPISODE', widget.episode.toString());
+      dynamic result = await _controller.runJavaScriptReturningResult(js);
+      if (result is String) { try { result = jsonDecode(result); } catch (_) {} }
+      if (result is String) { try { result = jsonDecode(result); } catch (_) {} }
+      if (result is Map && result['state'] == 'found') {
+        final url = Uri.tryParse(result['url']?.toString() ?? '');
+        if (url != null && url.scheme == 'https') {
+          if (mounted) setState(() { _loading = true; _revealed = false; });
+          await _controller.loadRequest(url);
+          return true;
+        }
+      }
+      if (result is Map && result['state'] == 'changed') {
+        // Allow the site's own season-change handler to populate its episode list.
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        return await _resolveEpisodeAfterChange();
+      }
+    } catch (_) { /* No reliable episode link: show the page for manual selection. */ }
+    finally { _resolvingEpisode = false; }
+    return false;
+  }
+  Future<bool> _resolveEpisodeAfterChange() async {
+    _resolvingEpisode = false;
+    return _resolveEpisode();
+  }
+
   Future<void> _rememberDetail() async {
     if (!_canMatch || _isTv || (_isSearchUrl(widget.url.toString()) && _candidateUrl == null)) return;
     final current = await _controller.currentUrl();
@@ -151,6 +219,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
         onPageFinished: (url) async {
           await _applyCleanPlayer();
           if (_focused && _isSearchUrl(url) && await _autoMatchSearch()) return;
+          if (_focused && !_isSearchUrl(url) && await _resolveEpisode()) return;
           bool found = false;
           if (_focused) found = await _applyFocus();
           if (found) await _rememberDetail();
