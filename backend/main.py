@@ -56,9 +56,24 @@ def search_public_pages(title: str):
     query = title.strip().casefold()
     if len(query) < 2 or len(query) > 120:
         raise HTTPException(status_code=422, detail="Title must be 2-120 characters")
-    listing = lk21_latest(40)
+    try:
+        listing = lk21_latest(40)
+    except HTTPException as exc:
+        if exc.status_code in (403, 502, 503):
+            return {
+                "results": [],
+                "status": "source_unavailable",
+                "message": "LK21 metadata source is currently unavailable; search was not completed.",
+                "diagnostic": exc.detail,
+            }
+        raise
     return {"results": [
         {"title": item["title"], "url": item["source_page"], "year": ""}
         for item in listing.get("items", [])
         if query in item["title"].casefold()
-    ], "note": "Matches current public latest listing only; metadata, not playback"}
+    ], "status": "ok", "note": "Matches current public latest listing only; metadata, not playback"}
+
+
+@app.get("/")
+def root():
+    return {"app": "FilmStream Source API", "health": "/health", "docs": "/docs"}
