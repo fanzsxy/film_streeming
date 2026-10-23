@@ -15,8 +15,11 @@ class WebSourcePage extends StatefulWidget {
   final bool embedded;
   final int tmdbId, season, episode;
   final String mediaType, year;
+  final ValueChanged<Uri>? onPlayerReady;
+  final void Function(int positionMs, int durationMs, bool ended)? onVideoProgress;
+  final VoidCallback? onFullscreenExit;
   const WebSourcePage({super.key, required this.title, required this.url, this.focused = false,
-    this.embedded = false, this.tmdbId = 0, this.mediaType = 'movie', this.year = '', this.season = 0, this.episode = 0});
+    this.embedded = false, this.tmdbId = 0, this.mediaType = 'movie', this.year = '', this.season = 0, this.episode = 0, this.onPlayerReady, this.onVideoProgress, this.onFullscreenExit});
   @override
   State<WebSourcePage> createState() => _WebSourcePageState();
 }
@@ -36,6 +39,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   String? _candidateUrl;
   bool _fullScreenRouteOpen = false;
   bool _fullScreenHiding = false;
+  bool _readyNotified = false;
   // Follow normal HTTPS series redirects without a confirmation dialog.
   // Pop-up windows remain disabled by the Clean Player script.
   String get _matchTitle => widget.title.split(' • S').first.trim();
@@ -304,6 +308,37 @@ class _WebSourcePageState extends State<WebSourcePage> {
     } catch (_) { /* Site may reject script injection; keep original player available. */ }
   }
 
+  Future<void> _installProgressObserver() async {
+    if (widget.onVideoProgress == null) return;
+    try {
+      await _controller.runJavaScript(r'''(() => {
+        if (window.__fsProgressObserver) return;
+        window.__fsProgressObserver = true;
+        const bound = new WeakSet();
+        const attach = () => {
+          document.querySelectorAll('video').forEach(v => {
+            if (bound.has(v)) return;
+            bound.add(v);
+            let last = -1;
+            const send = (ended = false) => {
+              const d = Number(v.duration), p = Number(v.currentTime);
+              if (!Number.isFinite(d) || !Number.isFinite(p) || d <= 0 || d > 86400 || p < 0) return;
+              const sec = Math.floor(p);
+              if (!ended && sec - last < 5) return;
+              last = sec;
+              FilmStreamProgress.postMessage(JSON.stringify({positionMs: Math.round(p*1000), durationMs: Math.round(d*1000), ended}));
+            };
+            v.addEventListener('timeupdate', () => send());
+            v.addEventListener('pause', () => send());
+            v.addEventListener('ended', () => send(true));
+          });
+        };
+        attach();
+        new MutationObserver(attach).observe(document.documentElement, {childList:true, subtree:true});
+      })();''');
+    } catch (_) { /* Cross-origin iframe progress is not accessible. */ }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -321,6 +356,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
         onPageFinished: (url) async {
           final generation = _navigationGeneration;
           await _applyCleanPlayer();
+          await _installProgressObserver();
           if (!mounted || generation != _navigationGeneration) return;
           if (_focused && _isSearchUrl(url) && await _autoMatchSearch()) return;
           if (!mounted || generation != _navigationGeneration) return;
@@ -361,7 +397,14 @@ class _WebSourcePageState extends State<WebSourcePage> {
           bool found = false;
           if (_focused) found = await _applyFocus();
           if (!mounted || generation != _navigationGeneration) return;
-          if (found) await _rememberDetail();
+          if (found) {
+            await _rememberDetail();
+            if (!_readyNotified && widget.onPlayerReady != null) {
+              _readyNotified = true;
+              final current = Uri.tryParse(await _controller.currentUrl() ?? '');
+              if (current != null && current.scheme == 'https') widget.onPlayerReady!(current);
+            }
+          }
           if (mounted && generation == _navigationGeneration) setState(() {
             _loading = false;
             _search = !found;
@@ -390,6 +433,17 @@ class _WebSourcePageState extends State<WebSourcePage> {
         },
       ))
       ;
+    _controller.addJavaScriptChannel('FilmStreamProgress', onMessageReceived: (msg) {
+      if (!mounted || widget.onVideoProgress == null) return;
+      try {
+        final v = jsonDecode(msg.message) as Map<String, dynamic>;
+        final p = (v['positionMs'] as num).toInt();
+        final d = (v['durationMs'] as num).toInt();
+        if (d > 0 && d <= 86400000 && p >= 0 && p <= d + 3000) {
+          widget.onVideoProgress!(p.clamp(0, d).toInt(), d, v['ended'] == true);
+        }
+      } catch (_) {}
+    });
     // Android WebChromeClient fullscreen is separate from the document CSS.
     // Keep its native custom video view inside a landscape Flutter route.
     if (_controller.platform is AndroidWebViewController) {
@@ -408,8 +462,10 @@ class _WebSourcePageState extends State<WebSourcePage> {
             if (!mounted) return;
             // Some sites replace the DOM after the custom fullscreen view closes.
             if (_focused) {
+              await Future<void>.delayed(const Duration(milliseconds: 250));
               await _applyFocus();
-              try { await _controller.runJavaScript("window.scrollTo(0,0);"); } catch (_) {}
+              try { await _controller.runJavaScript("window.scrollTo({top:0,left:0,behavior:'instant'});"); } catch (_) {}
+              widget.onFullscreenExit?.call();
             }
           });
         },
@@ -470,7 +526,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           `;
           document.documentElement.classList.add('fs-focus-v53');
           const player = document.querySelector('.main-player');
-          if (player) player.scrollIntoView({block:'start'});
+          if (player) window.scrollTo(0, 0);
           return true;
         })();
       ''');

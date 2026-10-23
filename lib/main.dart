@@ -52,7 +52,7 @@ class WatchStore {
 }
 String clock(int ms){final d=Duration(milliseconds:ms);final h=d.inHours;final m=d.inMinutes.remainder(60).toString().padLeft(2,'0');final sec=d.inSeconds.remainder(60).toString().padLeft(2,'0');return h>0?'$h:$m:$sec':'${d.inMinutes}:$sec';}
 class HistoryPage extends StatelessWidget {const HistoryPage({super.key});
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Riwayat Tontonan')),body:ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,builder:(context,items,_)=>items.isEmpty?const Center(child:Text('Belum ada riwayat. Putar video di FilmStream untuk mulai menyimpan progres.',textAlign:TextAlign.center)):ListView.builder(itemCount:items.length,itemBuilder:(context,i){final e=items[i];return ListTile(leading:e.poster.isEmpty?const SizedBox(width:50,child:Icon(Icons.movie)):Image.network('$imageRoot${e.poster}',width:50,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.movie)),title:Text(e.label,maxLines:2),subtitle:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(e.completed?'Selesai ditonton':'Terakhir ${clock(e.positionMs)} / ${clock(e.durationMs)}'),LinearProgressIndicator(value:e.progress),const SizedBox(height:4),Text(e.completed?'Putar ulang':'Lanjutkan menonton',style:const TextStyle(fontSize:12))]),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>PlayerPage(url:e.url,subtitle:e.subtitle,title:e.label,historyKey:e.key,poster:e.poster,type:e.type,tmdbId:e.tmdbId,season:e.season,episode:e.episode))),trailing:IconButton(tooltip:'Hapus riwayat',icon:const Icon(Icons.delete_outline),onPressed:()=>WatchStore.remove(e.key)));})));
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Riwayat Tontonan')),body:ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,builder:(context,items,_)=>items.isEmpty?const Center(child:Text('Belum ada riwayat. Putar video di FilmStream untuk mulai menyimpan progres.',textAlign:TextAlign.center)):ListView.builder(itemCount:items.length,itemBuilder:(context,i){final e=items[i];return ListTile(leading:e.poster.isEmpty?const SizedBox(width:50,child:Icon(Icons.movie)):Image.network('$imageRoot${e.poster}',width:50,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.movie)),title:Text(e.label,maxLines:2),subtitle:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(e.completed?'Selesai ditonton':e.subtitle=='__webview__'?(e.durationMs>0?'Terakhir ${clock(e.positionMs)} / ${clock(e.durationMs)}':'Episode/film pernah dibuka'):'Terakhir ${clock(e.positionMs)} / ${clock(e.durationMs)}'),LinearProgressIndicator(value:e.progress),const SizedBox(height:4),Text(e.completed?'Putar ulang':e.subtitle=='__webview__'?(e.durationMs>0?'Buka kembali (progres tercatat)':'Buka kembali player'):'Lanjutkan menonton',style:const TextStyle(fontSize:12))]),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>e.subtitle=='__webview__'?WebSourcePage(title:e.label,url:Uri.parse(e.url),focused:true,tmdbId:e.tmdbId,mediaType:e.type,season:e.season,episode:e.episode,onVideoProgress:(pos,dur,ended){final old=WatchStore.find(e.key) ?? e; final done=old.completed || ended || pos/dur>=.90; WatchStore.save(WatchEntry(key:old.key,title:old.title,poster:old.poster,type:old.type,url:old.url,subtitle:old.subtitle,tmdbId:old.tmdbId,season:old.season,episode:old.episode,positionMs:done?dur:pos,durationMs:dur,updatedAt:DateTime.now().millisecondsSinceEpoch,completed:done));}):PlayerPage(url:e.url,subtitle:e.subtitle,title:e.label,historyKey:e.key,poster:e.poster,type:e.type,tmdbId:e.tmdbId,season:e.season,episode:e.episode))),trailing:IconButton(tooltip:'Hapus riwayat',icon:const Icon(Icons.delete_outline),onPressed:()=>WatchStore.remove(e.key)));})));
 }
 class Tmdb {
  static Future<Map<String,dynamic>> get(String endpoint,[Map<String,String> params=const {}]) async {
@@ -224,7 +224,28 @@ Future<Uri> resolveSourcePage(Movie movie) async {
   return page;
 }
 
-Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? resolved}) =>
+Future<void> recordWebOpen(Movie movie, Uri url, {int season = 0, int episode = 0}) async {
+  if (url.scheme != 'https') return;
+  final key = movie.type == 'tv' ? 'tv:${movie.id}:$season:$episode' : 'movie:${movie.id}';
+  final prior = WatchStore.find(key);
+  await WatchStore.save(WatchEntry(key:key,title:movie.title,poster:movie.poster,
+    type:movie.type,url:url.toString(),subtitle:'__webview__',tmdbId:movie.id,
+    season:season,episode:episode,positionMs:prior?.positionMs ?? 0,durationMs:prior?.durationMs ?? 0,
+    updatedAt:DateTime.now().millisecondsSinceEpoch,completed:prior?.completed ?? false));
+}
+
+Future<void> recordWebProgress(Movie movie, Uri page, int positionMs, int durationMs, bool ended, {int season = 0, int episode = 0}) async {
+  if (page.scheme != 'https' || durationMs <= 0) return;
+  final key = movie.type == 'tv' ? 'tv:${movie.id}:$season:$episode' : 'movie:${movie.id}';
+  final prior = WatchStore.find(key);
+  final completed = (prior?.completed ?? false) || ended || positionMs / durationMs >= .90;
+  await WatchStore.save(WatchEntry(key:key,title:movie.title,poster:movie.poster,type:movie.type,
+    url:page.toString(),subtitle:'__webview__',tmdbId:movie.id,season:season,episode:episode,
+    positionMs:completed ? durationMs : positionMs,durationMs:durationMs,
+    updatedAt:DateTime.now().millisecondsSinceEpoch,completed:completed));
+}
+
+Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? resolved, VoidCallback? onFullscreenExit}) =>
   FutureBuilder<Uri>(
     future: resolved ?? resolveSourcePage(movie),
     builder: (context, snapshot) {
@@ -235,7 +256,10 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
         key: ValueKey('${movie.type}:${movie.id}:$season:$episode'),
         title: movie.title, url: snapshot.data!, focused: true, embedded: true,
         tmdbId: movie.id, mediaType: movie.type, year: movie.year,
-        season: season, episode: episode)));
+        season: season, episode: episode,
+        onPlayerReady: (uri) => recordWebOpen(movie, uri, season:season, episode:episode),
+        onVideoProgress: (pos, dur, ended) => recordWebProgress(movie, snapshot.data!, pos, dur, ended, season:season, episode:episode),
+        onFullscreenExit: onFullscreenExit)));
     },
   );
 
@@ -250,12 +274,13 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0,
 class DetailPage extends StatefulWidget {final Movie movie;final bool isFavorite;final VoidCallback onFavorite;const DetailPage({super.key,required this.movie,required this.isFavorite,required this.onFavorite});@override State<DetailPage> createState()=>_DetailPageState();}
 class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingController(),subtitleUrl=TextEditingController(),sourcePage=TextEditingController();late bool favorite;late Future<Map<String,dynamic>> details; late Future<Uri> sourceFuture;
  @override void initState(){super.initState();favorite=widget.isFavorite;details=Tmdb.get('${widget.movie.type}/${widget.movie.id}'); sourceFuture=resolveSourcePage(widget.movie);}
- @override void dispose(){videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();super.dispose();}
+ @override void dispose(){videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();detailScroll.dispose();super.dispose();}
  bool https(String input){final u=Uri.tryParse(input.trim());return u!=null&&u.scheme=='https'&&u.host.isNotEmpty;}
 
  int? selectedSeason;
  int? playingSeason, playingEpisode;
  final Map<int, Future<Map<String, dynamic>>> episodeFutures = {};
+ final ScrollController detailScroll = ScrollController();
  Widget _seasonSection(Movie m) {
    return FutureBuilder<Map<String, dynamic>>(
      future: details,
@@ -309,14 +334,25 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
              return Column(children: episodes.map<Widget>((episode) {
                final number = (episode['episode_number'] as num? ?? 0).toInt();
                if (number < 1) return const SizedBox.shrink();
-               return Card(margin: const EdgeInsets.symmetric(vertical: 5), color: const Color(0xff222229),
+               return ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,
+                 builder:(context, history, _) {
+                 final key = 'tv:${m.id}:$active:$number';
+                 WatchEntry? viewed;
+                 for (final h in history) { if (h.key == key) { viewed = h; break; } }
+                 final isActive = playingSeason == active && playingEpisode == number;
+                 return Card(margin: const EdgeInsets.symmetric(vertical: 5), color: isActive ? const Color(0xff422c32) : const Color(0xff222229),
                  child: ListTile(
                    leading: SizedBox(width: 42, child: Center(child: Text('$number', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)))),
                    title: Text((episode['name'] ?? 'Episode $number').toString(), maxLines: 2),
-                   subtitle: Text((episode['overview'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
-                   trailing: const Icon(Icons.play_circle_outline),
-                   onTap: () { setState(() { playingSeason = active; playingEpisode = number; }); },
-                 ));
+                   subtitle: Text(isActive ? 'Sedang dipilih' : viewed?.completed == true ? '✓ Sudah ditonton' : viewed != null && viewed.durationMs > 0 ? '◉ Progres ${(viewed.progress*100).round()}%' : viewed != null ? '◉ Pernah dibuka' : (episode['overview'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
+                   trailing: Row(mainAxisSize:MainAxisSize.min,children:[
+                     if (viewed?.completed == true) const Icon(Icons.check_circle, color: Color(0xffffb5b0)),
+                     const Icon(Icons.play_circle_outline),
+                   ]),
+                   onTap: () { setState(() { playingSeason = active; playingEpisode = number; });
+                     if (detailScroll.hasClients) detailScroll.animateTo(0,duration:const Duration(milliseconds:280),curve:Curves.easeOut);
+                   },
+                 )); });
              }).toList());
            },
          ),
@@ -330,10 +366,10 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
      appBar: AppBar(title: Text(m.title, maxLines: 1, overflow: TextOverflow.ellipsis),
        actions: [IconButton(icon: Icon(favorite ? Icons.favorite : Icons.favorite_border),
          onPressed: () { widget.onFavorite(); setState(() => favorite = !favorite); })]),
-     body: ListView(children: [
-       if (m.type == 'movie') inlineSource(m, resolved: sourceFuture)
+     body: ListView(controller: detailScroll, children: [
+       if (m.type == 'movie') inlineSource(m, resolved: sourceFuture, onFullscreenExit: () { if (detailScroll.hasClients) detailScroll.jumpTo(0); })
        else if (m.type == 'tv' && playingSeason != null && playingEpisode != null)
-         inlineSource(m, season: playingSeason!, episode: playingEpisode!)
+         inlineSource(m, season: playingSeason!, episode: playingEpisode!, onFullscreenExit: () { if (detailScroll.hasClients) detailScroll.jumpTo(0); })
        else if (m.backdrop.isNotEmpty) Image.network('$imageRoot${m.backdrop}',
          height: 190, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.shrink()),
        Padding(padding: const EdgeInsets.all(16), child: Column(
