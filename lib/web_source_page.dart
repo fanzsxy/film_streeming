@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,6 +34,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
   int _episodeAttempts = 0;
   int _navigationGeneration = 0;
   String? _candidateUrl;
+  bool _fullScreenRouteOpen = false;
+  bool _fullScreenHiding = false;
   // Follow normal HTTPS series redirects without a confirmation dialog.
   // Pop-up windows remain disabled by the Clean Player script.
   String get _matchTitle => widget.title.split(' • S').first.trim();
@@ -386,6 +390,37 @@ class _WebSourcePageState extends State<WebSourcePage> {
         },
       ))
       ;
+    // Android WebChromeClient fullscreen is separate from the document CSS.
+    // Keep its native custom video view inside a landscape Flutter route.
+    if (_controller.platform is AndroidWebViewController) {
+      (_controller.platform as AndroidWebViewController).setCustomWidgetCallbacks(
+        onShowCustomWidget: (videoWidget, onCustomWidgetHidden) {
+          if (!mounted || _fullScreenRouteOpen) return;
+          _fullScreenRouteOpen = true;
+          _fullScreenHiding = false;
+          Navigator.of(context).push(MaterialPageRoute<void>(
+            fullscreenDialog: true,
+            builder: (_) => _FilmStreamLandscapeVideo(video: videoWidget),
+          )).then((_) async {
+            _fullScreenRouteOpen = false;
+            if (!_fullScreenHiding) onCustomWidgetHidden();
+            _fullScreenHiding = false;
+            if (!mounted) return;
+            // Some sites replace the DOM after the custom fullscreen view closes.
+            if (_focused) {
+              await _applyFocus();
+              try { await _controller.runJavaScript("window.scrollTo(0,0);"); } catch (_) {}
+            }
+          });
+        },
+        onHideCustomWidget: () {
+          if (!_fullScreenRouteOpen || !mounted) return;
+          _fullScreenHiding = true;
+          final nav = Navigator.of(context);
+          if (nav.canPop()) nav.pop();
+        },
+      );
+    }
     _initialLoad();
   }
 
@@ -421,11 +456,11 @@ class _WebSourcePageState extends State<WebSourcePage> {
             html.fs-focus-v53 .player-left { width:100%!important; max-width:100%!important;
               margin:0!important; padding:0!important; box-sizing:border-box!important; }
             html.fs-focus-v53 .player-section-wrapper .player-action { display:none!important; }
-            html.fs-focus-v53 .player-options {display:block!important;visibility:visible!important;
+            html.fs-focus-v53 .player-options {display:block!important;visibility:visible!important;position:relative!important;transform:none!important;
               padding:10px 12px!important; min-height:64px!important; background:#222225!important;
               box-sizing:border-box!important; overflow:visible!important;}
             html.fs-focus-v53 #player-list {display:none!important;}
-            html.fs-focus-v53 #player-select {display:block!important;visibility:visible!important;
+            html.fs-focus-v53 #player-select {display:block!important;visibility:visible!important;position:relative!important;transform:none!important;
               width:100%!important; max-width:100%!important; min-height:46px!important;
               color:#fff!important; background:#303034!important; border:1px solid #68686d!important;
               font-size:15px!important; border-radius:8px!important; padding:8px!important;}
@@ -512,4 +547,44 @@ class _WebSourcePageState extends State<WebSourcePage> {
     );
   }
 
+}
+
+
+/// Native Android video fullscreen: keep source video widget intact and rotate
+/// only this route, returning to portrait when it is dismissed.
+class _FilmStreamLandscapeVideo extends StatefulWidget {
+  final Widget video;
+  const _FilmStreamLandscapeVideo({required this.video});
+  @override
+  State<_FilmStreamLandscapeVideo> createState() => _FilmStreamLandscapeVideoState();
+}
+
+class _FilmStreamLandscapeVideoState extends State<_FilmStreamLandscapeVideo> {
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight,
+    ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations(const [DeviceOrientation.portraitUp]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    super.dispose();
+  }
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: Colors.black,
+    body: SafeArea(top:false, bottom:false, child: Stack(children: [
+      Positioned.fill(child: widget.video),
+      Positioned(top: 8, left: 8, child: SafeArea(child: IconButton(
+        tooltip: 'Keluar fullscreen',
+        onPressed: () => Navigator.of(context).pop(),
+        icon: const Icon(Icons.fullscreen_exit, color: Colors.white),
+        style: IconButton.styleFrom(backgroundColor: Colors.black54),
+      ))),
+    ])),
+  );
 }
