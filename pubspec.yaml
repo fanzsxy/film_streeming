@@ -1,7 +1,7 @@
 name: filmstream_personal
-description: FilmStream V5 - automatic authorized playback sources.
+description: FilmStream V4 - TMDB catalog and optional external metadata source.
 publish_to: none
-version: 1.0.6+6
+version: 1.0.5+5
 environment:
   sdk: '>=3.6.0 <4.0.0'
 dependencies:

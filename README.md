@@ -1,19 +1,14 @@
-# FilmStream — Offline Player HTML Parser
+# FilmStream V5 – Focused Web Player
 
-## Pemasangan
-Salin isi folder `backend/` ke folder `backend/` repo FilmStream (jangan hapus file lain). Commit/push; Vercel otomatis deploy jika GitHub terhubung. Root Directory Vercel tetap `backend`. Tidak perlu build APK.
+**Upload only these files to the existing repo, preserving paths:**
+- `lib/main.dart` replaces existing file (based on All-Titles V4).
+- `lib/web_source_page.dart` replaces existing file.
+- `pubspec.yaml` has the same dependencies as the earlier WebView build (webview_flutter ^4.10.0 etc). If your existing pubspec already includes webview_flutter, it need not be replaced.
 
-Endpoint baru: `POST /inspect/player-html` (lihat `/docs`). Input contoh:
+No backend changes. Existing `lib/source_manager.dart`, `android/` and GitHub workflow stay in place.
 
-```json
-{
-  "page_url": "https://example.com/movie",
-  "html": "<html><h1>Contoh</h1><iframe title=\"SERVER\" src=\"https://example.org/embed/abc\"></iframe></html>"
-}
-```
+Build with existing GitHub Actions. Tap **Tonton di Web Player** on Mufasa. It loads its known exact film page, focuses the player visually, retains the original server picker, and provides toggle full page, refresh and external-browser fallback. Other films look for an exact archived `page_url` in Source Catalog; if absent they open the source site's regular search results with the film title. A search result still requires selection and does not imply playback. No invented slug or guessed embedded URL.
 
-Keluaran mengklasifikasi `embed`, `file_candidate`, `manifest_candidate`, atau `unknown_candidate`. Semua `status=unverified`; `direct_video_verified=false`. Ini bukan sumber playback otomatis, tidak mengambil halaman dari Vercel, tidak melewati 403, dan tidak mengeksekusi JavaScript. Player yang dibuat dinamis dengan JavaScript mungkin tidak muncul dalam HTML statis.
+This is a visual focus mode on the original page, not stand-alone HYDRAX playback. An original page can change markup, refuse Android WebView, or deny playback. Toggle the full-page icon when the style hides something important. CSS style insertion doesn't spoof identities or alter the site's media requests.
 
-Untuk pengujian halaman publik yang boleh Anda akses, gunakan HTML yang Anda simpan sendiri dan tempel sebagai input POST melalui `/docs`; jangan kirim cookie/token. Hasilnya bisa digunakan untuk menentukan apakah integrasi embed resmi atau URL media yang tersedia cocok untuk player. Endpoint ini untuk pengujian pribadi: jangan publikasikan HTML sensitif di server terbuka.
-
-Uji lokal: `python tests/test_parser.py` (dari root paket, setelah memasang requirements).
+Note: No Flutter SDK was available in the build environment here. Validate via your normal GitHub Actions run; share compiler logs if it fails.
