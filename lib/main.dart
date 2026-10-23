@@ -209,10 +209,16 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0,
       }
     } catch (_) { /* Site search is a deliberate fallback, not a playback success. */ }
   }
-  // Never assume a TV show landing page is the selected episode.
-  // Until an episode-specific source is catalogued, use the site's own search.
-  if (movie.type == 'tv') page = null;
-  page ??= Uri.https('tv12.lk21official.cc', '/search', {'s': movie.type == 'tv' && season > 0 && episode > 0 ? '${movie.title} Season $season Episode $episode' : movie.title});
+  // Exact episode URL supplied by the user and checked against their browser screenshot.
+  // Other series search the *show title*, not a phrase with season/episode,
+  // because the search site indexes a show landing page first.
+  if (movie.type == 'tv') {
+    page = null;
+    if (movie.title.trim().toLowerCase() == 'the mentalist' && season == 1 && episode == 1) {
+      page = Uri.parse('https://tv9.nontondrama.my/the-mentalist-season-1-episode-1-2008');
+    }
+  }
+  page ??= Uri.https('tv12.lk21official.cc', '/search', {'s': movie.title});
   if (!context.mounted) return;
   Navigator.push(context, MaterialPageRoute(builder: (_) =>
     WebSourcePage(title: movie.type == 'tv' && episode > 0 ? '${movie.title} • S${season}E${episode}' : movie.title, url: page!, focused: true, tmdbId: movie.id, mediaType: movie.type, year: movie.year, season: season, episode: episode)));

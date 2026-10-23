@@ -30,9 +30,10 @@ class _WebSourcePageState extends State<WebSourcePage> {
   String? _candidateUrl;
   // Follow normal HTTPS series redirects without a confirmation dialog.
   // Pop-up windows remain disabled by the Clean Player script.
+  String get _matchTitle => widget.title.split(' • S').first.trim();
   bool get _isTv => widget.mediaType == 'tv' || widget.mediaType == 'series';
   String get _cacheKey => 'fs_detail_v54_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
-  bool get _canMatch => widget.tmdbId > 0 && widget.mediaType == 'movie' && widget.year.length == 4;
+  bool get _canMatch => widget.tmdbId > 0 && widget.year.length == 4;
   bool _isSearchUrl(String? url) { final u = Uri.tryParse(url ?? ''); return u != null &&
     (u.path == '/search' || u.path == '/search/' || u.path.startsWith('/search/')); }
   Future<void> _initialLoad() async {
@@ -57,19 +58,28 @@ class _WebSourcePageState extends State<WebSourcePage> {
         const target = norm(TARGET_TITLE);
         const expectedYear = TARGET_YEAR;
         const found = new Map();
-        const selectors = '.sliders .slider a[href], .video-list a[href], article a[href], .poster a[href], .search-results a[href], .items a[href]';
-        document.querySelectorAll(selectors).forEach(a => {
-          const url = new URL(a.getAttribute('href') || '', location.href);
-          if (url.host !== location.host || !/^https:$/.test(url.protocol) || !url.pathname || url.pathname === '/' || url.pathname.startsWith('/search')) return;
-          const card = a.closest('article, li, .item, .result') || a;
-          const heading = card.querySelector('.poster-title, .video-title, h2, h3, figcaption');
-          const title = (heading?.textContent || a.querySelector('img')?.alt || a.getAttribute('title') || '').trim();
-          const dateNode = card.querySelector('.year, [itemprop="datePublished"], .video-year');
-          const year = (dateNode?.getAttribute('content') || dateNode?.textContent || '').match(/(?:19|20)\d{2}/)?.[0] || '';
-          if (norm(title) === target && year === expectedYear) found.set(url.href, {url:url.href,title,year});
+        // Different source themes use different card wrappers. Inspect only links
+        // with a poster and score their enclosing card rather than all site links.
+        document.querySelectorAll('a[href]').forEach(a => {
+          const href = a.getAttribute('href') || '';
+          let url; try { url = new URL(href, location.href); } catch (_) { return; }
+          if (url.host !== location.host || url.protocol !== 'https:' ||
+              !url.pathname || url.pathname === '/' || url.pathname.startsWith('/search')) return;
+          const card = a.closest('article, .item, .result, .video-item, .film-item, .movie-item, .ml-item, li') || a.parentElement || a;
+          const poster = a.querySelector('img') || card.querySelector('img');
+          if (!poster) return;
+          const heading = card.querySelector('.poster-title, .video-title, .title, h2, h3, figcaption');
+          let title = (heading?.textContent || a.getAttribute('title') || poster.getAttribute('alt') || '').trim();
+          // Some themes append the year and category to the title.
+          title = title.replace(/\s*\((?:19|20)\d{2}\)\s*[-–]?\s*(?:series|movie|film)?\s*$/i, '').trim();
+          const dateNode = card.querySelector('.year, .date, [itemprop="datePublished"], .video-year');
+          const cardText = [dateNode?.getAttribute('content'),dateNode?.textContent,card.innerText,poster.getAttribute('alt')].filter(Boolean).join(' ');
+          const year = cardText.match(/(?:19|20)\d{2}/)?.[0] || '';
+          if (norm(title) !== target || year !== expectedYear) return;
+          found.set(url.href, {url:url.href,title,year});
         });
         return JSON.stringify([...found.values()]);
-      })()'''.replaceAll('TARGET_TITLE', jsonEncode(widget.title)).replaceAll('TARGET_YEAR', jsonEncode(widget.year)));
+      })()'''.replaceAll('TARGET_TITLE', jsonEncode(_matchTitle)).replaceAll('TARGET_YEAR', jsonEncode(widget.year)));
       // Android WebView can return either a JSON string or a JS-quoted JSON string.
       dynamic decoded = raw;
       if (decoded is String) { try { decoded = jsonDecode(decoded); } catch (_) {} }
@@ -88,7 +98,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
     return false;
   }
   Future<void> _rememberDetail() async {
-    if (!_canMatch || (_isSearchUrl(widget.url.toString()) && _candidateUrl == null)) return;
+    if (!_canMatch || _isTv || (_isSearchUrl(widget.url.toString()) && _candidateUrl == null)) return;
     final current = await _controller.currentUrl();
     final uri = Uri.tryParse(current ?? '');
     if (uri == null || uri.scheme != 'https' || uri.host != widget.url.host || _isSearchUrl(current)) return;
@@ -178,8 +188,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
     try {
       final result = await _controller.runJavaScriptReturningResult(r'''
         (() => {
-          const shell = document.querySelector('.player-section-wrapper');
-          const iframe = shell?.querySelector('iframe#main-player');
+          const shell = document.querySelector('.player-section-wrapper, .player-area, .main-player') || (document.querySelector('iframe#main-player')?.parentElement);
+          const iframe = shell?.querySelector('iframe#main-player, iframe[src]');
           if (!shell || !iframe) return false;
           let style = document.getElementById('fs-focus-v53');
           if (!style) {
