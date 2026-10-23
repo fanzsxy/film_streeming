@@ -44,3 +44,21 @@ def lk21_catalog(limit: int = Query(default=20, ge=1, le=40)):
 @app.get("/lk21/detail")
 def lk21_page(path: str = Query(min_length=2, max_length=180)):
     return lk21_detail(path)
+
+
+@app.get("/search/{title}")
+def search_public_pages(title: str):
+    """Compatibility endpoint for FilmStream's existing external-page search UI.
+
+    Matches only titles present in the current public latest-page listing.
+    This is NOT full-site search and does not supply any playable media.
+    """
+    query = title.strip().casefold()
+    if len(query) < 2 or len(query) > 120:
+        raise HTTPException(status_code=422, detail="Title must be 2-120 characters")
+    listing = lk21_latest(40)
+    return {"results": [
+        {"title": item["title"], "url": item["source_page"], "year": ""}
+        for item in listing.get("items", [])
+        if query in item["title"].casefold()
+    ], "note": "Matches current public latest listing only; metadata, not playback"}
