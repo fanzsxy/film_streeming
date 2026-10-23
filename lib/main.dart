@@ -228,13 +228,14 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
   FutureBuilder<Uri>(
     future: resolved ?? resolveSourcePage(movie),
     builder: (context, snapshot) {
-      if (!snapshot.hasData) return const AspectRatio(aspectRatio: 16 / 9,
+      if (!snapshot.hasData) return const SizedBox(height: 340,
         child: ColoredBox(color: Color(0xff101014), child: Center(child: CircularProgressIndicator())));
-      return AspectRatio(aspectRatio: 16 / 9, child: WebSourcePage(
+      return LayoutBuilder(builder: (context, constraints) => SizedBox(
+        height: constraints.maxWidth * 9 / 16 + 112, child: WebSourcePage(
         key: ValueKey('${movie.type}:${movie.id}:$season:$episode'),
         title: movie.title, url: snapshot.data!, focused: true, embedded: true,
         tmdbId: movie.id, mediaType: movie.type, year: movie.year,
-        season: season, episode: episode));
+        season: season, episode: episode)));
     },
   );
 
@@ -252,63 +253,81 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
  @override void dispose(){videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();super.dispose();}
  bool https(String input){final u=Uri.tryParse(input.trim());return u!=null&&u.scheme=='https'&&u.host.isNotEmpty;}
 
+ int? selectedSeason;
+ final Map<int, Future<Map<String, dynamic>>> episodeFutures = {};
  Widget _seasonSection(Movie m) {
    return FutureBuilder<Map<String, dynamic>>(
      future: details,
      builder: (context, snapshot) {
-       if (!snapshot.hasData) {
-         return const Padding(padding: EdgeInsets.all(12), child: LinearProgressIndicator());
-       }
+       if (!snapshot.hasData) return const Padding(padding: EdgeInsets.all(12), child: LinearProgressIndicator());
        final seasons = (snapshot.data!['seasons'] as List? ?? [])
            .whereType<Map<String, dynamic>>()
-           .where((item) => (item['season_number'] as num? ?? 0) >= 1);
-       return Column(
-         crossAxisAlignment: CrossAxisAlignment.start,
-         children: [
-           const SizedBox(height: 20),
-           const Text('Season & Episode', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-           ...seasons.map((season) {
-             final seasonNumber = (season['season_number'] as num).toInt();
-             return ExpansionTile(
-               title: Text((season['name'] ?? 'Season $seasonNumber').toString()),
-               subtitle: Text('${season['episode_count'] ?? 0} episode'),
-               children: [
-                 FutureBuilder<Map<String, dynamic>>(
-                   future: Tmdb.get('tv/${m.id}/season/$seasonNumber'),
-                   builder: (context, episodeSnapshot) {
-                     if (!episodeSnapshot.hasData) return const LinearProgressIndicator();
-                     final episodes = (episodeSnapshot.data!['episodes'] as List? ?? [])
-                         .whereType<Map<String, dynamic>>();
-                     return Column(
-                       children: episodes.map<Widget>((episode) {
-                         final episodeNumber = (episode['episode_number'] as num? ?? 0).toInt();
-                         return ListTile(
-                           leading: const Icon(Icons.play_circle_outline),
-                           title: Text('$episodeNumber. ${episode['name'] ?? 'Episode'}'),
-                           subtitle: Text((episode['overview'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
-                           onTap: () => Navigator.push(context, MaterialPageRoute(
-                             builder: (_) => Scaffold(
-                               appBar: AppBar(title: Text('${m.title} • S${seasonNumber}E$episodeNumber')),
-                               body: ListView(children: [
-                                 inlineSource(m, season: seasonNumber, episode: episodeNumber),
-                                 Padding(padding: const EdgeInsets.all(16), child: Text(
-                                   '${episode['name'] ?? 'Episode $episodeNumber'}',
-                                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
-                                 Padding(padding: const EdgeInsets.symmetric(horizontal: 16),
-                                   child: Text((episode['overview'] ?? '').toString())),
-                               ]),
-                             ),
-                           )),
-                         );
-                       }).toList(),
-                     );
-                   },
-                 ),
-               ],
-             );
-           }),
-         ],
-       );
+           .where((item) => (item['season_number'] as num? ?? 0) >= 1).toList()
+         ..sort((a,b) => ((a['season_number'] as num).toInt()).compareTo((b['season_number'] as num).toInt()));
+       if (seasons.isEmpty) return const Text('Daftar season belum tersedia.');
+       final active = seasons.any((x) => (x['season_number'] as num).toInt() == selectedSeason)
+           ? selectedSeason! : (seasons.first['season_number'] as num).toInt();
+       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+         const SizedBox(height: 24),
+         const Text('Pilih Season', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+         const SizedBox(height: 12),
+         SizedBox(height: 94, child: ListView.separated(
+           scrollDirection: Axis.horizontal,
+           itemCount: seasons.length,
+           separatorBuilder: (_, __) => const SizedBox(width: 10),
+           itemBuilder: (context, i) {
+             final item = seasons[i];
+             final n = (item['season_number'] as num).toInt();
+             return SizedBox(width: 142, child: InkWell(
+               borderRadius: BorderRadius.circular(14),
+               onTap: () => setState(() => selectedSeason = n),
+               child: Container(padding: const EdgeInsets.all(12),
+                 decoration: BoxDecoration(
+                   borderRadius: BorderRadius.circular(14),
+                   border: Border.all(color: active == n ? const Color(0xffffb5b0) : Colors.white24, width: active == n ? 2 : 1),
+                   color: active == n ? const Color(0xff422c32) : const Color(0xff24242b)),
+                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
+                   Row(children: [Expanded(child: Text('Season $n', style: const TextStyle(fontWeight: FontWeight.bold))),
+                     Icon(Icons.chevron_right, size: 19, color: active == n ? const Color(0xffffb5b0) : Colors.white70)]),
+                   const SizedBox(height: 6),
+                   Text('${item['episode_count'] ?? 0} episode', style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                 ])),
+             ));
+           },
+         )),
+         const SizedBox(height: 22),
+         Text('Episode • Season $active', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+         const SizedBox(height: 8),
+         FutureBuilder<Map<String,dynamic>>(
+           key: ValueKey('season-${m.id}-$active'),
+           future: episodeFutures.putIfAbsent(active, () => Tmdb.get('tv/${m.id}/season/$active')),
+           builder: (context, episodeSnapshot) {
+             if (episodeSnapshot.hasError) return const Text('Daftar episode gagal dimuat. Pilih season kembali.');
+             if (!episodeSnapshot.hasData) return const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()));
+             final episodes = (episodeSnapshot.data!['episodes'] as List? ?? []).whereType<Map<String,dynamic>>().toList();
+             return Column(children: episodes.map<Widget>((episode) {
+               final number = (episode['episode_number'] as num? ?? 0).toInt();
+               if (number < 1) return const SizedBox.shrink();
+               return Card(margin: const EdgeInsets.symmetric(vertical: 5), color: const Color(0xff222229),
+                 child: ListTile(
+                   leading: SizedBox(width: 42, child: Center(child: Text('$number', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)))),
+                   title: Text((episode['name'] ?? 'Episode $number').toString(), maxLines: 2),
+                   subtitle: Text((episode['overview'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
+                   trailing: const Icon(Icons.play_circle_outline),
+                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
+                     appBar: AppBar(title: Text('${m.title} • S${active}E$number')),
+                     body: ListView(children: [
+                       inlineSource(m, season: active, episode: number),
+                       Padding(padding: const EdgeInsets.all(16), child: Text(
+                         '${episode['name'] ?? 'Episode $number'}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
+                       Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Text((episode['overview'] ?? '').toString())),
+                     ]),
+                   ))),
+                 ));
+             }).toList());
+           },
+         ),
+       ]);
      },
    );
  }

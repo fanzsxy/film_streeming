@@ -415,9 +415,14 @@ class _WebSourcePageState extends State<WebSourcePage> {
             html.fs-focus-v53 .player-left { width:100%!important; max-width:100%!important;
               margin:0!important; padding:0!important; box-sizing:border-box!important; }
             html.fs-focus-v53 .player-section-wrapper .player-action { display:none!important; }
+            html.fs-focus-v53 .player-options, html.fs-focus-v53 #player-list,
+            html.fs-focus-v53 #player-select { display:block!important; visibility:visible!important; }
+            html.fs-focus-v53 .main-player, html.fs-focus-v53 .player-options {
+              max-width:100%!important; width:100%!important; margin-left:0!important; margin-right:0!important; }
           `;
           document.documentElement.classList.add('fs-focus-v53');
-          window.scrollTo(0, 0);
+          const player = document.querySelector('.main-player');
+          if (player) player.scrollIntoView({block:'start'});
           return true;
         })();
       ''');
