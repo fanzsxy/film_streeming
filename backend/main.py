@@ -91,3 +91,40 @@ def inspect_player_html(payload: PlayerHtmlInput):
         return parse_player_html(payload.html, payload.page_url)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# Stateless Source Manager: inspect supplied HTML, never treat embed as direct media.
+from typing import Literal
+
+class SourceManagerInspectInput(BaseModel):
+    tmdb_id: int
+    media_type: Literal["movie", "tv"]
+    html: str
+    page_url: str
+    season: int = 0
+    episode: int = 0
+
+@app.post("/source-manager/inspect")
+def source_manager_inspect(payload: SourceManagerInspectInput):
+    if payload.tmdb_id < 1 or payload.season < 0 or payload.episode < 0:
+        raise HTTPException(status_code=422, detail="Invalid TMDB ID, season or episode")
+    try:
+        inspection = parse_player_html(payload.html, payload.page_url)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    candidates = []
+    for source in inspection["sources"]:
+        kind = source["type"]
+        candidates.append({**source, "native_player_ready": False,
+                           "category": ("embed_only" if kind == "embed" else
+                                        "direct_media_candidate" if kind in ("file_candidate", "manifest_candidate")
+                                        else "unknown_candidate")})
+    return {
+        "tmdb_id": payload.tmdb_id, "media_type": payload.media_type,
+        "season": payload.season, "episode": payload.episode,
+        "title": inspection["title"], "page_url": inspection["page_url"],
+        "source_count": len(candidates), "sources": candidates,
+        "available_for_native_playback": False,
+        "status": "inspection_only",
+        "note": "No automatic fetching or storage. Media candidates are not verified; /resolve uses separately configured authorized MP4/HLS sources."
+    }
