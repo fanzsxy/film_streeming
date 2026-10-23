@@ -66,7 +66,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           if (norm(title) === target && year === expectedYear) found.set(url.href, {url:url.href,title,year});
         });
         return JSON.stringify([...found.values()]);
-      })()'''.replace('TARGET_TITLE', jsonEncode(widget.title)).replace('TARGET_YEAR', jsonEncode(widget.year)));
+      })()'''.replaceAll('TARGET_TITLE', jsonEncode(widget.title)).replaceAll('TARGET_YEAR', jsonEncode(widget.year)));
       // Android WebView can return either a JSON string or a JS-quoted JSON string.
       dynamic decoded = raw;
       if (decoded is String) { try { decoded = jsonDecode(decoded); } catch (_) {} }
@@ -93,6 +93,36 @@ class _WebSourcePageState extends State<WebSourcePage> {
     await prefs.setString(_cacheKey, uri.toString());
   }
 
+  // Guard top-level navigations; iframe/subresource requests are not blocked.
+  bool _allowedMainNavigation(String url) {
+    final u = Uri.tryParse(url);
+    if (u == null) return false;
+    if (u.scheme == 'about') return true;
+    if (u.scheme != 'https') return false;
+    final origin = widget.url.host.toLowerCase();
+    // Keep navigation within the original website. Embed frames load separately.
+    return u.host.toLowerCase() == origin;
+  }
+
+  Future<void> _applyCleanPlayer() async {
+    try {
+      await _controller.runJavaScript(r'''(() => {
+        if (window.__filmstreamCleanV1) return;
+        window.__filmstreamCleanV1 = true;
+        // Keep popups from replacing the Flutter player; do not touch video requests.
+        try { window.open = function() { return null; }; } catch (_) {}
+        const clean = () => {
+          document.querySelectorAll('a[target="_blank"]').forEach(a => a.removeAttribute('target'));
+          document.querySelectorAll('#adContainer, #nativeAds, #adsLink').forEach(el => {
+            el.style.setProperty('display','none','important');
+          });
+        };
+        clean();
+        new MutationObserver(clean).observe(document.documentElement, {childList:true,subtree:true});
+      })();''');
+    } catch (_) { /* Site may reject script injection; keep original player available. */ }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -106,6 +136,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
         },
         onProgress: (p) { if (mounted) setState(() => _progress = p); },
         onPageFinished: (url) async {
+          await _applyCleanPlayer();
           if (_focused && _isSearchUrl(url) && await _autoMatchSearch()) return;
           bool found = false;
           if (_focused) found = await _applyFocus();
@@ -124,7 +155,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
         onNavigationRequest: (r) {
           final next = Uri.tryParse(r.url);
           if (next == null || (next.scheme != 'https' && next.scheme != 'about')) return NavigationDecision.prevent;
-          if (_isSearchUrl(widget.url.toString()) && _search && next.host == widget.url.host && !_isSearchUrl(next.toString()) && next.path != '/') { _candidateUrl = next.toString(); }
+          if (r.isMainFrame && !_allowedMainNavigation(r.url)) return NavigationDecision.prevent;
+          if (r.isMainFrame && _isSearchUrl(widget.url.toString()) && _search && next.host == widget.url.host && !_isSearchUrl(next.toString()) && next.path != '/') { _candidateUrl = next.toString(); }
           return NavigationDecision.navigate;
         },
       ))
