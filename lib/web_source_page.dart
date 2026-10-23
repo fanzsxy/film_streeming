@@ -329,6 +329,24 @@ class _WebSourcePageState extends State<WebSourcePage> {
             }
           }
           if (!mounted || generation != _navigationGeneration) return;
+          // A source redirect splash may finish loading before its countdown
+          // navigates away. Keep the Flutter cover in place for that transition.
+          // This is visual only: no cookies, authentication or redirects are altered.
+          if (_focused) {
+            bool redirectSplash = false;
+            try {
+              final splash = await _controller.runJavaScriptReturningResult(r'''(() => {
+                const text = (document.body?.innerText || '').toLowerCase();
+                return (text.includes('anda akan dialihkan') || text.includes('you will be redirected'))
+                  && (text.includes('nontondrama') || text.includes('detik') || text.includes('seconds'));
+              })()''');
+              redirectSplash = splash == true || splash.toString() == 'true';
+            } catch (_) {}
+            if (redirectSplash) {
+              await Future<void>.delayed(const Duration(milliseconds: 4300));
+              if (!mounted || generation != _navigationGeneration) return;
+            }
+          }
           bool found = false;
           if (_focused) found = await _applyFocus();
           if (!mounted || generation != _navigationGeneration) return;
