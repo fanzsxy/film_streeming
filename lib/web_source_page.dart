@@ -610,8 +610,16 @@ class _WebSourcePageState extends State<WebSourcePage> {
             /* Only Flutter renders the server controls; preserve original DOM for JS. */
             html.fs-focus-v53 .player-options {position:absolute!important;left:-20000px!important;top:0!important;
               width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important;}
-            html.fs-focus-v53 .main-player, html.fs-focus-v53 .player-options {
-              max-width:100%!important; width:100%!important; margin-left:0!important; margin-right:0!important; }
+            html.fs-focus-v53 .main-player { width:100%!important; max-width:100%!important;
+              aspect-ratio:16 / 9!important; height:auto!important; min-height:0!important;
+              margin:0!important; padding:0!important; overflow:hidden!important; position:relative!important;
+              background:#000!important; }
+            html.fs-focus-v53 .main-player > iframe,
+            html.fs-focus-v53 .main-player > #main-player { display:block!important;
+              position:absolute!important; inset:0!important; width:100%!important; height:100%!important;
+              min-height:0!important; max-height:100%!important; border:0!important; margin:0!important; }
+            html.fs-focus-v53 .player-options { max-width:100%!important; width:100%!important;
+              margin-left:0!important; margin-right:0!important; }
           `;
           document.documentElement.classList.add('fs-focus-v53');
           const player = document.querySelector('.main-player');
@@ -684,12 +692,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.embedded) return ClipRect(child: Column(children: [
-      // Reserve all remaining height for the actual WebView. Flutter server chips
-      // take their own space below it instead of overlaying video controls.
-      Expanded(child: SizedBox(width: double.infinity, child: _playerBody())),
-      _flutterServers(),
-    ]));
+    if (widget.embedded) return ClipRect(child: Column(children: [Expanded(child: _playerBody()), _flutterServers()]));
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) { if (!didPop) _back(); },
