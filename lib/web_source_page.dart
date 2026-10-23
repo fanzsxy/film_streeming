@@ -29,6 +29,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   bool _matching = false;
   bool _resolvingEpisode = false;
   int _episodeAttempts = 0;
+  int _navigationGeneration = 0;
   String? _candidateUrl;
   // Follow normal HTTPS series redirects without a confirmation dialog.
   // Pop-up windows remain disabled by the Clean Player script.
@@ -40,6 +41,11 @@ class _WebSourcePageState extends State<WebSourcePage> {
     (u.path == '/search' || u.path == '/search/' || u.path.startsWith('/search/')); }
   Future<void> _initialLoad() async {
     Uri target = widget.url;
+    if (_isTv && widget.tmdbId > 0 && widget.season > 0 && widget.episode > 0) {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = Uri.tryParse(prefs.getString(_episodeCacheKey(widget.season, widget.episode)) ?? '');
+      if (cached != null && cached.scheme == 'https' && !_isSearchUrl(cached.toString())) target = cached;
+    }
     if (_canMatch && _isSearchUrl(target.toString())) {
       final prefs = await SharedPreferences.getInstance();
       final cached = Uri.tryParse(prefs.getString(_cacheKey) ?? '');
@@ -115,6 +121,68 @@ class _WebSourcePageState extends State<WebSourcePage> {
     finally { _matching = false; }
     return false;
   }
+  String _episodeCacheKey(int season, int episode) =>
+      'fs_episode_v512_${widget.tmdbId}_${season}_$episode';
+
+  // Persist ONLY real episode links observed in the website DOM. Do not
+  // synthesize a slug or confuse a series landing page with an episode.
+  Future<void> _collectEpisodeLinks() async {
+    if (!_isTv || widget.tmdbId <= 0) return;
+    try {
+      final raw = await _controller.runJavaScriptReturningResult(r'''(() => {
+        const selections = [...document.querySelectorAll('select')];
+        const selected = selections.flatMap(s => [...s.selectedOptions].map(o =>
+          (o.textContent || '') + ' ' + (o.value || ''))).join(' ');
+        const fromSelection = selected.match(/(?:season|musim)[\s-]*(\d+)/i);
+        const fromUrl = location.pathname.match(/(?:season|musim)[-_ ]*(\d+)/i);
+        const season = Number(fromSelection?.[1] || fromUrl?.[1] || 0);
+        const found = [];
+        for (const a of document.querySelectorAll('a[href]')) {
+          let u; try { u = new URL(a.getAttribute('href'), location.href); } catch (_) { continue; }
+          if (u.protocol !== 'https:' || !u.pathname || u.pathname === '/') continue;
+          const explicit = u.pathname.match(/(?:season|musim)[-_ ]*(\d+).*?(?:episode|eps?|ep)[-_ ]*0*(\d+)(?!\d)/i);
+          let sn = explicit ? Number(explicit[1]) : season;
+          let ep = explicit ? Number(explicit[2]) : 0;
+          const panel = a.closest('.episode,.episodes,.episode-list,.episode-grid,.ep-list,.server-episode,.series-episode');
+          if (!ep && panel && season) {
+            const m = (a.textContent || '').trim().match(/^(?:episode|eps?|ep)?\s*0*(\d+)$/i);
+            if (m) ep = Number(m[1]);
+          }
+          if (sn > 0 && ep > 0 && ep < 1000 && (explicit || panel))
+            found.push({season:sn, episode:ep, url:u.href});
+        }
+        return JSON.stringify(found);
+      })()''');
+      dynamic decoded = raw;
+      if (decoded is String) { try { decoded = jsonDecode(decoded); } catch (_) {} }
+      if (decoded is String) { try { decoded = jsonDecode(decoded); } catch (_) {} }
+      if (decoded is! List) return;
+      final buckets = <String, Set<String>>{};
+      for (final item in decoded) {
+        if (item is! Map) continue;
+        final sn = int.tryParse('${item['season']}') ?? 0;
+        final ep = int.tryParse('${item['episode']}') ?? 0;
+        final uri = Uri.tryParse('${item['url']}');
+        if (sn < 1 || ep < 1 || uri == null || uri.scheme != 'https') continue;
+        buckets.putIfAbsent(_episodeCacheKey(sn, ep), () => <String>{}).add(uri.toString());
+      }
+      final prefs = await SharedPreferences.getInstance();
+      for (final entry in buckets.entries) {
+        if (entry.value.length == 1) await prefs.setString(entry.key, entry.value.single);
+      }
+    } catch (_) { /* Incompatible DOM; retain manual fallback. */ }
+  }
+
+  Future<bool> _openCachedEpisode() async {
+    if (!_isTv || widget.tmdbId <= 0 || widget.season < 1 || widget.episode < 1) return false;
+    final prefs = await SharedPreferences.getInstance();
+    final uri = Uri.tryParse(prefs.getString(_episodeCacheKey(widget.season, widget.episode)) ?? '');
+    if (uri == null || uri.scheme != 'https' || _isSearchUrl(uri.toString())) return false;
+    if (mounted) setState(() { _revealed = false; _loading = true; });
+    await _controller.loadRequest(uri);
+    return true;
+  }
+
   // The series landing page contains the real season selector and episode links.
   // Resolve them from the loaded page instead of constructing speculative URLs.
   Future<bool> _resolveEpisode() async {
@@ -122,6 +190,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
     _resolvingEpisode = true;
     _episodeAttempts++;
     try {
+      await _collectEpisodeLinks();
       final js = r'''(() => {
         const season = TARGET_SEASON, episode = TARGET_EPISODE;
         const selected = new RegExp('(?:season|musim)[\\s-]*' + season + '(?![0-9])','i');
@@ -163,6 +232,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
         final url = Uri.tryParse(result['url']?.toString() ?? '');
         if (url != null && url.scheme == 'https') {
           if (mounted) setState(() { _loading = true; _revealed = false; });
+          final prefs = await SharedPreferences.getInstance();
+          if (widget.tmdbId > 0) await prefs.setString(_episodeCacheKey(widget.season, widget.episode), url.toString());
           await _controller.loadRequest(url);
           return true;
         }
@@ -170,6 +241,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
       if (result is Map && result['state'] == 'changed') {
         // Allow the site's own season-change handler to populate its episode list.
         await Future<void>.delayed(const Duration(milliseconds: 500));
+        await _collectEpisodeLinks();
+        if (await _openCachedEpisode()) return true;
         return await _resolveEpisodeAfterChange();
       }
     } catch (_) { /* No reliable episode link: show the page for manual selection. */ }
@@ -229,17 +302,38 @@ class _WebSourcePageState extends State<WebSourcePage> {
       ..setBackgroundColor(const Color(0xff101014))
       ..setNavigationDelegate(NavigationDelegate(
         onPageStarted: (_) {
+          _navigationGeneration++;
+          _episodeAttempts = 0; // Each new document gets its own resolution attempts.
           if (mounted) setState(() { _loading = true; _revealed = false; _error = null; _progress = 0; });
         },
         onProgress: (p) { if (mounted) setState(() => _progress = p); },
         onPageFinished: (url) async {
+          final generation = _navigationGeneration;
           await _applyCleanPlayer();
+          if (!mounted || generation != _navigationGeneration) return;
           if (_focused && _isSearchUrl(url) && await _autoMatchSearch()) return;
-          if (_focused && !_isSearchUrl(url) && await _resolveEpisode()) return;
+          if (!mounted || generation != _navigationGeneration) return;
+          if (_focused && _isTv && !_isSearchUrl(url)) {
+            await _collectEpisodeLinks();
+            if (!mounted || generation != _navigationGeneration) return;
+            // Series landing pages can briefly show an interstitial before the
+            // episode list is populated by the source site's own scripts.
+            // Keep the Flutter loading cover visible throughout resolution.
+            for (var attempt = 0; attempt < 3; attempt++) {
+              if (!mounted || generation != _navigationGeneration) return;
+              if (await _resolveEpisode()) return;
+              if (!mounted || generation != _navigationGeneration) return;
+              if (attempt < 2) {
+                await Future<void>.delayed(Duration(milliseconds: 450 * (attempt + 1)));
+              }
+            }
+          }
+          if (!mounted || generation != _navigationGeneration) return;
           bool found = false;
           if (_focused) found = await _applyFocus();
+          if (!mounted || generation != _navigationGeneration) return;
           if (found) await _rememberDetail();
-          if (mounted) setState(() {
+          if (mounted && generation == _navigationGeneration) setState(() {
             _loading = false;
             _search = !found;
             _revealed = true;
@@ -259,6 +353,10 @@ class _WebSourcePageState extends State<WebSourcePage> {
             return NavigationDecision.prevent;
           }
           if (r.isMainFrame && _isSearchUrl(widget.url.toString()) && _search && next.host == widget.url.host && !_isSearchUrl(next.toString()) && next.path != '/') { _candidateUrl = next.toString(); }
+          // Cover the old website before any new top-level document is shown.
+          if (r.isMainFrame && mounted && _focused) {
+            setState(() { _revealed = false; _loading = true; });
+          }
           return NavigationDecision.navigate;
         },
       ))
