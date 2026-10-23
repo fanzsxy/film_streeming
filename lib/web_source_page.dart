@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 /// A visual reader mode for the source page. The site's actual player/iframe
 /// remains in its original document. Nothing is proxied or extracted.
@@ -8,7 +10,10 @@ class WebSourcePage extends StatefulWidget {
   final String title;
   final Uri url;
   final bool focused;
-  const WebSourcePage({super.key, required this.title, required this.url, this.focused = false});
+  final int tmdbId, season, episode;
+  final String mediaType, year;
+  const WebSourcePage({super.key, required this.title, required this.url, this.focused = false,
+    this.tmdbId = 0, this.mediaType = 'movie', this.year = '', this.season = 0, this.episode = 0});
   @override
   State<WebSourcePage> createState() => _WebSourcePageState();
 }
@@ -21,6 +26,72 @@ class _WebSourcePageState extends State<WebSourcePage> {
   bool _search = false;
   String? _error;
   int _progress = 0;
+  bool _matching = false;
+  String? _candidateUrl;
+  String get _cacheKey => 'fs_detail_v54_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
+  bool get _canMatch => widget.tmdbId > 0 && widget.mediaType == 'movie' && widget.year.length == 4;
+  bool _isSearchUrl(String? url) { final u = Uri.tryParse(url ?? ''); return u != null &&
+    (u.path == '/search' || u.path == '/search/' || u.path.startsWith('/search/')); }
+  Future<void> _initialLoad() async {
+    Uri target = widget.url;
+    if (_canMatch && _isSearchUrl(target.toString())) {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = Uri.tryParse(prefs.getString(_cacheKey) ?? '');
+      if (cached != null && cached.scheme == 'https' && cached.host == widget.url.host && !_isSearchUrl(cached.toString())) {
+        target = cached; _candidateUrl = cached.toString();
+      }
+    }
+    await _controller.loadRequest(target);
+  }
+  Future<bool> _autoMatchSearch() async {
+    if (!_canMatch || _matching) return false;
+    _matching = true;
+    try {
+      final raw = await _controller.runJavaScriptReturningResult(r'''(() => {
+        const norm = s => (s || '').toLowerCase().normalize('NFKD')
+          .replace(/[\u0300-\u036f]/g, '').replace(/&amp;/g, '&')
+          .replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+        const target = norm(TARGET_TITLE);
+        const expectedYear = TARGET_YEAR;
+        const found = new Map();
+        const selectors = '.sliders .slider a[href], .video-list a[href], article a[href], .poster a[href], .search-results a[href], .items a[href]';
+        document.querySelectorAll(selectors).forEach(a => {
+          const url = new URL(a.getAttribute('href') || '', location.href);
+          if (url.host !== location.host || !/^https:$/.test(url.protocol) || !url.pathname || url.pathname === '/' || url.pathname.startsWith('/search')) return;
+          const card = a.closest('article, li, .item, .result') || a;
+          const heading = card.querySelector('.poster-title, .video-title, h2, h3, figcaption');
+          const title = (heading?.textContent || a.querySelector('img')?.alt || a.getAttribute('title') || '').trim();
+          const dateNode = card.querySelector('.year, [itemprop="datePublished"], .video-year');
+          const year = (dateNode?.getAttribute('content') || dateNode?.textContent || '').match(/(?:19|20)\d{2}/)?.[0] || '';
+          if (norm(title) === target && year === expectedYear) found.set(url.href, {url:url.href,title,year});
+        });
+        return JSON.stringify([...found.values()]);
+      })()'''.replace('TARGET_TITLE', jsonEncode(widget.title)).replace('TARGET_YEAR', jsonEncode(widget.year)));
+      // Android WebView can return either a JSON string or a JS-quoted JSON string.
+      dynamic decoded = raw;
+      if (decoded is String) { try { decoded = jsonDecode(decoded); } catch (_) {} }
+      if (decoded is String) { try { decoded = jsonDecode(decoded); } catch (_) {} }
+      if (decoded is List && decoded.length == 1 && decoded.first is Map) {
+        final link = Uri.tryParse((decoded.first as Map)['url']?.toString() ?? '');
+        if (link != null && link.scheme == 'https' && link.host == widget.url.host && !_isSearchUrl(link.toString())) {
+          _candidateUrl = link.toString();
+          if (mounted) setState(() { _revealed = false; _loading = true; });
+          await _controller.loadRequest(link);
+          return true;
+        }
+      }
+    } catch (_) { /* A changed site DOM must fall back to manual search. */ }
+    finally { _matching = false; }
+    return false;
+  }
+  Future<void> _rememberDetail() async {
+    if (!_canMatch || (_isSearchUrl(widget.url.toString()) && _candidateUrl == null)) return;
+    final current = await _controller.currentUrl();
+    final uri = Uri.tryParse(current ?? '');
+    if (uri == null || uri.scheme != 'https' || uri.host != widget.url.host || _isSearchUrl(current)) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_cacheKey, uri.toString());
+  }
 
   @override
   void initState() {
@@ -34,9 +105,11 @@ class _WebSourcePageState extends State<WebSourcePage> {
           if (mounted) setState(() { _loading = true; _revealed = false; _error = null; _progress = 0; });
         },
         onProgress: (p) { if (mounted) setState(() => _progress = p); },
-        onPageFinished: (_) async {
+        onPageFinished: (url) async {
+          if (_focused && _isSearchUrl(url) && await _autoMatchSearch()) return;
           bool found = false;
           if (_focused) found = await _applyFocus();
+          if (found) await _rememberDetail();
           if (mounted) setState(() {
             _loading = false;
             _search = !found;
@@ -51,10 +124,12 @@ class _WebSourcePageState extends State<WebSourcePage> {
         onNavigationRequest: (r) {
           final next = Uri.tryParse(r.url);
           if (next == null || (next.scheme != 'https' && next.scheme != 'about')) return NavigationDecision.prevent;
+          if (_isSearchUrl(widget.url.toString()) && _search && next.host == widget.url.host && !_isSearchUrl(next.toString()) && next.path != '/') { _candidateUrl = next.toString(); }
           return NavigationDecision.navigate;
         },
       ))
-      ..loadRequest(widget.url);
+      ;
+    _initialLoad();
   }
 
   /// Restrict *visual* focus to a known film-page DOM, never on search pages.

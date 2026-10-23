@@ -215,7 +215,7 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0,
   page ??= Uri.https('tv12.lk21official.cc', '/search', {'s': movie.type == 'tv' && season > 0 && episode > 0 ? '${movie.title} Season $season Episode $episode' : movie.title});
   if (!context.mounted) return;
   Navigator.push(context, MaterialPageRoute(builder: (_) =>
-    WebSourcePage(title: movie.type == 'tv' && episode > 0 ? '${movie.title} • S${season}E${episode}' : movie.title, url: page!, focused: true)));
+    WebSourcePage(title: movie.type == 'tv' && episode > 0 ? '${movie.title} • S${season}E${episode}' : movie.title, url: page!, focused: true, tmdbId: movie.id, mediaType: movie.type, year: movie.year, season: season, episode: episode)));
 }
 
 class DetailPage extends StatefulWidget {final Movie movie;final bool isFavorite;final VoidCallback onFavorite;const DetailPage({super.key,required this.movie,required this.isFavorite,required this.onFavorite});@override State<DetailPage> createState()=>_DetailPageState();}
