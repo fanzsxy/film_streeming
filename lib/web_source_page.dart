@@ -59,29 +59,45 @@ class _WebSourcePageState extends State<WebSourcePage> {
           .replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
         const target = norm(TARGET_TITLE);
         const expectedYear = TARGET_YEAR;
-        const found = new Map();
-        // Different source themes use different card wrappers. Inspect only links
-        // with a poster and score their enclosing card rather than all site links.
+        const isSeries = TARGET_SERIES;
+        const matches = new Map();
+        // A series search result often links its poster and title separately.
+        // Inspect a small shared card and avoid using unrelated surrounding results.
         document.querySelectorAll('a[href]').forEach(a => {
-          const href = a.getAttribute('href') || '';
-          let url; try { url = new URL(href, location.href); } catch (_) { return; }
-          if (url.host !== location.host || url.protocol !== 'https:' ||
-              !url.pathname || url.pathname === '/' || url.pathname.startsWith('/search')) return;
-          const card = a.closest('article, .item, .result, .video-item, .film-item, .movie-item, .ml-item, li') || a.parentElement || a;
-          const poster = a.querySelector('img') || card.querySelector('img');
+          let u; try { u = new URL(a.getAttribute('href') || '', location.href); } catch (_) { return; }
+          if (u.protocol !== 'https:' || u.host !== location.host ||
+              u.pathname === '/' || u.pathname.startsWith('/search')) return;
+          let card = a;
+          for (let i = 0; i < 4 && card.parentElement; i++) {
+            if (card.querySelector('img') &&
+                (card.querySelector('h2,h3,h4,.title,.poster-title,.video-title') ||
+                 (card.innerText || '').trim().length > 8)) break;
+            card = card.parentElement;
+          }
+          const poster = card.querySelector('img') || a.querySelector('img');
           if (!poster) return;
-          const heading = card.querySelector('.poster-title, .video-title, .title, h2, h3, figcaption');
-          let title = (heading?.textContent || a.getAttribute('title') || poster.getAttribute('alt') || '').trim();
-          // Some themes append the year and category to the title.
-          title = title.replace(/\s*\((?:19|20)\d{2}\)\s*[-–]?\s*(?:series|movie|film)?\s*$/i, '').trim();
-          const dateNode = card.querySelector('.year, .date, [itemprop="datePublished"], .video-year');
-          const cardText = [dateNode?.getAttribute('content'),dateNode?.textContent,card.innerText,poster.getAttribute('alt')].filter(Boolean).join(' ');
-          const year = cardText.match(/(?:19|20)\d{2}/)?.[0] || '';
-          if (norm(title) !== target || year !== expectedYear) return;
-          found.set(url.href, {url:url.href,title,year});
+          const heading = card.querySelector('.poster-title,.video-title,.title,h2,h3,h4,figcaption');
+          const possible = [heading?.textContent, a.getAttribute('title'),
+            poster.getAttribute('alt'), a.textContent,
+            card.querySelector('a[title]')?.getAttribute('title')].filter(Boolean);
+          const titleOK = possible.some(v => {
+            const cleaned = v.replace(/\s*\((?:19|20)\d{2}\)\s*[-–]?\s*(?:series|movie|film)?\s*$/i,'').trim();
+            return norm(cleaned) === target || norm(cleaned) === norm(TARGET_TITLE + ' (' + expectedYear + ') - Series');
+          });
+          if (!titleOK) return;
+          const text = [card.innerText, poster.getAttribute('alt'), a.getAttribute('title'),
+            card.querySelector('.year,.date,[itemprop="datePublished"]')?.textContent].filter(Boolean).join(' ');
+          const years = text.match(/(?:19|20)\d{2}/g) || [];
+          if (expectedYear && !years.includes(expectedYear)) return;
+          const tag = (card.innerText || '').toLowerCase();
+          if (isSeries && /\b(movie|film)\b/.test(tag) && !/\b(series|eps|episode|s\.?[1-9])\b/.test(tag)) return;
+          // Only same-site title detail links are candidates; do not guess a URL.
+          matches.set(u.href, {url:u.href});
         });
-        return JSON.stringify([...found.values()]);
-      })()'''.replaceAll('TARGET_TITLE', jsonEncode(_matchTitle)).replaceAll('TARGET_YEAR', jsonEncode(widget.year)));
+        return JSON.stringify([...matches.values()]);
+      })()'''.replaceAll('TARGET_TITLE', jsonEncode(_matchTitle))
+             .replaceAll('TARGET_YEAR', jsonEncode(widget.year))
+             .replaceAll('TARGET_SERIES', _isTv ? 'true' : 'false'));
       // Android WebView can return either a JSON string or a JS-quoted JSON string.
       dynamic decoded = raw;
       if (decoded is String) { try { decoded = jsonDecode(decoded); } catch (_) {} }
