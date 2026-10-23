@@ -194,7 +194,7 @@ class _ExternalSourcePageState extends State<ExternalSourcePage> {
  }));
 }
 // Opens the known film page, or a catalogued page, or the site's normal search UI.
-Future<void> openFocusedFilm(BuildContext context, Movie movie) async {
+Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0, int episode = 0}) async {
   Uri? page;
   // A previously inspected, exact title match. No guessed embed URLs.
   if (movie.type == 'movie' && movie.id == 762509) {
@@ -209,10 +209,13 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie) async {
       }
     } catch (_) { /* Site search is a deliberate fallback, not a playback success. */ }
   }
-  page ??= Uri.https('tv12.lk21official.cc', '/search', {'s': movie.title});
+  // Never assume a TV show landing page is the selected episode.
+  // Until an episode-specific source is catalogued, use the site's own search.
+  if (movie.type == 'tv') page = null;
+  page ??= Uri.https('tv12.lk21official.cc', '/search', {'s': movie.type == 'tv' && season > 0 && episode > 0 ? '${movie.title} Season $season Episode $episode' : movie.title});
   if (!context.mounted) return;
   Navigator.push(context, MaterialPageRoute(builder: (_) =>
-    WebSourcePage(title: movie.title, url: page!, focused: true)));
+    WebSourcePage(title: movie.type == 'tv' && episode > 0 ? '${movie.title} • S${season}E${episode}' : movie.title, url: page!, focused: true)));
 }
 
 class DetailPage extends StatefulWidget {final Movie movie;final bool isFavorite;final VoidCallback onFavorite;const DetailPage({super.key,required this.movie,required this.isFavorite,required this.onFavorite});@override State<DetailPage> createState()=>_DetailPageState();}
@@ -262,7 +265,11 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
                                  appBar: AppBar(title: Text('Episode $episodeNumber')),
                                  body: Padding(
                                    padding: const EdgeInsets.all(20),
-                                   child: AutoSourceButton(movie: m, season: seasonNumber, episode: episodeNumber),
+                                   child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                                     FilledButton.icon(onPressed: () => openFocusedFilm(context, m, season: seasonNumber, episode: episodeNumber), icon: const Icon(Icons.smart_display), label: const Text('Cari episode di Web Player')),
+                                     const SizedBox(height: 12),
+                                     AutoSourceButton(movie: m, season: seasonNumber, episode: episodeNumber),
+                                   ]),
                                  ),
                                ),
                              ),

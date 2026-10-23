@@ -25,7 +25,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
       ..setBackgroundColor(const Color(0xff101014))
       ..setNavigationDelegate(NavigationDelegate(
         onProgress: (p) { if (mounted) setState(() => _progress=p); },
-        onPageStarted: (_) { if (mounted) setState(() { _loading=true; _error=null; }); },
+        onPageStarted: (_) { if (mounted) setState(() { _loading=true; _error=null; _progress=0; }); },
         onPageFinished: (_) async {
           if (_focused) await _applyFocus();
           if (mounted) setState(() => _loading=false);
@@ -39,62 +39,76 @@ class _WebSourcePageState extends State<WebSourcePage> {
       ))
       ..loadRequest(widget.url);
   }
-  // Only display the existing page's player section. The page and iframe
-  // remain on their real HTTPS origins; this is a visual layout change.
+  // Persistent visual focus: keep the source page and original iframe intact.
+  // Re-applies when the site's JavaScript changes layout or inserts a player.
   Future<void> _applyFocus() async {
     try {
       await _controller.runJavaScript(r'''
         (() => {
-          const player = document.querySelector('.player-section-wrapper .main-player');
-          if (!player) return; // Search/listing pages stay fully navigable.
-          let style = document.getElementById('filmstream-focus-style');
-          if (!style) {
-            style = document.createElement('style');
-            style.id = 'filmstream-focus-style';
-            document.head.appendChild(style);
-          }
-          style.textContent = `
-            html, body { margin:0!important; padding:0!important; width:100%!important;
-              overflow-x:hidden!important; background:#101014!important; }
-            body > :not(main):not(script):not(style),
-            main.site-content > :not(.player-section-wrapper),
-            .player-right, .related-content, .mob-related-video,
-            .player-action, .iframe-loader + .cinema-toggle,
-            .simple-box, #nativeAds, .bottom-nav, .mobile-bottom-nav,
-            .sticky-bottom, .floating-ads, .ads-container,
-            .player-section-wrapper .player-right { display:none!important; }
-            main.site-content, .player-section-wrapper, .player-section-wrapper .container,
-            .player-area, .player-wrapper, .player-left, .main-player,
-            .main-section, .player-section-wrapper .player-options {
-              display:block!important; position:relative!important; float:none!important;
+          const css = `
+            html.fs-focus, html.fs-focus body { margin:0!important; padding:0!important;
+              background:#101014!important; overflow-x:hidden!important; }
+            html.fs-focus body > header, html.fs-focus body > nav,
+            html.fs-focus body > footer, html.fs-focus body > aside,
+            html.fs-focus .mobile-nav, html.fs-focus .main-header,
+            html.fs-focus .sub-header, html.fs-focus .main-section,
+            html.fs-focus .player-right, html.fs-focus .related-content,
+            html.fs-focus .mob-related-video, html.fs-focus .player-action,
+            html.fs-focus #nativeAds, html.fs-focus .bottom-nav,
+            html.fs-focus .mobile-bottom-nav, html.fs-focus .sticky-bottom,
+            html.fs-focus .floating-ads, html.fs-focus .ads-container,
+            html.fs-focus .site-footer, html.fs-focus .footer,
+            html.fs-focus .player-section-wrapper ~ * { display:none!important; }
+            html.fs-focus main.site-content, html.fs-focus .player-section-wrapper,
+            html.fs-focus .player-section-wrapper .container,
+            html.fs-focus .player-area, html.fs-focus .player-wrapper,
+            html.fs-focus .player-left { display:block!important; position:relative!important;
               box-sizing:border-box!important; width:100%!important; max-width:100%!important;
               min-width:0!important; margin:0!important; padding:0!important;
               height:auto!important; min-height:0!important; overflow:visible!important;
-              background:#101014!important; color:#fff!important;
-            }
-            .player-wrapper { display:block!important; }
-            .main-player iframe#main-player, .main-player iframe {
-              display:block!important; width:100%!important; max-width:100%!important;
-              height:56.25vw!important; min-height:210px!important; max-height:65vh!important;
-              border:0!important; margin:0!important;
-            }
-            .player-options { padding:12px 10px!important; background:#211a1a!important; }
-            .player-options #player-list, .player-options #player-select { max-width:100%!important; }
-            .player-options select { display:block!important; width:100%!important;
+              background:#101014!important; float:none!important; }
+            html.fs-focus .main-player { display:block!important; width:100%!important;
+              max-width:100%!important; margin:0!important; padding:0!important;
+              background:#000!important; position:relative!important; }
+            html.fs-focus iframe#main-player { display:block!important; width:100%!important;
+              max-width:100%!important; height:56.25vw!important; min-height:210px!important;
+              max-height:65vh!important; border:0!important; margin:0!important; }
+            html.fs-focus .player-options { display:block!important; width:100%!important;
+              padding:12px 10px!important; box-sizing:border-box!important;
+              background:#211a1a!important; color:#fff!important; }
+            html.fs-focus .player-options select { display:block!important; width:100%!important;
               min-height:45px!important; color:#fff!important; background:#302626!important; }
           `;
-          document.documentElement.scrollTop=0;
-          document.body.scrollTop=0;
-          window.scrollTo(0,0);
+          const ensure = () => {
+            const hasPlayer = !!document.querySelector('.player-section-wrapper .main-player');
+            document.documentElement.classList.toggle('fs-focus', hasPlayer && window.__filmstreamFocus === true);
+            let node = document.getElementById('filmstream-focus-style');
+            if (!node) { node = document.createElement('style'); node.id='filmstream-focus-style'; document.head.appendChild(node); }
+            if (node.textContent !== css) node.textContent = css;
+            if (hasPlayer && window.__filmstreamFocus) {
+              const shell = document.querySelector('.player-section-wrapper');
+              if (shell && !shell.dataset.fsFocused) { shell.dataset.fsFocused='1'; window.scrollTo(0,0); }
+            }
+          };
+          window.__filmstreamFocus = true;
+          ensure();
+          if (!window.__filmstreamFocusObserver) {
+            window.__filmstreamFocusObserver = new MutationObserver(() => {
+              if (window.__filmstreamFocusQueued) return;
+              window.__filmstreamFocusQueued = true;
+              requestAnimationFrame(() => { window.__filmstreamFocusQueued = false; ensure(); });
+            });
+            window.__filmstreamFocusObserver.observe(document.documentElement,{childList:true,subtree:true});
+          }
         })();
       ''');
-    } catch (_) { /* If unavailable, preserve original page and full-view toggle. */ }
+    } catch (_) { /* Keep the actual page accessible if visual focus fails. */ }
   }
   Future<void> _setFocused(bool next) async {
     setState(() => _focused=next);
     if (next) { await _applyFocus(); }
     else {
-      try { await _controller.runJavaScript("document.getElementById('filmstream-focus-style')?.remove();"); } catch (_) {}
+      try { await _controller.runJavaScript("window.__filmstreamFocus=false; document.documentElement.classList.remove('fs-focus');"); } catch (_) {}
     }
   }
   Future<void> _back() async {
