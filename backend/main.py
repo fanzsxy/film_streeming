@@ -32,3 +32,15 @@ def resolve(tmdb_id: int = Query(ge=1), type: str = Query(pattern="^(movie|tv)$"
             raise HTTPException(422, "Invalid source configuration")
         return {"available": True, "provider": item.provider, "playback": {"type": item.playback_type, "url": item.url}, "subtitle_url": item.subtitle_url}
     return {"available": False}
+
+
+# Optional public-page metadata research (not a playback provider).
+from lk21_scraper import latest as lk21_latest, parse_detail as lk21_detail
+
+@app.get("/lk21/latest")
+def lk21_catalog(limit: int = Query(default=20, ge=1, le=40)):
+    return lk21_latest(limit)
+
+@app.get("/lk21/detail")
+def lk21_page(path: str = Query(min_length=2, max_length=180)):
+    return lk21_detail(path)
