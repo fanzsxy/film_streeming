@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 /// A visual reader mode for the source page. The site's actual player/iframe
 /// remains in its original document. Nothing is proxied or extracted.
@@ -45,6 +46,10 @@ class _WebSourcePageState extends State<WebSourcePage> {
   List<String> _serverNames = const [];
   String _selectedServer = '';
   bool _changingServer = false;
+  final List<String> _titleAliases = [];
+  final Set<String> _searchedTitles = {};
+  static const _tmdbToken = String.fromEnvironment('TMDB_TOKEN');
+
 
   // Follow normal HTTPS series redirects without a confirmation dialog.
   // Pop-up windows remain disabled by the Clean Player script.
@@ -52,9 +57,50 @@ class _WebSourcePageState extends State<WebSourcePage> {
   bool get _isTv => widget.mediaType == 'tv' || widget.mediaType == 'series';
   String get _cacheKey => 'fs_detail_v54_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
   bool get _canMatch => widget.tmdbId > 0 && widget.year.length == 4;
+  String _normalizeTitle(String text) => text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
+  Future<void> _loadTitleAliases() async {
+    _titleAliases.clear();
+    _titleAliases.add(_matchTitle);
+    if (!_canMatch || _tmdbToken.isEmpty) return;
+    try {
+      final kind = _isTv ? 'tv' : 'movie';
+      final uri = Uri.https('api.themoviedb.org', '/3/$kind/${widget.tmdbId}/alternative_titles');
+      final response = await http.get(uri, headers: {
+        'Authorization': 'Bearer $_tmdbToken', 'Accept': 'application/json',
+      }).timeout(const Duration(seconds: 6));
+      if (response.statusCode != 200) return;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final entries = (data[_isTv ? 'results' : 'titles'] as List?) ?? const [];
+      // Use TMDB-provided alternative titles only; never translate or invent a title.
+      for (final value in entries) {
+        if (value is! Map) continue;
+        final title = (value['title'] ?? '').toString().trim();
+        if (title.length < 3 || !RegExp(r'[A-Za-z]').hasMatch(title)) continue;
+        if (_titleAliases.any((e) => _normalizeTitle(e) == _normalizeTitle(title))) continue;
+        _titleAliases.add(title);
+        if (_titleAliases.length >= 12) break;
+      }
+    } catch (_) { /* TMDB alternate titles are optional. */ }
+  }
+  Future<bool> _searchNextAlias() async {
+    if (!_isSearchUrl(await _controller.currentUrl())) return false;
+    for (final title in _titleAliases) {
+      final key = _normalizeTitle(title);
+      if (key.isEmpty || !_searchedTitles.add(key)) continue;
+      if (key == _normalizeTitle(_matchTitle)) continue;
+      final next = widget.url.replace(path: '/search', queryParameters: {'s': title});
+      if (next.scheme != 'https') return false;
+      if (mounted) setState(() { _revealed = false; _loading = true; });
+      await _controller.loadRequest(next);
+      return true;
+    }
+    return false;
+  }
   bool _isSearchUrl(String? url) { final u = Uri.tryParse(url ?? ''); return u != null &&
     (u.path == '/search' || u.path == '/search/' || u.path.startsWith('/search/')); }
   Future<void> _initialLoad() async {
+    await _loadTitleAliases();
+    _searchedTitles.add(_normalizeTitle(_matchTitle));
     Uri target = widget.url;
     if (_isTv && widget.tmdbId > 0 && widget.season > 0 && widget.episode > 0) {
       final prefs = await SharedPreferences.getInstance();
@@ -78,7 +124,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
         const norm = s => (s || '').toLowerCase().normalize('NFKD')
           .replace(/[\u0300-\u036f]/g, '').replace(/&amp;/g, '&')
           .replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
-        const target = norm(TARGET_TITLE);
+        const targets = TARGET_ALIASES.map(norm).filter(Boolean);
         const expectedYear = TARGET_YEAR;
         const isSeries = TARGET_SERIES;
         const matches = new Map();
@@ -103,7 +149,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
             card.querySelector('a[title]')?.getAttribute('title')].filter(Boolean);
           const titleOK = possible.some(v => {
             const cleaned = v.replace(/\s*\((?:19|20)\d{2}\)\s*[-–]?\s*(?:series|movie|film)?\s*$/i,'').trim();
-            return norm(cleaned) === target || norm(cleaned) === norm(TARGET_TITLE + ' (' + expectedYear + ') - Series');
+            return targets.includes(norm(cleaned));
           });
           if (!titleOK) return;
           const text = [card.innerText, poster.getAttribute('alt'), a.getAttribute('title'),
@@ -116,7 +162,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           matches.set(u.href, {url:u.href, exact: years.includes(expectedYear)});
         });
         return JSON.stringify([...matches.values()]);
-      })()'''.replaceAll('TARGET_TITLE', jsonEncode(_matchTitle))
+      })()'''.replaceAll('TARGET_ALIASES', jsonEncode(_titleAliases))
              .replaceAll('TARGET_YEAR', jsonEncode(widget.year))
              .replaceAll('TARGET_SERIES', _isTv ? 'true' : 'false'));
       // Android WebView can return either a JSON string or a JS-quoted JSON string.
@@ -137,7 +183,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
       }
     } catch (_) { /* A changed site DOM must fall back to manual search. */ }
     finally { _matching = false; }
-    return false;
+    return _searchNextAlias();
   }
   String _episodeCacheKey(int season, int episode) =>
       'fs_episode_v512_${widget.tmdbId}_${season}_$episode';
