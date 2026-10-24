@@ -448,6 +448,23 @@ class _WebSourcePageState extends State<WebSourcePage> {
           await _applyCleanPlayer();
           await _installProgressObserver();
           if (!mounted || generation != _navigationGeneration) return;
+          // The source sometimes finishes its countdown/redirect document before
+          // navigating to the actual series page. Never briefly reveal that page.
+          // This visual cover does not block redirects, login or user navigation.
+          if (_focused && await _isRedirectInterstitial()) {
+            for (var tick = 0; tick < 14; tick++) {
+              await Future<void>.delayed(const Duration(milliseconds: 500));
+              if (!mounted || generation != _navigationGeneration) return;
+              if (!await _isRedirectInterstitial()) break;
+            }
+            if (!mounted || generation != _navigationGeneration) return;
+            // If the upstream redirect never happens, make the real page available
+            // for user interaction instead of showing an endless spinner.
+            if (await _isRedirectInterstitial()) {
+              setState(() { _loading = false; _search = true; _revealed = true; });
+              return;
+            }
+          }
           if (_focused && _isSearchUrl(url) && await _autoMatchSearch()) return;
           if (!mounted || generation != _navigationGeneration) return;
           if (_focused && _isTv && !_isSearchUrl(url)) {
@@ -466,24 +483,6 @@ class _WebSourcePageState extends State<WebSourcePage> {
             }
           }
           if (!mounted || generation != _navigationGeneration) return;
-          // A source redirect splash may finish loading before its countdown
-          // navigates away. Keep the Flutter cover in place for that transition.
-          // This is visual only: no cookies, authentication or redirects are altered.
-          if (_focused) {
-            bool redirectSplash = false;
-            try {
-              final splash = await _controller.runJavaScriptReturningResult(r'''(() => {
-                const text = (document.body?.innerText || '').toLowerCase();
-                return (text.includes('anda akan dialihkan') || text.includes('you will be redirected'))
-                  && (text.includes('nontondrama') || text.includes('detik') || text.includes('seconds'));
-              })()''');
-              redirectSplash = splash == true || splash.toString() == 'true';
-            } catch (_) {}
-            if (redirectSplash) {
-              await Future<void>.delayed(const Duration(milliseconds: 4300));
-              if (!mounted || generation != _navigationGeneration) return;
-            }
-          }
           bool found = false;
           if (_focused) found = await _applyFocus();
           if (!mounted || generation != _navigationGeneration) return;
@@ -640,6 +639,17 @@ class _WebSourcePageState extends State<WebSourcePage> {
         })();
       ''');
       return result == true || result.toString() == 'true';
+    } catch (_) { return false; }
+  }
+
+  Future<bool> _isRedirectInterstitial() async {
+    try {
+      final value = await _controller.runJavaScriptReturningResult(r'''(() => {
+        const t = (document.body?.innerText || '').toLowerCase();
+        return (t.includes('anda akan dialihkan') || t.includes('you will be redirected'))
+          && (t.includes('nontondrama') || t.includes('detik') || t.includes('seconds'));
+      })()''');
+      return value == true || value.toString() == 'true';
     } catch (_) { return false; }
   }
 
