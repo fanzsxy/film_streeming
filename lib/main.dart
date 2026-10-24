@@ -148,7 +148,41 @@ class Tmdb {
   return english;
  }
  static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
-  final d=await get(endpoint,{'page':'$page',...params});return (d['results'] as List? ?? []).whereType<Map<String,dynamic>>().where((e)=>e['media_type']!='person').map((e)=>Movie.fromJson(e,fallback:type)).toList();
+  final d=await get(endpoint,{'page':'$page',...params});
+  final search=endpoint.startsWith('search/');
+  return (d['results'] as List? ?? [])
+    .whereType<Map<String,dynamic>>()
+    .where((e){
+      if(e['media_type']=='person')return false;
+      final media=e['media_type']?.toString()??type;
+      if(media!='movie'&&media!='tv')return false;
+      final title=(e['title']??e['name']??'').toString().trim();
+      final poster=(e['poster_path']??'').toString();
+      final backdrop=(e['backdrop_path']??'').toString();
+      final overview=(e['overview']??'').toString().trim();
+      final votes=(e['vote_count'] as num?)?.toInt()??0;
+      final rating=(e['vote_average'] as num?)?.toDouble()??0.0;
+      final genres=(e['genre_ids'] as List? ??[]).whereType<num>().map((n)=>n.toInt()).toSet();
+      final date=(e['release_date']??e['first_air_date']??'').toString();
+      if(title.isEmpty||poster.isEmpty||date.length<4)return false;
+      // Exclude broadcast formats from the general film/series catalog.
+      if(media=='tv'&&genres.intersection({10763,10764,10767}).isNotEmpty)return false;
+      // Remove very low-information TMDB submissions, even from search.
+      // Search is slightly more permissive so niche works can still be found.
+      // Stronger quality threshold on browse; search keeps a little room for niche titles.
+      if(votes<(search?25:75)||rating<4.5||overview.length<40)return false;
+      if(!search&&backdrop.isEmpty)return false;
+      // Exclude apparent clips, bonus material, promos and TV specials using
+      // the title only when it clearly describes non-feature content.
+      final normalized=title.toLowerCase();
+      final extra=RegExp(r'\b(trailer|teaser|behind the scenes|making of|bonus video|promo|promotional|interview|music video|compilation|recap|special feature|live concert|live event)\b');
+      if(extra.hasMatch(normalized))return false;
+      // TV categories: exclude documentary, news, reality, talk, and soap.
+      if(media=='tv'&&genres.intersection({99,10763,10764,10767,10766}).isNotEmpty)return false;
+      if(!search&&backdrop.isEmpty)return false;
+      return true;
+    })
+    .map((e)=>Movie.fromJson(e,fallback:type)).toList();
  }
 }
 class HomePage extends StatefulWidget {const HomePage({super.key});@override State<HomePage> createState()=>_HomePageState();}
