@@ -187,7 +187,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  Map<String,String> _params(String media) {
   final both=[genre1,genre2].where((g)=>g>0).toSet().join(',');
   final sortField=sort=='popular'?'popularity.desc':sort=='latest'?(media=='tv'?'first_air_date.desc':'primary_release_date.desc'):(media=='tv'?'original_name.asc':'original_title.asc');
-  return {'sort_by':sortField,'include_adult':'false','include_video':'false',if(both.isNotEmpty)'with_genres':both,if(country.isNotEmpty)'with_origin_country':country};
+  return {'sort_by':sortField,'include_adult':'false','include_video':'false','vote_count.gte':'20',if(both.isNotEmpty)'with_genres':both,if(country.isNotEmpty)'with_origin_country':country};
  }
  Future<void> _fetch() async {
   if(busy||!more)return;
@@ -197,7 +197,11 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
    final kinds=type=='all'?const ['movie','tv']:[type];
    final batches=await Future.wait(kinds.map((k)=>Tmdb.list('discover/$k',page:nextPage,type:k,params:_params(k))));
    if(!mounted||token!=epoch)return;
-   final incoming=batches.expand((x)=>x).toList();
+   final incoming=batches.expand((x)=>x).where((m) =>
+    m.poster.isNotEmpty && m.backdrop.isNotEmpty && m.overview.trim().length >= 20 &&
+    m.release.length >= 4 && m.rating >= 3.0 &&
+    !(m.type == 'tv' && m.genres.any((g) => const [10763,10764,10767].contains(g)))
+   ).toList();
    setState((){
     page=nextPage;
     for(final m in incoming){if(!results.any((x)=>x.id==m.id&&x.type==m.type))results.add(m);}
