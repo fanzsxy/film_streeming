@@ -32,6 +32,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   bool _loading = true;
   bool _revealed = false;
   bool _search = false;
+  bool _noMatch = false;
   String? _error;
   int _progress = 0;
   bool _matching = false;
@@ -94,11 +95,13 @@ class _WebSourcePageState extends State<WebSourcePage> {
       await _controller.loadRequest(next);
       return true;
     }
+    if (mounted) setState(() => _noMatch = true);
     return false;
   }
   bool _isSearchUrl(String? url) { final u = Uri.tryParse(url ?? ''); return u != null &&
     (u.path == '/search' || u.path == '/search/' || u.path.startsWith('/search/')); }
   Future<void> _initialLoad() async {
+    _noMatch = false;
     await _loadTitleAliases();
     _searchedTitles.add(_normalizeTitle(_matchTitle));
     Uri target = widget.url;
@@ -175,6 +178,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
         if (choices.length != 1 || choices.first is! Map) return false;
         final link = Uri.tryParse((choices.first as Map)['url']?.toString() ?? '');
         if (link != null && link.scheme == 'https' && link.host == widget.url.host && !_isSearchUrl(link.toString())) {
+          _noMatch = false;
           _candidateUrl = link.toString();
           if (mounted) setState(() { _revealed = false; _loading = true; });
           await _controller.loadRequest(link);
@@ -777,11 +781,23 @@ class _WebSourcePageState extends State<WebSourcePage> {
                 TextButton(onPressed: _external, child: const Text('Buka di browser')),
               ]))))),
         if (_revealed && _search && _focused && _error == null)
-          Positioned(left: 10, right: 10, bottom: 14, child: Card(child: Padding(
-            padding: const EdgeInsets.all(10), child: Text(
-              _isTv ? 'Halaman belum menampilkan player.' : 'Ini masih halaman pencarian. Pilih hasil film yang tepat; tampilan fokus aktif saat halaman player terbuka.',
-              textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall,
-            )))),
+          Positioned.fill(child: ColoredBox(color: const Color(0xff101014),
+            child: Center(child: Padding(padding: const EdgeInsets.all(18),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(_noMatch ? Icons.movie_filter_outlined : Icons.info_outline, size: 38, color: Colors.white70),
+                const SizedBox(height: 12),
+                Text(_noMatch ? 'Film atau series belum ditemukan' : 'Sumber pemutar belum dapat dipastikan',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                const SizedBox(height: 8),
+                Text(_noMatch
+                  ? 'Tidak ada hasil unik yang cocok setelah pencarian judul dan judul alternatif. Ketersediaan di sumber belum dapat dipastikan.'
+                  : 'Halaman sumber belum menyediakan player yang dapat dikenali.',
+                  textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
+                const SizedBox(height: 16),
+                TextButton(onPressed: _back, child: const Text('Kembali ke katalog')),
+                TextButton(onPressed: () { setState(() { _noMatch = false; _revealed = false; _loading = true; }); _initialLoad(); },
+                  child: const Text('Coba lagi')),
+              ]))))),
       ]);
 
   @override
