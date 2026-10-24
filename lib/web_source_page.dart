@@ -109,11 +109,11 @@ class _WebSourcePageState extends State<WebSourcePage> {
           const text = [card.innerText, poster.getAttribute('alt'), a.getAttribute('title'),
             card.querySelector('.year,.date,[itemprop="datePublished"]')?.textContent].filter(Boolean).join(' ');
           const years = text.match(/(?:19|20)\d{2}/g) || [];
-          if (expectedYear && !years.includes(expectedYear)) return;
+          if (expectedYear && !years.some(y => Math.abs(Number(y) - Number(expectedYear)) <= 1)) return;
           const tag = (card.innerText || '').toLowerCase();
           if (isSeries && /\b(movie|film)\b/.test(tag) && !/\b(series|eps|episode|s\.?[1-9])\b/.test(tag)) return;
           // Only same-site title detail links are candidates; do not guess a URL.
-          matches.set(u.href, {url:u.href});
+          matches.set(u.href, {url:u.href, exact: years.includes(expectedYear)});
         });
         return JSON.stringify([...matches.values()]);
       })()'''.replaceAll('TARGET_TITLE', jsonEncode(_matchTitle))
@@ -123,8 +123,11 @@ class _WebSourcePageState extends State<WebSourcePage> {
       dynamic decoded = raw;
       if (decoded is String) { try { decoded = jsonDecode(decoded); } catch (_) {} }
       if (decoded is String) { try { decoded = jsonDecode(decoded); } catch (_) {} }
-      if (decoded is List && decoded.length == 1 && decoded.first is Map) {
-        final link = Uri.tryParse((decoded.first as Map)['url']?.toString() ?? '');
+      if (decoded is List) {
+        final exact = decoded.where((e) => e is Map && e['exact'] == true).toList();
+        final choices = exact.isNotEmpty ? exact : decoded;
+        if (choices.length != 1 || choices.first is! Map) return false;
+        final link = Uri.tryParse((choices.first as Map)['url']?.toString() ?? '');
         if (link != null && link.scheme == 'https' && link.host == widget.url.host && !_isSearchUrl(link.toString())) {
           _candidateUrl = link.toString();
           if (mounted) setState(() { _revealed = false; _loading = true; });
