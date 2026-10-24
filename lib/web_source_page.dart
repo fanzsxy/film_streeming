@@ -139,6 +139,16 @@ class _WebSourcePageState extends State<WebSourcePage> {
         const distinctive = v => norm(v).split(' ').filter(w =>
           w && !['a','an','the','of','in','at','and','age'].includes(w)).sort().join(' ');
         const targetWords = targets.map(distinctive).filter(v => v.split(' ').length >= 3);
+        const keywords = v => [...new Set(norm(v).split(' ').filter(w =>
+          w.length >= 4 && !['movie','film','series','episode','nobita','doraemon','new','with','from','this','that',].includes(w)))];
+        // Prefer distinctive overlapping terms, not an arbitrary two-word match.
+        // "castle" remains eligible when paired with undersea and devil.
+        const overlapMatch = v => targets.some(title => {
+          const wanted = keywords(title), found = keywords(v);
+          if (wanted.length < 3 || found.length < 3) return false;
+          const shared = wanted.filter(w => found.includes(w)).length;
+          return shared >= 3 && shared / Math.min(wanted.length, found.length) >= 0.65;
+        });
         const expectedYear = TARGET_YEAR;
         const isSeries = TARGET_SERIES;
         const matches = new Map();
@@ -173,7 +183,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
               // title, e.g. "Spirited Away (Sen to Chihiro no Kamikakushi)".
               targets.some(target => candidate.startsWith(target + ' ') &&
                 /\s*\(/.test(cleaned.slice(target.length))) ||
-              (targetWords.length > 0 && targetWords.includes(distinctive(candidate)));
+              (targetWords.length > 0 && targetWords.includes(distinctive(candidate))) ||
+              overlapMatch(cleaned);
           });
           if (!titleOK) return;
           const text = [card.innerText, poster.getAttribute('alt'), a.getAttribute('title'),
