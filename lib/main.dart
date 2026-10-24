@@ -80,7 +80,7 @@ class Tmdb {
  static Future<List<Movie>> rail(String endpoint, String type) => _railCache.putIfAbsent("$endpoint|$type", () => list(endpoint,type:type));
  static Future<Map<String,dynamic>> get(String endpoint,[Map<String,String> params=const {}]) async {
   if(tmdbToken.isEmpty)throw Exception('TMDB_TOKEN belum diatur.');
-  final uri=Uri.https('api.themoviedb.org','/3/$endpoint',{'language':'id-ID',...params});
+  final uri=Uri.https('api.themoviedb.org','/3/$endpoint',{'language':'en-US',...params});
   final r=await http.get(uri,headers:{'Authorization':'Bearer $tmdbToken','accept':'application/json'}).timeout(const Duration(seconds:20));
   if(r.statusCode!=200)throw Exception('TMDB HTTP ${r.statusCode}');return jsonDecode(r.body) as Map<String,dynamic>;
  }
@@ -118,7 +118,12 @@ class LastWatchedRail extends StatelessWidget {
  const LastWatchedRail({super.key});
  void _open(BuildContext context, WatchEntry e) => openWatchDetail(context,e);
  @override Widget build(BuildContext context)=>ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,builder:(context,history,_) {
-   final recent=history.where((e)=>e.url.isNotEmpty).take(12).toList();
+   // Beranda menampilkan satu kartu per judul (episode terbaru saja).
+   // Entri lama dari sekadar membuka detail tanpa progres tidak dihitung tontonan.
+   final seen = <String>{};
+   final recent = history.where((e) => e.url.isNotEmpty && (e.positionMs > 0 || e.completed))
+       .where((e) => seen.add('${e.type}:${e.tmdbId > 0 ? e.tmdbId : e.title}'))
+       .take(12).toList();
    if(recent.isEmpty)return const SizedBox.shrink();
    return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
      Padding(padding:const EdgeInsets.fromLTRB(16,18,12,10),child:Row(children:[const Expanded(child:Text('Terakhir Ditonton',style:TextStyle(fontSize:22,fontWeight:FontWeight.bold))),TextButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const HistoryPage())),child:const Text('Lihat Lainnya  ›'))])),
@@ -289,7 +294,7 @@ Future<void> recordWebOpen(Movie movie, Uri url, {int season = 0, int episode = 
 }
 
 Future<void> recordWebProgress(Movie movie, Uri page, int positionMs, int durationMs, bool ended, {int season = 0, int episode = 0}) async {
-  if (page.scheme != 'https' || durationMs <= 0) return;
+  if (page.scheme != 'https' || durationMs <= 0 || (positionMs <= 0 && !ended)) return;
   final key = movie.type == 'tv' ? 'tv:${movie.id}:$season:$episode' : 'movie:${movie.id}';
   final prior = WatchStore.find(key);
   final completed = (prior?.completed ?? false) || ended || positionMs / durationMs >= .90;
@@ -310,7 +315,9 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
         title: movie.title, url: snapshot.data!, focused: true, embedded: true,
         tmdbId: movie.id, mediaType: movie.type, year: movie.year,
         season: season, episode: episode,
-        onPlayerReady: (uri) => recordWebOpen(movie, uri, season:season, episode:episode),
+        // Jangan mencatat riwayat hanya karena player/halaman detail dimuat.
+        // Riwayat dicatat ketika video mengirim posisi pemutaran yang valid.
+        onPlayerReady: null,
         onVideoProgress: (pos, dur, ended) => recordWebProgress(movie, snapshot.data!, pos, dur, ended, season:season, episode:episode),
         onFullscreenExit: onFullscreenExit);
     },
