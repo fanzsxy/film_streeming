@@ -251,15 +251,14 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
     builder: (context, snapshot) {
       if (!snapshot.hasData) return const SizedBox(height: 340,
         child: ColoredBox(color: Color(0xff101014), child: Center(child: CircularProgressIndicator())));
-      return LayoutBuilder(builder: (context, constraints) => SizedBox(
-        height: constraints.maxWidth * 9 / 16 + 96, child: WebSourcePage(
+      return WebSourcePage(
         key: ValueKey('${movie.type}:${movie.id}:$season:$episode'),
         title: movie.title, url: snapshot.data!, focused: true, embedded: true,
         tmdbId: movie.id, mediaType: movie.type, year: movie.year,
         season: season, episode: episode,
         onPlayerReady: (uri) => recordWebOpen(movie, uri, season:season, episode:episode),
         onVideoProgress: (pos, dur, ended) => recordWebProgress(movie, snapshot.data!, pos, dur, ended, season:season, episode:episode),
-        onFullscreenExit: onFullscreenExit)));
+        onFullscreenExit: onFullscreenExit);
     },
   );
 
