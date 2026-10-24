@@ -169,7 +169,16 @@ class Tmdb {
       if(media=='tv'&&genres.intersection({10763,10764,10767}).isNotEmpty)return false;
       // Remove very low-information TMDB submissions, even from search.
       // Search is slightly more permissive so niche works can still be found.
-      if(votes<(search?10:20)||rating<3.0||overview.length<15)return false;
+      // Stronger quality threshold on browse; search keeps a little room for niche titles.
+      if(votes<(search?25:75)||rating<4.5||overview.length<40)return false;
+      if(!search&&backdrop.isEmpty)return false;
+      // Exclude apparent clips, bonus material, promos and TV specials using
+      // the title only when it clearly describes non-feature content.
+      final normalized=title.toLowerCase();
+      final extra=RegExp(r'\b(trailer|teaser|behind the scenes|making of|bonus video|promo|promotional|interview|music video|compilation|recap|special feature|live concert|live event)\b');
+      if(extra.hasMatch(normalized))return false;
+      // TV categories: exclude documentary, news, reality, talk, and soap.
+      if(media=='tv'&&genres.intersection({99,10763,10764,10767,10766}).isNotEmpty)return false;
       if(!search&&backdrop.isEmpty)return false;
       return true;
     })
