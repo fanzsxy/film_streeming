@@ -103,8 +103,6 @@ class _WebSourcePageState extends State<WebSourcePage> {
   Future<void> _initialLoad() async {
     _noMatch = false;
     _searchedTitles.clear();
-    await _loadTitleAliases();
-    _searchedTitles.add(_normalizeTitle(_matchTitle));
     Uri target = widget.url;
     if (_isTv && widget.tmdbId > 0 && widget.season > 0 && widget.episode > 0) {
       final prefs = await SharedPreferences.getInstance();
@@ -117,6 +115,12 @@ class _WebSourcePageState extends State<WebSourcePage> {
       if (cached != null && cached.scheme == 'https' && cached.host == widget.url.host && !_isSearchUrl(cached.toString())) {
         target = cached; _candidateUrl = cached.toString();
       }
+    }
+    // A verified cached detail/episode does not need a TMDB title lookup.
+    // Start opening it immediately instead of blocking playback for up to 6s.
+    if (_isSearchUrl(target.toString())) {
+      await _loadTitleAliases();
+      _searchedTitles.add(_normalizeTitle(_matchTitle));
     }
     await _controller.loadRequest(target);
   }
