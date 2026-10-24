@@ -186,7 +186,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  void _reset(){epoch++;results.clear();page=0;more=true;error='';busy=false;if(scroll.hasClients)scroll.jumpTo(0);setState((){});_fetch();}
  Map<String,String> _params(String media) {
   final both=[genre1,genre2].where((g)=>g>0).toSet().join(',');
-  final sortField=sort=='popular'?'popularity.desc':sort=='latest'?(media=='tv'?'first_air_date.desc':'primary_release_date.desc'):'original_title.asc';
+  final sortField=sort=='popular'?'popularity.desc':sort=='latest'?(media=='tv'?'first_air_date.desc':'primary_release_date.desc'):(media=='tv'?'original_name.asc':'original_title.asc');
   return {'sort_by':sortField,'include_adult':'false','include_video':'false',if(both.isNotEmpty)'with_genres':both,if(country.isNotEmpty)'with_origin_country':country};
  }
  Future<void> _fetch() async {
@@ -203,7 +203,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     for(final m in incoming){if(!results.any((x)=>x.id==m.id&&x.type==m.type))results.add(m);}
     if(sort=='title'){results.sort((a,b)=>a.title.toLowerCase().compareTo(b.title.toLowerCase()));}
     else if(sort=='latest'){results.sort((a,b)=>b.release.compareTo(a.release));}
-    else{results.sort((a,b)=>b.rating.compareTo(a.rating));}
+    // For popularity, preserve TMDB's popularity order within each page.
     more=batches.any((x)=>x.isNotEmpty)&&page<50;error='';
    });
   }catch(e){if(mounted&&token==epoch)setState(()=>error='Gagal mengambil katalog. Coba lagi.');}
