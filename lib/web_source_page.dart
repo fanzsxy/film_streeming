@@ -169,6 +169,10 @@ class _WebSourcePageState extends State<WebSourcePage> {
             const cleaned = v.replace(/\s*\((?:19|20)\d{2}\)\s*[-–]?\s*(?:series|movie|film)?\s*$/i,'').trim();
             const candidate = norm(cleaned);
             return targets.includes(candidate) ||
+              // Source result titles may add a parenthesized original/alternate
+              // title, e.g. "Spirited Away (Sen to Chihiro no Kamikakushi)".
+              targets.some(target => candidate.startsWith(target + ' ') &&
+                /\s*\(/.test(cleaned.slice(target.length))) ||
               (targetWords.length > 0 && targetWords.includes(distinctive(candidate)));
           });
           if (!titleOK) return;
