@@ -165,6 +165,76 @@ class _HomePageState extends State<HomePage> {
  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Row(mainAxisSize:MainAxisSize.min,children:[Icon(Icons.local_movies_rounded,color:Color(0xffe5aa55),size:27),SizedBox(width:9),Text('FILMSTREAM',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:1.2,fontSize:21))]),actions:[IconButton(tooltip:'Riwayat tontonan',icon:const Icon(Icons.history_rounded),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const HistoryPage()))),IconButton(icon:const Icon(Icons.info_outline_rounded),onPressed:()=>showAboutDialog(context:context,applicationName:'FilmStream Personal',children:[const Text('Metadata menggunakan TMDB; bukan didukung atau disertifikasi oleh TMDB. Pemutaran video memerlukan sumber yang dapat digunakan secara sah.')]))]),bottomNavigationBar:NavigationBar(selectedIndex:tab,onDestinationSelected:changeTab,destinations:const [NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home),label:'Beranda'),NavigationDestination(icon:Icon(Icons.movie_outlined),selectedIcon:Icon(Icons.movie),label:'Film'),NavigationDestination(icon:Icon(Icons.tv_outlined),selectedIcon:Icon(Icons.tv),label:'Series'),NavigationDestination(icon:Icon(Icons.tune_outlined),selectedIcon:Icon(Icons.tune),label:'Filter'),NavigationDestination(icon:Icon(Icons.favorite_border),selectedIcon:Icon(Icons.favorite),label:'Favorit')]),body:Column(children:[if(tab!=4)Padding(padding:const EdgeInsets.fromLTRB(14,8,14,8),child:TextField(controller:search,decoration:InputDecoration(prefixIcon:const Icon(Icons.search_rounded),hintText:'Cari film atau series...',suffixIcon:query.isEmpty?null:IconButton(icon:const Icon(Icons.close_rounded),onPressed:(){search.clear();setState(()=>query='');}),filled:true,fillColor:const Color(0xff20252e),enabledBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(16),borderSide:BorderSide.none),focusedBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(16),borderSide:const BorderSide(color:Color(0xffe5aa55),width:1.4))),onChanged:(v){debounce?.cancel();debounce=Timer(const Duration(milliseconds:400),(){if(mounted)setState(()=>query=v.trim());});})),Expanded(child:query.isNotEmpty?PagedGrid(key:ValueKey('search:$query'),title:'Hasil pencarian: $query',endpoint:'search/multi',params:{'query':query,'include_adult':'false'},type:'movie',onTap:open):switch(tab){0=>ListView(key:const PageStorageKey('home-feed'),controller:homeScroll,children:[CinemaHero(onTap:open),CinemaGenres(onSelect:(id){setState((){tab=3;genre='$id';query='';search.clear();});}),const LastWatchedRail(),const Padding(padding:EdgeInsets.fromLTRB(16,24,16,2),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('JELAJAHI KOLEKSI',style:TextStyle(fontSize:11,letterSpacing:2,color:Color(0xffe5aa55),fontWeight:FontWeight.w800)),SizedBox(height:7),Text('Pilihan untuk kamu',style:TextStyle(fontSize:25,fontWeight:FontWeight.w800))])),MovieRail(key:const ValueKey('rail-trending'),title:'Sedang Trending',endpoint:'trending/all/week',type:'movie',onTap:open,onSeeAll:()=>openCollection('Sedang Trending','trending/all/week','movie')),MovieRail(key:const ValueKey('rail-film-pop'),title:'Film Populer',endpoint:'movie/popular',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Populer','movie/popular','movie')),MovieRail(key:const ValueKey('rail-series-pop'),title:'Series Populer',endpoint:'tv/popular',type:'tv',onTap:open,onSeeAll:()=>openCollection('Series Populer','tv/popular','tv')),MovieRail(key:const ValueKey('rail-film-top'),title:'Film Rating Tinggi',endpoint:'movie/top_rated',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Rating Tinggi','movie/top_rated','movie')),MovieRail(key:const ValueKey('rail-series-top'),title:'Series Rating Tinggi',endpoint:'tv/top_rated',type:'tv',onTap:open,onSeeAll:()=>openCollection('Series Rating Tinggi','tv/top_rated','tv')),MovieRail(key:const ValueKey('rail-now-playing'),title:'Film Sedang Tayang',endpoint:'movie/now_playing',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Sedang Tayang','movie/now_playing','movie')),MovieRail(key:const ValueKey('rail-upcoming'),title:'Film Mendatang',endpoint:'movie/upcoming',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Mendatang','movie/upcoming','movie')),MovieRail(key:const ValueKey('rail-on-air'),title:'Series Sedang Tayang',endpoint:'tv/on_the_air',type:'tv',onTap:open,onSeeAll:()=>openCollection('Series Sedang Tayang','tv/on_the_air','tv')),MovieRail(key:const ValueKey('rail-today'),title:'Episode Baru Hari Ini',endpoint:'tv/airing_today',type:'tv',onTap:open,onSeeAll:()=>openCollection('Episode Baru Hari Ini','tv/airing_today','tv')),MovieRail(key:const ValueKey('rail-movie-week'),title:'Film Trending Minggu Ini',endpoint:'trending/movie/week',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Trending Minggu Ini','trending/movie/week','movie')),MovieRail(key:const ValueKey('rail-tv-week'),title:'Series Trending Minggu Ini',endpoint:'trending/tv/week',type:'tv',onTap:open,onSeeAll:()=>openCollection('Series Trending Minggu Ini','trending/tv/week','tv')),const SizedBox(height:16)]),1=>PagedGrid(key:const ValueKey('film'),title:'Semua Film Populer',endpoint:'movie/popular',type:'movie',onTap:open),2=>PagedGrid(key:const ValueKey('tv'),title:'Series Populer',endpoint:'tv/popular',type:'tv',onTap:open),3=>FilmstreamFilter(initialGenre:genre,onTap:open),_=>favorites.isEmpty?const Center(child:Text('Belum ada favorit. Simpan dari halaman detail.')):GridView.builder(padding:const EdgeInsets.all(12),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:.58,mainAxisSpacing:14,crossAxisSpacing:12),itemCount:favorites.length,itemBuilder:(context,i)=>MovieTile(movie:favorites.values.elementAt(i),onTap:open))})]));
 }
 // Cinema Booking-inspired layout using FilmStream's own TMDB data and widgets.
+
+class FilmstreamFilter extends StatefulWidget {
+ final String initialGenre;
+ final ValueChanged<Movie> onTap;
+ const FilmstreamFilter({super.key,required this.initialGenre,required this.onTap});
+ @override State<FilmstreamFilter> createState()=>_FilmstreamFilterState();
+}
+class _FilmstreamFilterState extends State<FilmstreamFilter> {
+ static const genres=<int,String>{0:'Semua genre',28:'Action',12:'Petualangan',16:'Animasi',35:'Komedi',80:'Kriminal',99:'Dokumenter',18:'Drama',10751:'Keluarga',14:'Fantasi',36:'Sejarah',27:'Horor',10402:'Musik',9648:'Misteri',10749:'Romantis',878:'Sci-Fi',53:'Thriller',10752:'Perang',37:'Western'};
+ String sort='title',type='all',country='';
+ int genre1=0,genre2=0,page=0,epoch=0;
+ bool busy=false,more=true;
+ String error='';
+ final results=<Movie>[];
+ final ScrollController scroll=ScrollController();
+ @override void initState(){super.initState();genre1=int.tryParse(widget.initialGenre)??0;_fetch();scroll.addListener((){if(scroll.hasClients&&scroll.position.pixels>scroll.position.maxScrollExtent-460)_fetch();});}
+ @override void didUpdateWidget(covariant FilmstreamFilter old){super.didUpdateWidget(old);if(old.initialGenre!=widget.initialGenre){genre1=int.tryParse(widget.initialGenre)??0;_reset();}}
+ @override void dispose(){scroll.dispose();super.dispose();}
+ void _reset(){epoch++;results.clear();page=0;more=true;error='';busy=false;if(scroll.hasClients)scroll.jumpTo(0);setState((){});_fetch();}
+ Map<String,String> _params(String media) {
+  final both=[genre1,genre2].where((g)=>g>0).toSet().join(',');
+  final sortField=sort=='popular'?'popularity.desc':sort=='latest'?(media=='tv'?'first_air_date.desc':'primary_release_date.desc'):'original_title.asc';
+  return {'sort_by':sortField,'include_adult':'false','include_video':'false',if(both.isNotEmpty)'with_genres':both,if(country.isNotEmpty)'with_origin_country':country};
+ }
+ Future<void> _fetch() async {
+  if(busy||!more)return;
+  final token=epoch,nextPage=page+1;
+  setState(()=>busy=true);
+  try {
+   final kinds=type=='all'?const ['movie','tv']:[type];
+   final batches=await Future.wait(kinds.map((k)=>Tmdb.list('discover/$k',page:nextPage,type:k,params:_params(k))));
+   if(!mounted||token!=epoch)return;
+   final incoming=batches.expand((x)=>x).toList();
+   setState((){
+    page=nextPage;
+    for(final m in incoming){if(!results.any((x)=>x.id==m.id&&x.type==m.type))results.add(m);}
+    if(sort=='title'){results.sort((a,b)=>a.title.toLowerCase().compareTo(b.title.toLowerCase()));}
+    else if(sort=='latest'){results.sort((a,b)=>b.release.compareTo(a.release));}
+    else{results.sort((a,b)=>b.rating.compareTo(a.rating));}
+    more=batches.any((x)=>x.isNotEmpty)&&page<50;error='';
+   });
+  }catch(e){if(mounted&&token==epoch)setState(()=>error='Gagal mengambil katalog. Coba lagi.');}
+  finally{if(mounted&&token==epoch)setState(()=>busy=false);}
+ }
+ Widget _pick<T>(String caption,T value,List<DropdownMenuItem<T>> options,ValueChanged<T?> update)=>DropdownButtonFormField<T>(
+  value:value,isExpanded:true,decoration:InputDecoration(labelText:caption,isDense:true,filled:true,fillColor:const Color(0xff20252e),border:OutlineInputBorder(borderRadius:BorderRadius.circular(12))),items:options,onChanged:(v){update(v);_reset();});
+ @override Widget build(BuildContext context)=>Column(children:[
+  Padding(padding:const EdgeInsets.fromLTRB(12,5,12,9),child:Column(children:[
+   Row(children:[
+    Expanded(child:_pick<String>('Urut berdasarkan',sort,const [
+     DropdownMenuItem(value:'title',child:Text('Abjad A–Z')),DropdownMenuItem(value:'popular',child:Text('Popular')),DropdownMenuItem(value:'latest',child:Text('Terbaru'))],(v){if(v!=null)sort=v;})),
+    const SizedBox(width:9),
+    Expanded(child:_pick<String>('Tipe',type,const [
+     DropdownMenuItem(value:'all',child:Text('Film & Series')),DropdownMenuItem(value:'movie',child:Text('Film')),DropdownMenuItem(value:'tv',child:Text('Series'))],(v){if(v!=null)type=v;})),
+   ]),
+   const SizedBox(height:9),
+   Row(children:[
+    Expanded(child:_pick<int>('Genre 1',genre1,genres.entries.map((g)=>DropdownMenuItem(value:g.key,child:Text(g.value))).toList(),(v){genre1=v??0;})),
+    const SizedBox(width:9),
+    Expanded(child:_pick<int>('Genre 2',genre2,genres.entries.map((g)=>DropdownMenuItem(value:g.key,child:Text(g.value))).toList(),(v){genre2=v??0;})),
+   ]),
+   const SizedBox(height:9),
+   _pick<String>('Negara',country,const [
+    DropdownMenuItem(value:'',child:Text('Semua negara')),
+    DropdownMenuItem(value:'JP',child:Text('Jepang')),DropdownMenuItem(value:'KR',child:Text('Korea')),DropdownMenuItem(value:'CN',child:Text('China'))],(v){country=v??'';}),
+  ])),
+  Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:6),child:Align(alignment:Alignment.centerLeft,child:Text('Katalog ${type=='all'?'Film & Series':type=='tv'?'Series':'Film'}',style:const TextStyle(fontSize:19,fontWeight:FontWeight.w800)))),
+  Expanded(child:error.isNotEmpty&&results.isEmpty?Center(child:TextButton(onPressed:_fetch,child:Text(error))):results.isEmpty&&busy?const Center(child:CircularProgressIndicator()):results.isEmpty?const Center(child:Text('Tidak ada hasil sesuai filter')):GridView.builder(controller:scroll,padding:const EdgeInsets.all(12),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:.58,mainAxisSpacing:14,crossAxisSpacing:12),itemCount:results.length+(busy||error.isNotEmpty?1:0),itemBuilder:(context,i){if(i==results.length)return Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:const Text('Coba lagi')):const CircularProgressIndicator());return MovieTile(movie:results[i],onTap:widget.onTap);}))
+ ]);
+}
 class CinemaHero extends StatefulWidget {
  final ValueChanged<Movie> onTap;
  const CinemaHero({super.key,required this.onTap});
