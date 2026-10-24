@@ -179,11 +179,12 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  bool busy=false,more=true;
  String error='';
  final results=<Movie>[];
+ final Set<String> seenResults=<String>{};
  final ScrollController scroll=ScrollController();
  @override void initState(){super.initState();genre1=int.tryParse(widget.initialGenre)??0;_fetch();scroll.addListener((){if(scroll.hasClients&&scroll.position.pixels>scroll.position.maxScrollExtent-460)_fetch();});}
  @override void didUpdateWidget(covariant FilmstreamFilter old){super.didUpdateWidget(old);if(old.initialGenre!=widget.initialGenre){genre1=int.tryParse(widget.initialGenre)??0;_reset();}}
  @override void dispose(){scroll.dispose();super.dispose();}
- void _reset(){epoch++;results.clear();page=0;more=true;error='';busy=false;if(scroll.hasClients)scroll.jumpTo(0);setState((){});_fetch();}
+ void _reset(){epoch++;results.clear();seenResults.clear();page=0;more=true;error='';busy=false;if(scroll.hasClients)scroll.jumpTo(0);setState((){});_fetch();}
  Map<String,String> _params(String media) {
   final both=[genre1,genre2].where((g)=>g>0).toSet().join(',');
   final sortField=sort=='popular'?'popularity.desc':sort=='latest'?(media=='tv'?'first_air_date.desc':'primary_release_date.desc'):(media=='tv'?'original_name.asc':'original_title.asc');
@@ -202,12 +203,15 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     m.release.length >= 4 && m.rating >= 3.0 &&
     !(m.type == 'tv' && m.genres.any((g) => const [10763,10764,10767].contains(g)))
    ).toList();
+   // Only sort the newly fetched page. Resorting all previous cards shifts
+   // their indices while the user scrolls, making content appear repeated.
+   if(sort=='title')incoming.sort((a,b)=>a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+   else if(sort=='latest')incoming.sort((a,b)=>b.release.compareTo(a.release));
    setState((){
     page=nextPage;
-    for(final m in incoming){if(!results.any((x)=>x.id==m.id&&x.type==m.type))results.add(m);}
-    if(sort=='title'){results.sort((a,b)=>a.title.toLowerCase().compareTo(b.title.toLowerCase()));}
-    else if(sort=='latest'){results.sort((a,b)=>b.release.compareTo(a.release));}
-    // For popularity, preserve TMDB's popularity order within each page.
+    for(final m in incoming){
+     if(seenResults.add('${m.type}:${m.id}'))results.add(m);
+    }
     more=batches.any((x)=>x.isNotEmpty)&&page<50;error='';
    });
   }catch(e){if(mounted&&token==epoch)setState(()=>error='Gagal mengambil katalog. Coba lagi.');}
@@ -241,7 +245,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   if(results.isEmpty) SliverFillRemaining(hasScrollBody:false,child:Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:Text(error)):busy?const CircularProgressIndicator():const Text('Tidak ada hasil sesuai filter'))),
   if(results.isNotEmpty) SliverPadding(padding:const EdgeInsets.all(12),sliver:SliverGrid(delegate:SliverChildBuilderDelegate((context,i){
    if(i==results.length)return Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:const Text('Coba lagi')):const CircularProgressIndicator());
-   return MovieTile(movie:results[i],onTap:widget.onTap);
+   return MovieTile(key:ValueKey('${results[i].type}:${results[i].id}'),movie:results[i],onTap:widget.onTap);
   },childCount:results.length+(busy||error.isNotEmpty?1:0)),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:.58,mainAxisSpacing:14,crossAxisSpacing:12))),
  ]);
 }
