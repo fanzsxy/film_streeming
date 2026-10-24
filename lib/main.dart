@@ -73,7 +73,7 @@ Future<void> openWatchDetail(BuildContext context, WatchEntry e) async {
   }
 }
 class HistoryPage extends StatelessWidget {const HistoryPage({super.key});
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Riwayat Tontonan')),body:ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,builder:(context,items,_)=>items.isEmpty?const Center(child:Text('Belum ada riwayat. Putar video di FilmStream untuk mulai menyimpan progres.',textAlign:TextAlign.center)):ListView.builder(itemCount:items.length,itemBuilder:(context,i){final e=items[i];return ListTile(leading:e.poster.isEmpty?const SizedBox(width:50,child:Icon(Icons.movie)):Image.network('$imageRoot${e.poster}',width:50,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.movie)),title:Text(e.label,maxLines:2),subtitle:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(e.completed?'Selesai ditonton':e.subtitle=='__webview__'?(e.durationMs>0?'Terakhir ${clock(e.positionMs)} / ${clock(e.durationMs)}':'Episode/film pernah dibuka'):'Terakhir ${clock(e.positionMs)} / ${clock(e.durationMs)}'),LinearProgressIndicator(value:e.progress),const SizedBox(height:4),Text(e.completed?'Putar ulang':e.subtitle=='__webview__'?(e.durationMs>0?'Buka kembali (progres tercatat)':'Buka kembali player'):'Lanjutkan menonton',style:const TextStyle(fontSize:12))]),onTap:()=>openWatchDetail(context,e),trailing:IconButton(tooltip:'Hapus riwayat',icon:const Icon(Icons.delete_outline),onPressed:()=>WatchStore.remove(e.key)));})));
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Riwayat Tontonan')),body:ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,builder:(context,items,_)=>items.isEmpty?const Center(child:Text('Belum ada riwayat. Putar video di FilmStream untuk mulai menyimpan progres.',textAlign:TextAlign.center)):ListView.builder(itemCount:items.length,itemBuilder:(context,i){final e=items[i];return ListTile(leading:e.poster.isEmpty?const SizedBox(width:50,child:Icon(Icons.movie)):Image.network('$imageRoot${e.poster}',width:50,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.movie)),title:Text(e.label,maxLines:2),subtitle:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(e.completed?'Pernah menekan player':e.subtitle=='__webview__'?(e.durationMs>0?'Terakhir ${clock(e.positionMs)} / ${clock(e.durationMs)}':'Episode/film pernah dibuka'):'Terakhir ${clock(e.positionMs)} / ${clock(e.durationMs)}'),LinearProgressIndicator(value:e.progress),const SizedBox(height:4),Text(e.completed?'Putar ulang':e.subtitle=='__webview__'?(e.durationMs>0?'Buka kembali (progres tercatat)':'Buka kembali player'):'Lanjutkan menonton',style:const TextStyle(fontSize:12))]),onTap:()=>openWatchDetail(context,e),trailing:IconButton(tooltip:'Hapus riwayat',icon:const Icon(Icons.delete_outline),onPressed:()=>WatchStore.remove(e.key)));})));
 }
 class Tmdb {
  static final Map<String,Future<List<Movie>>> _railCache = {};
@@ -83,6 +83,35 @@ class Tmdb {
   final uri=Uri.https('api.themoviedb.org','/3/$endpoint',{'language':'en-US',...params});
   final r=await http.get(uri,headers:{'Authorization':'Bearer $tmdbToken','accept':'application/json'}).timeout(const Duration(seconds:20));
   if(r.statusCode!=200)throw Exception('TMDB HTTP ${r.statusCode}');return jsonDecode(r.body) as Map<String,dynamic>;
+ }
+ // Keep titles, season names, and matching metadata in English; replace only
+ // descriptions with Indonesian when TMDB supplies a non-empty translation.
+ static Future<Map<String,dynamic>> bilingualDetail(String endpoint) async {
+  final english = await get(endpoint);
+  try {
+   final indonesian = await get(endpoint, {'language':'id-ID'});
+   final description = (indonesian['overview'] ?? '').toString().trim();
+   if (description.isNotEmpty) english['overview'] = description;
+   // Episode descriptions can also be localized without changing episode identity.
+   final englishEpisodes = english['episodes'];
+   final indonesianEpisodes = indonesian['episodes'];
+   if (englishEpisodes is List && indonesianEpisodes is List) {
+    final translatedByNumber = <int,String>{};
+    for (final item in indonesianEpisodes) {
+     if (item is Map && item['episode_number'] is num) {
+      final description = (item['overview'] ?? '').toString().trim();
+      if (description.isNotEmpty) translatedByNumber[(item['episode_number'] as num).toInt()] = description;
+     }
+    }
+    for (final item in englishEpisodes) {
+     if (item is Map<String,dynamic> && item['episode_number'] is num) {
+      final localized = translatedByNumber[(item['episode_number'] as num).toInt()];
+      if (localized != null) item['overview'] = localized;
+     }
+    }
+   }
+  } catch (_) { /* English overview is a safe fallback. */ }
+  return english;
  }
  static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
   final d=await get(endpoint,{'page':'$page',...params});return (d['results'] as List? ?? []).whereType<Map<String,dynamic>>().where((e)=>e['media_type']!='person').map((e)=>Movie.fromJson(e,fallback:type)).toList();
@@ -293,6 +322,21 @@ Future<void> recordWebOpen(Movie movie, Uri url, {int season = 0, int episode = 
     updatedAt:DateTime.now().millisecondsSinceEpoch,completed:prior?.completed ?? false));
 }
 
+// Kebijakan pilihan pengguna: sentuhan pertama pada area player dianggap sudah ditonton.
+// Ini adalah status berdasarkan interaksi, BUKAN verifikasi durasi/tamat video.
+Future<void> recordPlayerTap(Movie movie, Uri url, {int season = 0, int episode = 0}) async {
+  if (url.scheme != 'https') return;
+  final key = movie.type == 'tv' ? 'tv:${movie.id}:$season:$episode' : 'movie:${movie.id}';
+  final prior = WatchStore.find(key);
+  final duration = prior != null && prior.durationMs > 0 ? prior.durationMs : 1000;
+  await WatchStore.save(WatchEntry(
+    key:key, title:movie.title, poster:movie.poster, type:movie.type,
+    url:url.toString(), subtitle:'__webview__', tmdbId:movie.id,
+    season:season, episode:episode, positionMs:duration, durationMs:duration,
+    updatedAt:DateTime.now().millisecondsSinceEpoch, completed:true,
+  ));
+}
+
 Future<void> recordWebProgress(Movie movie, Uri page, int positionMs, int durationMs, bool ended, {int season = 0, int episode = 0}) async {
   if (page.scheme != 'https' || durationMs <= 0 || (positionMs < 100 && !ended)) return;
   final key = movie.type == 'tv' ? 'tv:${movie.id}:$season:$episode' : 'movie:${movie.id}';
@@ -318,6 +362,7 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
         // Jangan mencatat riwayat hanya karena player/halaman detail dimuat.
         // Riwayat dicatat ketika video mengirim posisi pemutaran yang valid.
         onPlayerReady: null,
+        onPlayIntent: (page) => recordPlayerTap(movie, page, season:season, episode:episode),
         onVideoProgress: (pos, dur, ended) => recordWebProgress(movie, snapshot.data!, pos, dur, ended, season:season, episode:episode),
         onFullscreenExit: onFullscreenExit);
     },
@@ -333,7 +378,7 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0,
 
 class DetailPage extends StatefulWidget {final Movie movie;final bool isFavorite;final VoidCallback onFavorite; final int? initialSeason,initialEpisode; final Uri? initialPage; const DetailPage({super.key,required this.movie,required this.isFavorite,required this.onFavorite,this.initialSeason,this.initialEpisode,this.initialPage});@override State<DetailPage> createState()=>_DetailPageState();}
 class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingController(),subtitleUrl=TextEditingController(),sourcePage=TextEditingController();late bool favorite;late Future<Map<String,dynamic>> details; late Future<Uri> sourceFuture;
- @override void initState(){super.initState();favorite=widget.isFavorite;details=Tmdb.get('${widget.movie.type}/${widget.movie.id}'); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}}
+ @override void initState(){super.initState();favorite=widget.isFavorite;details=Tmdb.bilingualDetail('${widget.movie.type}/${widget.movie.id}'); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}}
  @override void dispose(){videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();detailScroll.dispose();super.dispose();}
  bool https(String input){final u=Uri.tryParse(input.trim());return u!=null&&u.scheme=='https'&&u.host.isNotEmpty;}
 
@@ -387,7 +432,7 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
          const SizedBox(height: 8),
          FutureBuilder<Map<String,dynamic>>(
            key: ValueKey('season-${m.id}-$active'),
-           future: episodeFutures.putIfAbsent(active, () => Tmdb.get('tv/${m.id}/season/$active')),
+           future: episodeFutures.putIfAbsent(active, () => Tmdb.bilingualDetail('tv/${m.id}/season/$active')),
            builder: (context, episodeSnapshot) {
              if (episodeSnapshot.hasError) return const Text('Daftar episode gagal dimuat. Pilih season kembali.');
              if (!episodeSnapshot.hasData) return const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()));
@@ -455,7 +500,13 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
              Text('${m.type == 'tv' ? 'Series' : 'Film'} • ${m.year} • ★ ${m.rating.toStringAsFixed(1)}',
                style: const TextStyle(color: Colors.white70)),
              const SizedBox(height: 14),
-             Text(m.overview.isEmpty ? 'Sinopsis belum tersedia.' : m.overview),
+             FutureBuilder<Map<String,dynamic>>(
+               future: details,
+               builder: (context, localized) {
+                 final description = (localized.data?['overview'] ?? m.overview).toString().trim();
+                 return Text(description.isEmpty ? 'Sinopsis belum tersedia.' : description);
+               },
+             ),
              if (m.type == 'tv') _seasonSection(m),
            ],
          )),

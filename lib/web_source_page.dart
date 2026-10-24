@@ -16,10 +16,11 @@ class WebSourcePage extends StatefulWidget {
   final int tmdbId, season, episode;
   final String mediaType, year;
   final ValueChanged<Uri>? onPlayerReady;
+  final ValueChanged<Uri>? onPlayIntent;
   final void Function(int positionMs, int durationMs, bool ended)? onVideoProgress;
   final VoidCallback? onFullscreenExit;
   const WebSourcePage({super.key, required this.title, required this.url, this.focused = false,
-    this.embedded = false, this.tmdbId = 0, this.mediaType = 'movie', this.year = '', this.season = 0, this.episode = 0, this.onPlayerReady, this.onVideoProgress, this.onFullscreenExit});
+    this.embedded = false, this.tmdbId = 0, this.mediaType = 'movie', this.year = '', this.season = 0, this.episode = 0, this.onPlayerReady, this.onPlayIntent, this.onVideoProgress, this.onFullscreenExit});
   @override
   State<WebSourcePage> createState() => _WebSourcePageState();
 }
@@ -40,6 +41,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   bool _fullScreenRouteOpen = false;
   bool _fullScreenHiding = false;
   bool _readyNotified = false;
+  bool _playIntentNotified = false;
   List<String> _serverNames = const [];
   String _selectedServer = '';
   bool _changingServer = false;
@@ -690,8 +692,25 @@ class _WebSourcePageState extends State<WebSourcePage> {
     if (current.scheme == 'https') await launchUrl(current, mode: LaunchMode.externalApplication);
   }
 
+  Future<void> _notifyPlayTap() async {
+    if (_playIntentNotified || !mounted || !_revealed || _search || _error != null || widget.onPlayIntent == null) return;
+    _playIntentNotified = true;
+    try {
+      final page = Uri.tryParse(await _controller.currentUrl() ?? '');
+      if (page != null && page.scheme == 'https' && !_isSearchUrl(page.toString())) {
+        widget.onPlayIntent!(page);
+      } else {
+        _playIntentNotified = false;
+      }
+    } catch (_) { _playIntentNotified = false; }
+  }
+
   Widget _playerBody() => Stack(children: [
-        WebViewWidget(controller: _controller),
+        Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) { _notifyPlayTap(); },
+          child: WebViewWidget(controller: _controller),
+        ),
         if (!_revealed && _error == null)
           Positioned.fill(child: ColoredBox(color: const Color(0xff101014),
             child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
