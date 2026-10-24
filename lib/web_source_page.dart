@@ -168,10 +168,18 @@ class _WebSourcePageState extends State<WebSourcePage> {
             }
           }
           const poster = card.querySelector('img') || a.querySelector('img');
-          if (!poster) return;
+          // Search result pages often store the authoritative title/year in
+          // the result URL rather than in the card's visible caption.
+          let slug = '';
+          try { slug = decodeURIComponent(u.pathname.split('/').filter(Boolean).pop() || ''); }
+          catch (_) { slug = u.pathname.split('/').filter(Boolean).pop() || ''; }
+          const slugTitle = slug.replace(/-(?:19|20)\d{2}$/, '').replace(/-/g, ' ');
+          // Do not match unrelated navigation links: require poster/card or
+          // a source-style dated detail URL.
+          if (!poster && !/-(?:19|20)\d{2}$/.test(slug)) return;
           const heading = card.querySelector('.poster-title,.video-title,.title,h2,h3,h4,figcaption');
           const possible = [heading?.textContent, a.getAttribute('title'),
-            poster.getAttribute('alt'), a.textContent,
+            poster?.getAttribute('alt'), a.textContent, slugTitle,
             ...Array.from(card.querySelectorAll('a[title],a[href]')).slice(0,8)
               .flatMap(link => [link.getAttribute('title'),link.textContent])
           ].filter(Boolean);
@@ -187,7 +195,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
               overlapMatch(cleaned);
           });
           if (!titleOK) return;
-          const text = [card.innerText, poster.getAttribute('alt'), a.getAttribute('title'),
+          const text = [card.innerText, poster?.getAttribute('alt'), a.getAttribute('title'), slug,
             card.querySelector('.year,.date,[itemprop="datePublished"]')?.textContent].filter(Boolean).join(' ');
           const years = text.match(/(?:19|20)\d{2}/g) || [];
           if (expectedYear && !years.some(y => Math.abs(Number(y) - Number(expectedYear)) <= 1)) return;
