@@ -211,7 +211,8 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  }
  Widget _pick<T>(String caption,T value,List<DropdownMenuItem<T>> options,ValueChanged<T?> update)=>DropdownButtonFormField<T>(
   value:value,isExpanded:true,decoration:InputDecoration(labelText:caption,isDense:true,filled:true,fillColor:const Color(0xff20252e),border:OutlineInputBorder(borderRadius:BorderRadius.circular(12))),items:options,onChanged:(v){update(v);_reset();});
- @override Widget build(BuildContext context)=>Column(children:[
+ @override Widget build(BuildContext context)=>CustomScrollView(controller:scroll,slivers:[
+  SliverToBoxAdapter(child:Column(children:[
   Padding(padding:const EdgeInsets.fromLTRB(12,5,12,9),child:Column(children:[
    Row(children:[
     Expanded(child:_pick<String>('Urut berdasarkan',sort,const [
@@ -232,7 +233,12 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     DropdownMenuItem(value:'JP',child:Text('Jepang')),DropdownMenuItem(value:'KR',child:Text('Korea')),DropdownMenuItem(value:'CN',child:Text('China'))],(v){country=v??'';}),
   ])),
   Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:6),child:Align(alignment:Alignment.centerLeft,child:Text('Katalog ${type=='all'?'Film & Series':type=='tv'?'Series':'Film'}',style:const TextStyle(fontSize:19,fontWeight:FontWeight.w800)))),
-  Expanded(child:error.isNotEmpty&&results.isEmpty?Center(child:TextButton(onPressed:_fetch,child:Text(error))):results.isEmpty&&busy?const Center(child:CircularProgressIndicator()):results.isEmpty?const Center(child:Text('Tidak ada hasil sesuai filter')):GridView.builder(controller:scroll,padding:const EdgeInsets.all(12),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:.58,mainAxisSpacing:14,crossAxisSpacing:12),itemCount:results.length+(busy||error.isNotEmpty?1:0),itemBuilder:(context,i){if(i==results.length)return Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:const Text('Coba lagi')):const CircularProgressIndicator());return MovieTile(movie:results[i],onTap:widget.onTap);}))
+  ])),
+  if(results.isEmpty) SliverFillRemaining(hasScrollBody:false,child:Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:Text(error)):busy?const CircularProgressIndicator():const Text('Tidak ada hasil sesuai filter'))),
+  if(results.isNotEmpty) SliverPadding(padding:const EdgeInsets.all(12),sliver:SliverGrid(delegate:SliverChildBuilderDelegate((context,i){
+   if(i==results.length)return Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:const Text('Coba lagi')):const CircularProgressIndicator());
+   return MovieTile(movie:results[i],onTap:widget.onTap);
+  },childCount:results.length+(busy||error.isNotEmpty?1:0)),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:.58,mainAxisSpacing:14,crossAxisSpacing:12))),
  ]);
 }
 class CinemaHero extends StatefulWidget {
