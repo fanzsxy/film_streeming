@@ -128,6 +128,12 @@ class _WebSourcePageState extends State<WebSourcePage> {
           .replace(/[\u0300-\u036f]/g, '').replace(/&amp;/g, '&')
           .replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
         const targets = TARGET_ALIASES.map(norm).filter(Boolean);
+        // Compare distinctive words when distributors use a different English
+        // title ordering (e.g. "Mafia in White" vs "Age of the White Mafia").
+        // This is never enough alone: year, media type and unique URL are checked.
+        const distinctive = v => norm(v).split(' ').filter(w =>
+          w && !['a','an','the','of','in','at','and','age'].includes(w)).sort().join(' ');
+        const targetWords = targets.map(distinctive).filter(v => v.split(' ').length >= 3);
         const expectedYear = TARGET_YEAR;
         const isSeries = TARGET_SERIES;
         const matches = new Map();
@@ -152,7 +158,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
             card.querySelector('a[title]')?.getAttribute('title')].filter(Boolean);
           const titleOK = possible.some(v => {
             const cleaned = v.replace(/\s*\((?:19|20)\d{2}\)\s*[-–]?\s*(?:series|movie|film)?\s*$/i,'').trim();
-            return targets.includes(norm(cleaned));
+            const candidate = norm(cleaned);
+            return targets.includes(candidate) ||
+              (targetWords.length > 0 && targetWords.includes(distinctive(candidate)));
           });
           if (!titleOK) return;
           const text = [card.innerText, poster.getAttribute('alt'), a.getAttribute('title'),
