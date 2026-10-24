@@ -183,7 +183,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
             ...Array.from(card.querySelectorAll('a[title],a[href]')).slice(0,8)
               .flatMap(link => [link.getAttribute('title'),link.textContent])
           ].filter(Boolean);
-          const titleOK = possible.some(v => {
+          const sourceTitle = norm(slugTitle.replace(/^nonton\s+/, '').replace(/^watch\s+/, ''));
+          const sourceExact = targets.some(target => sourceTitle === target);
+          const titleOK = sourceExact || possible.some(v => {
             const cleaned = v.replace(/\s*\((?:19|20)\d{2}\)\s*[-–]?\s*(?:series|movie|film)?\s*$/i,'').trim();
             const candidate = norm(cleaned);
             return targets.includes(candidate) ||
@@ -202,7 +204,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
           const tag = (card.innerText || '').toLowerCase();
           if (isSeries && /\b(movie|film)\b/.test(tag) && !/\b(series|eps|episode|s\.?[1-9])\b/.test(tag)) return;
           // Only same-site title detail links are candidates; do not guess a URL.
-          matches.set(u.href, {url:u.href, exact: years.includes(expectedYear)});
+          const sameYear=years.includes(expectedYear);
+          const slugYear=slug.match(/(?:19|20)\d{2}$/)?.[0] === expectedYear;
+          matches.set(u.href, {url:u.href, exact: sameYear && sourceExact, score: (sourceExact?10:0)+(slugYear?5:0)+(sameYear?2:0)});
         });
         return JSON.stringify([...matches.values()]);
       })()'''.replaceAll('TARGET_ALIASES', jsonEncode(_titleAliases))
@@ -213,9 +217,12 @@ class _WebSourcePageState extends State<WebSourcePage> {
       if (decoded is String) { try { decoded = jsonDecode(decoded); } catch (_) {} }
       if (decoded is String) { try { decoded = jsonDecode(decoded); } catch (_) {} }
       if (decoded is List) {
-        final exact = decoded.where((e) => e is Map && e['exact'] == true).toList();
-        final choices = exact.isNotEmpty ? exact : decoded;
-        if (choices.length != 1 || choices.first is! Map) return false;
+        final candidates=decoded.whereType<Map>().toList();
+        candidates.sort((a,b)=>((b['score'] as num?)??0).compareTo((a['score'] as num?)??0));
+        if(candidates.isEmpty)return false;
+        final bestScore=(candidates.first['score'] as num?)??0;
+        final choices=candidates.where((e)=>((e['score'] as num?)??0)==bestScore).toList();
+        if(choices.length != 1 || bestScore < 2)return false;
         final link = Uri.tryParse((choices.first as Map)['url']?.toString() ?? '');
         if (link != null && link.scheme == 'https' && link.host == widget.url.host && !_isSearchUrl(link.toString())) {
           _noMatch = false;
