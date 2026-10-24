@@ -294,7 +294,7 @@ Future<void> recordWebOpen(Movie movie, Uri url, {int season = 0, int episode = 
 }
 
 Future<void> recordWebProgress(Movie movie, Uri page, int positionMs, int durationMs, bool ended, {int season = 0, int episode = 0}) async {
-  if (page.scheme != 'https' || durationMs <= 0 || (positionMs <= 0 && !ended)) return;
+  if (page.scheme != 'https' || durationMs <= 0 || (positionMs < 100 && !ended)) return;
   final key = movie.type == 'tv' ? 'tv:${movie.id}:$season:$episode' : 'movie:${movie.id}';
   final prior = WatchStore.find(key);
   final completed = (prior?.completed ?? false) || ended || positionMs / durationMs >= .90;

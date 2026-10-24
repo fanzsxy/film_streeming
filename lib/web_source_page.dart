@@ -405,26 +405,42 @@ class _WebSourcePageState extends State<WebSourcePage> {
         if (window.__fsProgressObserver) return;
         window.__fsProgressObserver = true;
         const bound = new WeakSet();
-        const attach = () => {
-          document.querySelectorAll('video').forEach(v => {
-            if (bound.has(v)) return;
-            bound.add(v);
-            let last = -1;
-            const send = (ended = false) => {
-              const d = Number(v.duration), p = Number(v.currentTime);
-              if (!Number.isFinite(d) || !Number.isFinite(p) || d <= 0 || d > 86400 || p < 0) return;
-              const sec = Math.floor(p);
-              if (!ended && sec - last < 5) return;
-              last = sec;
-              FilmStreamProgress.postMessage(JSON.stringify({positionMs: Math.round(p*1000), durationMs: Math.round(d*1000), ended}));
-            };
-            v.addEventListener('timeupdate', () => send());
-            v.addEventListener('pause', () => send());
-            v.addEventListener('ended', () => send(true));
-          });
+        const attach = (doc) => {
+          try {
+            doc.querySelectorAll('video').forEach(v => {
+              if (bound.has(v)) return;
+              bound.add(v);
+              let lastSentAt = -1;
+              let started = false;
+              const send = (ended = false) => {
+                const d = Number(v.duration), p = Number(v.currentTime);
+                if (!Number.isFinite(d) || !Number.isFinite(p) || d <= 0 || d > 86400 || p < 0) return;
+                // A loaded page or a play click is not proof of watching.
+                // Record as soon as measured playback reaches 0.1 seconds.
+                if (!ended && p < 0.1) return;
+                if (!ended && started && p - lastSentAt < 1 && p < d * 0.9) return;
+                started = true;
+                lastSentAt = p;
+                FilmStreamProgress.postMessage(JSON.stringify({positionMs: Math.round(p*1000), durationMs: Math.round(d*1000), ended}));
+              };
+              v.addEventListener('timeupdate', () => send());
+              v.addEventListener('playing', () => send());
+              v.addEventListener('pause', () => send());
+              v.addEventListener('seeked', () => send());
+              v.addEventListener('ended', () => send(true));
+            });
+            doc.querySelectorAll('iframe').forEach(frame => {
+              // Same-origin frames are readable; cross-origin players cannot be
+              // inspected or claimed to have completed without an official API.
+              try { if (frame.contentDocument) attach(frame.contentDocument); } catch (_) {}
+            });
+          } catch (_) {}
         };
-        attach();
-        new MutationObserver(attach).observe(document.documentElement, {childList:true, subtree:true});
+        attach(document);
+        new MutationObserver(() => attach(document)).observe(document.documentElement, {childList:true, subtree:true});
+        document.addEventListener('load', e => {
+          if (e.target && e.target.tagName === 'IFRAME') attach(document);
+        }, true);
       })();''');
     } catch (_) { /* Cross-origin iframe progress is not accessible. */ }
   }
