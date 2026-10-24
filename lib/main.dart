@@ -278,6 +278,7 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
 
  int? selectedSeason;
  int? playingSeason, playingEpisode;
+ Future<Uri>? episodeSourceFuture;
  final Map<int, Future<Map<String, dynamic>>> episodeFutures = {};
  final ScrollController detailScroll = ScrollController();
  Widget _seasonSection(Movie m) {
@@ -351,7 +352,9 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
                    trailing: Row(mainAxisSize:MainAxisSize.min,children:[
                      const Icon(Icons.play_circle_outline),
                    ]),
-                   onTap: () { setState(() { playingSeason = active; playingEpisode = number; });
+                   onTap: () { if (playingSeason != active || playingEpisode != number) {
+                       setState(() { playingSeason = active; playingEpisode = number; episodeSourceFuture = resolveSourcePage(m); });
+                     }
                      if (detailScroll.hasClients) detailScroll.animateTo(0,duration:const Duration(milliseconds:280),curve:Curves.easeOut);
                    },
                  )); });
@@ -368,23 +371,34 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
      appBar: AppBar(title: Text(m.title, maxLines: 1, overflow: TextOverflow.ellipsis),
        actions: [IconButton(icon: Icon(favorite ? Icons.favorite : Icons.favorite_border),
          onPressed: () { widget.onFavorite(); setState(() => favorite = !favorite); })]),
-     body: ListView(controller: detailScroll, children: [
-       if (m.type == 'movie') inlineSource(m, resolved: sourceFuture, onFullscreenExit: () { if (detailScroll.hasClients) detailScroll.jumpTo(0); })
+     // Keep the Android WebView outside the scrolling episode list. The same
+     // platform view stays mounted while the user scrolls or selects a season.
+     body: Column(children: [
+       if (m.type == 'movie')
+         inlineSource(m, resolved: sourceFuture, onFullscreenExit: () {
+           if (detailScroll.hasClients) detailScroll.jumpTo(0);
+         })
        else if (m.type == 'tv' && playingSeason != null && playingEpisode != null)
-         inlineSource(m, season: playingSeason!, episode: playingEpisode!, onFullscreenExit: () { if (detailScroll.hasClients) detailScroll.jumpTo(0); })
-       else if (m.backdrop.isNotEmpty) Image.network('$imageRoot${m.backdrop}',
-         height: 190, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.shrink()),
-       Padding(padding: const EdgeInsets.all(16), child: Column(
-         crossAxisAlignment: CrossAxisAlignment.start, children: [
-           Text(m.title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-           const SizedBox(height: 8),
-           Text('${m.type == 'tv' ? 'Series' : 'Film'} • ${m.year} • ★ ${m.rating.toStringAsFixed(1)}',
-             style: const TextStyle(color: Colors.white70)),
-           const SizedBox(height: 14),
-           Text(m.overview.isEmpty ? 'Sinopsis belum tersedia.' : m.overview),
-           if (m.type == 'tv') _seasonSection(m),
-         ],
-       )),
+         inlineSource(m, season: playingSeason!, episode: playingEpisode!,
+           resolved: episodeSourceFuture, onFullscreenExit: () {
+             if (detailScroll.hasClients) detailScroll.jumpTo(0);
+           })
+       else if (m.type == 'tv' && m.backdrop.isNotEmpty)
+         Image.network('$imageRoot${m.backdrop}', height: 190, width: double.infinity,
+           fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+       Expanded(child: ListView(controller: detailScroll, children: [
+         Padding(padding: const EdgeInsets.all(16), child: Column(
+           crossAxisAlignment: CrossAxisAlignment.start, children: [
+             Text(m.title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+             const SizedBox(height: 8),
+             Text('${m.type == 'tv' ? 'Series' : 'Film'} • ${m.year} • ★ ${m.rating.toStringAsFixed(1)}',
+               style: const TextStyle(color: Colors.white70)),
+             const SizedBox(height: 14),
+             Text(m.overview.isEmpty ? 'Sinopsis belum tersedia.' : m.overview),
+             if (m.type == 'tv') _seasonSection(m),
+           ],
+         )),
+       ])),
      ]),
    );
  }
