@@ -182,7 +182,7 @@ class _CinemaHeroState extends State<CinemaHero> {
       Image.network('$imageRoot${m.backdrop}',fit:BoxFit.cover,gaplessPlayback:true,errorBuilder:(_,__,___)=>const ColoredBox(color:Color(0xff252a34))),
       const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Colors.transparent,Color(0xdd000000)]))),
       Positioned(bottom:13,left:15,right:15,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m.title,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800,fontSize:21)),Text('Film · ${m.year}  ★ ${m.rating.toStringAsFixed(1)}',style:const TextStyle(fontSize:12,color:Colors.white70))]))
-    ]))))}),
+    ]))));})),
    const SizedBox(height:5),
    Row(mainAxisAlignment:MainAxisAlignment.center,children:List.generate(entries.length,(i)=>AnimatedContainer(duration:const Duration(milliseconds:180),margin:const EdgeInsets.symmetric(horizontal:3),width:i==selected?16:5,height:5,decoration:BoxDecoration(color:i==selected?const Color(0xffe5aa55):Colors.white30,borderRadius:BorderRadius.circular(4))))),
   ]);
