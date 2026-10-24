@@ -170,7 +170,7 @@ class Tmdb {
       // Remove very low-information TMDB submissions, even from search.
       // Search is slightly more permissive so niche works can still be found.
       // Stronger quality threshold on browse; search keeps a little room for niche titles.
-      if(votes<(search?25:75)||rating<4.5||overview.length<40)return false;
+      if(!search&&(votes<75||rating<4.5||overview.length<40))return false;
       if(!search&&backdrop.isEmpty)return false;
       // Exclude apparent clips, bonus material, promos and TV specials using
       // the title only when it clearly describes non-feature content.
@@ -388,7 +388,19 @@ class PagedGrid extends StatefulWidget {final String title,endpoint,type;final M
 class _PagedGridState extends State<PagedGrid> {final items=<Movie>[];int page=0;bool busy=false,more=true;String error='';final scroll=ScrollController();
  @override void initState(){super.initState();fetch();scroll.addListener((){if(scroll.hasClients&&scroll.position.pixels>scroll.position.maxScrollExtent-550)fetch();});}
  @override void dispose(){scroll.dispose();super.dispose();}
- Future<void> fetch() async {if(busy||!more)return;setState(()=>busy=true);try{final next=await Tmdb.list(widget.endpoint,page:page+1,params:widget.params,type:widget.type);if(!mounted)return;setState((){page++;items.addAll(next.where((m)=>!items.any((x)=>x.id==m.id&&x.type==m.type)));more=next.isNotEmpty&&page<50;error='';});}catch(e){if(mounted)setState(()=>error='$e');}finally{if(mounted)setState(()=>busy=false);}}
+ Future<void> fetch() async {if(busy||!more)return;setState(()=>busy=true);try{var next=await Tmdb.list(widget.endpoint,page:page+1,params:widget.params,type:widget.type);
+    if(next.isEmpty && page==0 && widget.endpoint=='search/multi'){
+      final query=(widget.params['query']??'').toLowerCase();
+      final terms=query.split(RegExp(r'[^a-z0-9]+')).where((w)=>w.length>=4).toList();
+      if(terms.length>=3){
+        final candidates=await Tmdb.list('search/multi',
+          params:{'query':terms.first,'include_adult':'false'},type:widget.type);
+        next=candidates.where((m){
+          final title=m.title.toLowerCase();
+          return terms.where((word)=>title.contains(word)).length>=2;
+        }).toList();
+      }
+    }if(!mounted)return;setState((){page++;items.addAll(next.where((m)=>!items.any((x)=>x.id==m.id&&x.type==m.type)));more=next.isNotEmpty&&page<50;error='';});}catch(e){if(mounted)setState(()=>error='$e');}finally{if(mounted)setState(()=>busy=false);}}
  @override Widget build(BuildContext context)=>Column(children:[Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:10),child:Align(alignment:Alignment.centerLeft,child:Text(widget.title,style:const TextStyle(fontSize:21,fontWeight:FontWeight.bold)))),Expanded(child:items.isEmpty&&busy?const Center(child:CircularProgressIndicator()):items.isEmpty&&error.isNotEmpty?Center(child:FilledButton(onPressed:fetch,child:Text('Gagal memuat — coba lagi ($error)'))):items.isEmpty?const Center(child:Text('Tidak ditemukan')):GridView.builder(controller:scroll,padding:const EdgeInsets.all(12),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:.58,mainAxisSpacing:14,crossAxisSpacing:12),itemCount:items.length+(busy||error.isNotEmpty?1:0),itemBuilder:(context,i){if(i==items.length)return Center(child:error.isNotEmpty?TextButton(onPressed:fetch,child:const Text('Coba lagi')):const CircularProgressIndicator());return MovieTile(movie:items[i],onTap:widget.onTap);}))]);}
 
 // Adapter percobaan untuk API metadata LK21 tidak resmi. Tidak mengekstrak stream.
