@@ -102,6 +102,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
     (u.path == '/search' || u.path == '/search/' || u.path.startsWith('/search/')); }
   Future<void> _initialLoad() async {
     _noMatch = false;
+    _searchedTitles.clear();
     await _loadTitleAliases();
     _searchedTitles.add(_normalizeTitle(_matchTitle));
     Uri target = widget.url;
@@ -143,19 +144,23 @@ class _WebSourcePageState extends State<WebSourcePage> {
           let u; try { u = new URL(a.getAttribute('href') || '', location.href); } catch (_) { return; }
           if (u.protocol !== 'https:' || u.host !== location.host ||
               u.pathname === '/' || u.pathname.startsWith('/search')) return;
-          let card = a;
-          for (let i = 0; i < 4 && card.parentElement; i++) {
-            if (card.querySelector('img') &&
-                (card.querySelector('h2,h3,h4,.title,.poster-title,.video-title') ||
-                 (card.innerText || '').trim().length > 8)) break;
-            card = card.parentElement;
+          let card = a.closest('article,li,.item,.movie,.film,.video,.poster,.ml-item,.grid-item');
+          if (!card) {
+            card = a;
+            for (let i = 0; i < 5 && card.parentElement; i++) {
+              if (card.querySelector('img') && card.querySelectorAll('a[href]').length >= 2 &&
+                  (card.innerText || '').trim().length >= 5) break;
+              card = card.parentElement;
+            }
           }
           const poster = card.querySelector('img') || a.querySelector('img');
           if (!poster) return;
           const heading = card.querySelector('.poster-title,.video-title,.title,h2,h3,h4,figcaption');
           const possible = [heading?.textContent, a.getAttribute('title'),
             poster.getAttribute('alt'), a.textContent,
-            card.querySelector('a[title]')?.getAttribute('title')].filter(Boolean);
+            ...Array.from(card.querySelectorAll('a[title],a[href]')).slice(0,8)
+              .flatMap(link => [link.getAttribute('title'),link.textContent])
+          ].filter(Boolean);
           const titleOK = possible.some(v => {
             const cleaned = v.replace(/\s*\((?:19|20)\d{2}\)\s*[-–]?\s*(?:series|movie|film)?\s*$/i,'').trim();
             const candidate = norm(cleaned);
@@ -544,7 +549,11 @@ class _WebSourcePageState extends State<WebSourcePage> {
               return;
             }
           }
-          if (_focused && _isSearchUrl(url) && await _autoMatchSearch()) return;
+          if (_focused && _isSearchUrl(url)) {
+            await Future<void>.delayed(const Duration(milliseconds: 650));
+            if (!mounted || generation != _navigationGeneration) return;
+            if (await _autoMatchSearch()) return;
+          }
           if (!mounted || generation != _navigationGeneration) return;
           if (_focused && _isTv && !_isSearchUrl(url)) {
             await _collectEpisodeLinks();
@@ -794,7 +803,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Icon(_noMatch ? Icons.movie_filter_outlined : Icons.info_outline, size: 38, color: Colors.white70),
                 const SizedBox(height: 12),
-                Text(_noMatch ? 'Film atau series belum ditemukan' : 'Sumber pemutar belum dapat dipastikan',
+                Text(_noMatch ? 'Belum menemukan hasil yang cocok' : 'Sumber pemutar belum dapat dipastikan',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                 const SizedBox(height: 8),
                 Text(_noMatch
