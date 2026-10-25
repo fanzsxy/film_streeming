@@ -13,10 +13,10 @@ class CatalogBrowser extends StatefulWidget {
 
 class _CatalogBrowserState extends State<CatalogBrowser> {
   late final Future<List<CatalogEntry>> entries = FilmStreamCatalog.load();
-  int visible = 60;
+  int visible = 24;
   @override void didUpdateWidget(covariant CatalogBrowser old) {
     super.didUpdateWidget(old);
-    if (old.query != widget.query || old.type != widget.type) visible = 60;
+    if (old.query != widget.query || old.type != widget.type) visible = 24;
   }
   @override Widget build(BuildContext context) => FutureBuilder<List<CatalogEntry>>(
     future: entries, builder: (context, snapshot) {
@@ -35,18 +35,19 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
         Padding(padding: const EdgeInsets.all(12), child: Align(
           alignment: Alignment.centerLeft, child: Text('${widget.title} · ${matches.length} judul',
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
-        Expanded(child: ListView.builder(itemCount: count + (count < matches.length ? 1 : 0),
+        Expanded(child: GridView.builder(
+          padding: const EdgeInsets.all(12),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2, childAspectRatio: .57,
+            crossAxisSpacing: 12, mainAxisSpacing: 14),
+          itemCount: count + (count < matches.length ? 1 : 0),
           itemBuilder: (context, i) {
-            if (i == count) return Padding(padding: const EdgeInsets.all(16),
-              child: FilledButton(onPressed: () => setState(() => visible += 60),
-                child: const Text('Tampilkan lebih banyak')));
+            if (i == count) return Center(child: FilledButton(
+              onPressed: () => setState(() => visible += 24),
+              child: const Text('Lainnya')));
             final item = matches[i];
-            return ListTile(
-              leading: Icon(item.type == 'tv' ? Icons.tv : Icons.movie,
-                color: const Color(0xffe5aa55)),
-              title: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-              subtitle: Text('${item.year} · ${item.type == "tv" ? "Series" : "Film"}'),
-              trailing: const Icon(Icons.chevron_right),
+            return CatalogPosterTile(
+              key: ValueKey(item.url), entry: item,
               onTap: () => Navigator.push(context, MaterialPageRoute(
                 builder: (_) => CatalogDetail(entry: item))),
             );
@@ -57,6 +58,80 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
   );
 }
 
+/// TMDB is enrichment only; every tile keeps its crawler title and source URL.
+class CatalogMetadata {
+  CatalogMetadata._();
+  static final Map<String, Future<Movie?>> _cache = {};
+  static final RegExp _spaces = RegExp(r'\s+');
+  static String norm(String v) => v.toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+      .trim().replaceAll(_spaces, ' ');
+  static Future<Movie?> forEntry(CatalogEntry entry) {
+    return _cache.putIfAbsent(entry.url, () async {
+      if (entry.year <= 0) return null;
+      try {
+        final response = await Tmdb.get(
+          entry.type == 'tv' ? 'search/tv' : 'search/movie',
+          {'query': entry.title, 'include_adult': 'false'});
+        for (final raw in (response['results'] as List? ?? const [])) {
+          if (raw is! Map) continue;
+          final data = Map<String, dynamic>.from(raw);
+          final title = (data['title'] ?? data['name'] ?? '').toString();
+          final original = (data['original_title'] ?? data['original_name'] ?? '').toString();
+          final date = (data['release_date'] ?? data['first_air_date'] ?? '').toString();
+          if (date.length < 4 || int.tryParse(date.substring(0, 4)) != entry.year) continue;
+          if (norm(title) != norm(entry.title) && norm(original) != norm(entry.title)) continue;
+          if (data['id'] is num) return Movie.fromJson(data, fallback: entry.type);
+        }
+      } catch (_) {}
+      return null;
+    });
+  }
+}
+
+class CatalogPosterTile extends StatefulWidget {
+  final CatalogEntry entry;
+  final VoidCallback onTap;
+  const CatalogPosterTile({super.key, required this.entry, required this.onTap});
+  @override State<CatalogPosterTile> createState() => _CatalogPosterTileState();
+}
+
+class _CatalogPosterTileState extends State<CatalogPosterTile> {
+  late Future<Movie?> metadata = CatalogMetadata.forEntry(widget.entry);
+  @override void didUpdateWidget(covariant CatalogPosterTile old) {
+    super.didUpdateWidget(old);
+    if (old.entry.url != widget.entry.url) metadata = CatalogMetadata.forEntry(widget.entry);
+  }
+  @override Widget build(BuildContext context) => InkWell(
+    onTap: widget.onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Expanded(child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(color: const Color(0xff20252e),
+          width: double.infinity,
+          child: FutureBuilder<Movie?>(future: metadata, builder: (context, snap) {
+            final movie = snap.data;
+            if (movie == null || movie.poster.isEmpty) {
+              return Center(child: Icon(
+                widget.entry.type == 'tv' ? Icons.tv : Icons.movie_outlined,
+                size: 52, color: Colors.white54));
+            }
+            return Image.network('$imageRoot${movie.poster}',
+              fit: BoxFit.cover, width: double.infinity,
+              errorBuilder: (_, __, ___) => const Icon(Icons.movie_outlined, size: 52));
+          }),
+        ),
+      )),
+      const SizedBox(height: 7),
+      Text(widget.entry.title, maxLines: 2, overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+      Text('${widget.entry.year}  ·  ${widget.entry.type == "tv" ? "Series" : "Film"}',
+        maxLines: 1, style: const TextStyle(fontSize: 11, color: Colors.white60)),
+    ]),
+  );
+}
+
 class CatalogDetail extends StatefulWidget {
   final CatalogEntry entry;
   const CatalogDetail({super.key, required this.entry});
@@ -64,31 +139,7 @@ class CatalogDetail extends StatefulWidget {
 }
 
 class _CatalogDetailState extends State<CatalogDetail> {
-  late final Future<Movie?> metadata = findMetadata();
-  static String norm(String v) => v.toLowerCase()
-      .replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim()
-      .replaceAll(RegExp(r'\s+'), ' ');
-  Future<Movie?> findMetadata() async {
-    if (widget.entry.year <= 0) return null;
-    try {
-      final response = await Tmdb.get(
-        widget.entry.type == 'tv' ? 'search/tv' : 'search/movie',
-        {'query': widget.entry.title, 'include_adult': 'false'});
-      for (final raw in (response['results'] as List? ?? const [])) {
-        if (raw is! Map) continue;
-        final data = Map<String,dynamic>.from(raw);
-        final title = (data['title'] ?? data['name'] ?? '').toString();
-        final original = (data['original_title'] ?? data['original_name'] ?? '').toString();
-        final release = (data['release_date'] ?? data['first_air_date'] ?? '').toString();
-        if (release.length < 4 || int.tryParse(release.substring(0,4)) != widget.entry.year) continue;
-        if (norm(title) != norm(widget.entry.title) &&
-            norm(original) != norm(widget.entry.title)) continue;
-        if (data['id'] is! num) continue;
-        return Movie.fromJson(data, fallback: widget.entry.type);
-      }
-    } catch (_) { /* Keep unmatched items from catalog. */ }
-    return null;
-  }
+  late final Future<Movie?> metadata = CatalogMetadata.forEntry(widget.entry);
 
   Future<void> openSource() async {
     final uri = Uri.tryParse(widget.entry.url);
