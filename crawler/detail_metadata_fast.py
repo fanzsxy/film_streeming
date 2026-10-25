@@ -17,6 +17,7 @@ async def main():
     ap.add_argument("--limit", type=int, default=100)
     ap.add_argument("--workers", type=int, default=3)
     ap.add_argument("--delay", type=float, default=3)
+    ap.add_argument("--retry-incomplete", action="store_true", help="Revisit cached entries with missing poster or synopsis")
     ap.add_argument("--retry-rating", action="store_true")
     ap.add_argument("--retry-synopsis", action="store_true")
     args = ap.parse_args()
@@ -34,7 +35,7 @@ async def main():
             continue
         old = records.get(url)
         retry = old is not None and (
-            args.retry_rating or args.retry_synopsis
+            args.retry_rating or args.retry_synopsis or (args.retry_incomplete and (not old.get("poster_url") or not old.get("synopsis")))
         )
         if old is not None and not retry:
             continue
@@ -90,6 +91,8 @@ async def main():
                         if args.retry_rating and details["rating"] is None:
                             updated["rating"] = None
                             updated["rating_source"] = None
+                        if not updated.get("poster_url") or not updated.get("synopsis"):
+                            print(f"INCOMPLETE: {item['title']} (can retry with --retry-incomplete)")
                         async with lock:
                             records[url] = updated
                             save_atomic(OUTPUT, records)
