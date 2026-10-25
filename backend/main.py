@@ -220,7 +220,7 @@ def ai_match(payload: AiMatchRequest):
           [{"index": n, "title": x["title"], "year": x["year"]} for n,x in enumerate(observed)],
           ensure_ascii=False)
     }]}], "generationConfig": {"responseMimeType": "application/json",
-        "temperature": 0, "maxOutputTokens": 140}}
+        "temperature": 0, "maxOutputTokens": 512}}
     try:
         response = requests.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
@@ -241,8 +241,28 @@ def ai_match(payload: AiMatchRequest):
     if response.status_code != 200:
         return {"status": "gemini_http_" + str(response.status_code), "matched": False}
     try:
-        answer = response.json()["candidates"][0]["content"]["parts"][0]["text"]
-        decision = json.loads(answer)
+        body = response.json()
+        choices = body.get("candidates") or []
+        if not choices:
+            return {"status": "gemini_no_candidates", "matched": False}
+        candidate = choices[0]
+        parts = (candidate.get("content") or {}).get("parts") or []
+        texts = [part.get("text", "") for part in parts if isinstance(part, dict)]
+        answer = "".join(texts).strip()
+        if not answer:
+            reason = candidate.get("finishReason", "unknown")
+            if reason in ("MAX_TOKENS", "MAX_OUTPUT_TOKENS"):
+                return {"status": "gemini_output_truncated", "matched": False}
+            return {"status": "gemini_empty_response", "matched": False}
+        # Accept a fenced JSON answer, but do not evaluate arbitrary model text.
+        if answer.startswith("```"):
+            answer = re.sub(r"^```(?:json)?\\s*|\\s*```$", "", answer).strip()
+        try:
+            decision = json.loads(answer)
+        except json.JSONDecodeError:
+            return {"status": "gemini_invalid_json", "matched": False}
+        if not isinstance(decision, dict):
+            return {"status": "gemini_invalid_schema", "matched": False}
         index = decision.get("index", -1)
         confidence = float(decision.get("confidence", 0))
         if type(index) is not int or not 0 <= index < len(observed) or confidence < 0.9:
