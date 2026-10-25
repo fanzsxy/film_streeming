@@ -220,7 +220,14 @@ def ai_match(payload: AiMatchRequest):
           [{"index": n, "title": x["title"], "year": x["year"]} for n,x in enumerate(observed)],
           ensure_ascii=False)
     }]}], "generationConfig": {"responseMimeType": "application/json",
-        "temperature": 0, "maxOutputTokens": 512}}
+        "temperature": 0, "maxOutputTokens": 1024,
+        "responseSchema": {"type": "OBJECT",
+            "properties": {
+                "index": {"type": "INTEGER"},
+                "confidence": {"type": "NUMBER"}
+            },
+            "required": ["index", "confidence"],
+            "propertyOrdering": ["index", "confidence"]}}}
     try:
         response = requests.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
@@ -256,10 +263,12 @@ def ai_match(payload: AiMatchRequest):
             return {"status": "gemini_empty_response", "matched": False}
         # Accept a fenced JSON answer, but do not evaluate arbitrary model text.
         if answer.startswith("```"):
-            answer = re.sub(r"^```(?:json)?\\s*|\\s*```$", "", answer).strip()
+            answer = re.sub(r"^```(?:json)?\s*|\s*```$", "", answer).strip()
         try:
             decision = json.loads(answer)
         except json.JSONDecodeError:
+            if candidate.get("finishReason") in ("MAX_TOKENS", "MAX_OUTPUT_TOKENS"):
+                return {"status": "gemini_output_truncated", "matched": False}
             return {"status": "gemini_invalid_json", "matched": False}
         if not isinstance(decision, dict):
             return {"status": "gemini_invalid_schema", "matched": False}
