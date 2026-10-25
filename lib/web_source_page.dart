@@ -91,35 +91,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
     for (final q in generated.take(14)) {
       if (_normalizeTitle(q) != _normalizeTitle(_matchTitle)) _searchQueries.add(q);
     }
-    if (!_canMatch || _tmdbToken.isEmpty) return;
-    try {
-      final kind = _isTv ? 'tv' : 'movie';
-      final uri = Uri.https('api.themoviedb.org', '/3/$kind/${widget.tmdbId}/alternative_titles');
-      final response = await http.get(uri, headers: {
-        'Authorization': 'Bearer $_tmdbToken', 'Accept': 'application/json',
-      }).timeout(const Duration(seconds: 6));
-      if (response.statusCode != 200) return;
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final entries = (data[_isTv ? 'results' : 'titles'] as List?) ?? const [];
-      // Use TMDB-provided alternative titles only; never translate or invent a title.
-      for (final value in entries) {
-        if (value is! Map) continue;
-        final title = (value['title'] ?? '').toString().trim();
-        if (title.length < 3 || !RegExp(r'[A-Za-z]').hasMatch(title)) continue;
-        // Ignore alternative names that drop the distinctive character/movie
-        // identity (e.g. generic "Gekijouban Naruto" for Boruto).
-        final mainWords = _normalizeTitle(_matchTitle).split(' ')
-            .where((word) => word.length >= 5 &&
-                !{'movie','series','film','naruto','gekijouban'}.contains(word))
-            .toSet();
-        final alternativeWords = _normalizeTitle(title).split(' ').toSet();
-        if (mainWords.isNotEmpty && mainWords.intersection(alternativeWords).isEmpty) continue;
-        if (_titleAliases.any((e) => _normalizeTitle(e) == _normalizeTitle(title))) continue;
-        _titleAliases.add(title);
-        _searchQueries.add(title);
-        if (_titleAliases.length >= 12) break;
-      }
-    } catch (_) { /* TMDB alternate titles are optional. */ }
+
   }
   Future<bool> _searchNextAlias() async {
     if (!_isSearchUrl(await _controller.currentUrl())) return false;
