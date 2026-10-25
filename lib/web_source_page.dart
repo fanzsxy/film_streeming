@@ -58,7 +58,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // Pop-up windows remain disabled by the Clean Player script.
   String get _matchTitle => widget.title.split(' • S').first.trim();
   bool get _isTv => widget.mediaType == 'tv' || widget.mediaType == 'series';
-  String get _cacheKey => 'fs_detail_v56_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
+  String get _cacheKey => 'fs_detail_v57_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
   bool get _canMatch => widget.tmdbId > 0 && widget.year.length == 4;
   String _normalizeTitle(String text) => text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
   Future<void> _loadTitleAliases() async {
@@ -171,10 +171,11 @@ class _WebSourcePageState extends State<WebSourcePage> {
           const heading=card?.querySelector('.poster-title,.video-title,.title,h2,h3,h4');
           const title=norm(titleFromSlug) || norm(ownTitle);
           if(!title) return;
-          const yearText=slugYear || card?.querySelector('.year,.date')?.textContent?.match(/(?:19|20)\d{2}/)?.[0] || '';
+          const yearText=slugYear || card?.querySelector('.year,.date')?.textContent?.match(/(?:19|20)\d{2}/)?.[0] ||
+            card?.querySelector('img')?.getAttribute('alt')?.match(/(?:19|20)\d{2}/)?.[0] || '';
           if(yearText && Math.abs(Number(yearText)-Number(year))>1)return;
           // Never classify a different title as exact using text from a broad card.
-          const exact=title===expected && yearText===year;
+          const exact=title===expected && (yearText===year || !yearText);
           const display=norm(ownTitle);
           const candidate={url:u.href,title:titleFromSlug || ownTitle,year:yearText,
             exact:exact, score:exact?100:((title===expected || display===expected)?50:0)};
@@ -203,9 +204,12 @@ class _WebSourcePageState extends State<WebSourcePage> {
           }
         }
         // Only observed search-page links are sent to Gemini.
-        final possible=candidates.where((e)=>
-          (e['year']?.toString()??'')==widget.year).toList();
-        if(possible.isNotEmpty && await _geminiMatchCandidates(possible))return true;
+        final possible=candidates.where((e){
+          final year=e['year']?.toString()??'';
+          return year==widget.year || year.isEmpty;
+        }).toList();
+        possible.sort((a,b)=>((b['score'] as num?)??0).compareTo((a['score'] as num?)??0));
+        if(possible.isNotEmpty && await _geminiMatchCandidates(possible.take(12).toList()))return true;
       }
     }catch(_){/* Source layout can change; do not guess a URL. */}
     finally{_matching=false;}
