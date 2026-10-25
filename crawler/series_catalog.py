@@ -95,12 +95,12 @@ YEAR_STATE = ROOT / "series_years_state.json"
 def next_year_page(html, current, category_path):
     """Only follow a linked next numbered page inside the same year category."""
     path = urlparse(current).path.rstrip("/")
-    match = re.fullmatch(re.escape(category_path) + r"/page/(\\d+)", path)
+    match = re.fullmatch(re.escape(category_path) + r"/page/(\d+)", path)
     number = int(match.group(1)) if match else 1
     for a in BeautifulSoup(html, "html.parser").select("a[href]"):
         candidate = urljoin(current, a.get("href", ""))
         parsed = urlparse(candidate)
-        match = re.fullmatch(re.escape(category_path) + r"/page/(\\d+)/?", parsed.path)
+        match = re.fullmatch(re.escape(category_path) + r"/page/(\d+)/?", parsed.path)
         if (parsed.scheme == "https" and parsed.hostname == urlparse(BASE).hostname
                 and match and int(match.group(1)) == number + 1):
             return candidate
