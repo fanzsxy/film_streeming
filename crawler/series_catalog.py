@@ -85,19 +85,66 @@ def save(items, next_url, completed=False):
         print("series_catalog.csv is open in Excel; JSON and checkpoint are safe. Close Excel before rerunning.")
 
 
+
+def next_year_page(html, current, category_path):
+    """Only follow a linked next numbered page inside the same year category."""
+    path = urlparse(current).path.rstrip("/")
+    match = re.fullmatch(re.escape(category_path) + r"/page/(\\d+)", path)
+    number = int(match.group(1)) if match else 1
+    for a in BeautifulSoup(html, "html.parser").select("a[href]"):
+        candidate = urljoin(current, a.get("href", ""))
+        parsed = urlparse(candidate)
+        match = re.fullmatch(re.escape(category_path) + r"/page/(\\d+)/?", parsed.path)
+        if (parsed.scheme == "https" and parsed.hostname == urlparse(BASE).hostname
+                and match and int(match.group(1)) == number + 1):
+            return candidate
+    return None
+
+
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Series catalog: latest or year categories")
     parser.add_argument("--pages", type=int, default=20)
     parser.add_argument("--delay", type=float, default=3)
+    parser.add_argument("--year", type=int, help="Series year category, e.g. 2026")
+    parser.add_argument("--url", help="Observed year category URL on the same host")
     args = parser.parse_args()
     if not 1 <= args.pages <= 100 or args.delay < 2:
         parser.error("--pages must be 1-100; --delay must be >= 2")
+    if args.url and args.year is None:
+        parser.error("--url requires --year")
+    if args.year is not None and not 1900 <= args.year <= 2100:
+        parser.error("--year must be 1900-2100")
+
     items = load(STORE, {})
     state = load(STATE, {})
-    if state.get("completed"):
-        print(f"Series listing already completed through last linked page. {len(items)} unique series saved.")
-        return
-    url = state.get("next_url", START)
+    category = None
+    category_path = None
+    if args.year is not None:
+        category = str(args.year)
+        initial = args.url or f"{BASE}/year/{category}"
+        parsed = urlparse(initial)
+        category_path = parsed.path.rstrip("/")
+        if (parsed.scheme != "https" or parsed.hostname != urlparse(BASE).hostname
+                or parsed.query or parsed.fragment or
+                not re.fullmatch(r"/[A-Za-z0-9/_-]+", category_path)
+                or "/page/" in category_path):
+            parser.error("Year URL must be an HTTPS category URL on tv9.nontondrama.my")
+        # Carry forward any previous year-category checkpoint.
+        old = load(YEAR_STATE, {}).get("categories", {}).get(category, {})
+        categories = state.setdefault("categories", {})
+        entry = categories.get(category, old)
+        if entry.get("start") and entry["start"] != initial:
+            parser.error("Saved year category URL differs from --url")
+        if entry.get("completed"):
+            print(f"Year {category} complete; {len(items)} series saved.")
+            return
+        url = entry.get("next_url", initial)
+    else:
+        if state.get("completed"):
+            print(f"Latest listing complete; {len(items)} unique series saved. Use --year to collect year categories.")
+            return
+        url = state.get("next_url", START)
+
     visited = set()
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=False)
@@ -110,28 +157,54 @@ def main():
                 visited.add(url)
                 try:
                     response = page.goto(url, wait_until="domcontentloaded", timeout=20000)
-                except Exception as e:
-                    print(f"Page load failed: {type(e).__name__}; stopped.")
+                except Exception as exc:
+                    print(f"Page load failed ({type(exc).__name__}); stopped.")
                     break
                 if not response or response.status >= 400:
-                    print(f"HTTP {response.status if response else 'unknown'}; stopped without bypassing.")
+                    print(f"HTTP {response.status if response else 'unknown'}; stopped.")
+                    break
+                if urlparse(page.url).hostname != urlparse(BASE).hostname:
+                    print("Unexpected redirect; stopped.")
                     break
                 page.wait_for_timeout(900)
                 html = page.content()
                 if re.search(r"captcha|verify you are human|access denied", html, re.I):
                     print("Verification required; stopped.")
                     break
-                found = cards(html, url)
+                found = cards(html, page.url)
                 if not found:
-                    print("No series cards found; check layout. Stopped.")
+                    print("No series cards found; stopped.")
+                    break
+                if category and not any(item["year"] == category for item in found.values()):
+                    print("Year category contains no matching-year cards; stopped.")
                     break
                 before = len(items)
                 items.update(found)
-                following = next_page(html, url)
-                save(items, following or url, completed=not bool(following))
-                print(f"{url}: {len(found)} cards; {len(items)-before} new; total series {len(items)}")
-                if not following:
-                    print("No next-page link on this series listing; stopped.")
+                following = (next_year_page(html, page.url, category_path) if category
+                             else next_page(html, page.url))
+                if category:
+                    state.setdefault("categories", {})[category] = {
+                        "start": initial, "next_url": following or url,
+                        "completed": not bool(following)}
+                    ROOT.mkdir(parents=True, exist_ok=True)
+                    STORE.write_text(json.dumps(items, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                    STATE.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+                    try:
+                        with CSV.open("w", newline="", encoding="utf-8-sig") as out:
+                            writer = csv.DictWriter(out, fieldnames=["title", "year", "url", "type"])
+                            writer.writeheader()
+                            writer.writerows(sorted(items.values(), key=lambda x: (x["title"].casefold(), x["year"])))
+                    except PermissionError:
+                        print("CSV locked by Excel; JSON and checkpoint saved. Close Excel before exporting.")
+                else:
+                    save(items, following or url, completed=not bool(following))
+                    # save() rewrites the checkpoint; restore year-category entries.
+                    state["next_url"] = following or url
+                    state["completed"] = not bool(following)
+                    STATE.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+                print(f"{url}: {len(found)} cards; {len(items)-before} new; total {len(items)}")
+                if not following or following in visited:
+                    print("No next linked page; stopped.")
                     break
                 url = following
                 time.sleep(args.delay)
