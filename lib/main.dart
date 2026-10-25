@@ -127,7 +127,14 @@ class LocalCatalogMetadata {
           _sourceByTmdb[_key(movie.type, movie.id)] = entry.url;
           return movie;
         } catch (_) {
-          return null;
+          return Movie.fromJson({
+            'id': -_stableId(entry.url),
+            'title': entry.title,
+            'release_date': '${entry.year}-01-01',
+            'first_air_date': '${entry.year}-01-01',
+            'media_type': entry.type,
+            'source_url': entry.url,
+          }, fallback: entry.type);
         }
       });
   static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
