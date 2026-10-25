@@ -1,7 +1,7 @@
-"""Collect public series listing metadata in a separate dataset from movies.
+"""Collect public series catalog metadata using visible Playwright Chromium.
 
-Usage: py crawler/browser_series.py --pages 20 --delay 3
-Only follows observed same-host next-page links; stops on denied access.
+Run: py crawler/browser_series.py --pages 20 --delay 3
+Series data/checkpoint are separate from movie data. No player/video extraction.
 """
 import argparse
 import csv
@@ -14,124 +14,114 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
-BASE = "https://tv9.nontondrama.my"
+from browser_catalog import BASE, YEAR, load_json
+
 START = BASE + "/latest-series"
-ROOT = Path("crawler/data")
-STORE = ROOT / "series_catalog.json"
-CSV = ROOT / "series_catalog.csv"
-STATE = ROOT / "series_state.json"
-YEAR = re.compile(r"(?<!\d)(?:19|20)\d{2}(?!\d)")
-PAGE = re.compile(r"/latest-series/page/(\d+)/?$")
+STORE = Path("crawler/data/browser_series.json")
+CSV = Path("crawler/data/browser_series.csv")
+STATE = Path("crawler/data/browser_series_state.json")
 
 
-def load(path, default):
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (FileNotFoundError, ValueError):
-        return default
-
-
-def cards(html, current):
+def series_from_html(html, current):
     soup = BeautifulSoup(html, "html.parser")
-    result = {}
+    found = {}
     for a in soup.select("a[href]"):
-        url = urljoin(current, a.get("href", ""))
-        u = urlparse(url)
+        href = urljoin(current, a.get("href", ""))
+        u = urlparse(href)
         if u.scheme != "https" or u.hostname != urlparse(BASE).hostname:
             continue
-        if u.path in ("/", "/latest-series", "/search") or "/page/" in u.path:
+        if not u.path or u.path in ("/", "/latest-series", "/search") or "/page/" in u.path:
             continue
-        card = (a.find_parent(["article", "li"]) or
-                a.find_parent(class_=re.compile(r"item|series|poster|film", re.I)) or a)
+        card = a.find_parent(["article", "li"]) or a.find_parent(
+            class_=re.compile(r"item|movie|poster|film|series", re.I)) or a
         image = card.select_one("img")
         heading = card.select_one("h2,h3,h4,.title,.poster-title")
+        if image is None and heading is None:
+            continue
         title = ((heading.get_text(" ", strip=True) if heading else "")
                  or a.get("title", "") or a.get_text(" ", strip=True)
                  or (image.get("alt", "") if image else "")).strip()
-        if not title or len(title) > 180 or (image is None and heading is None):
+        if not title or len(title) > 180:
             continue
-        year = YEAR.search(u.path.rstrip("/").split("/")[-1]) or YEAR.search(card.get_text(" ", strip=True))
-        if not year:
+        slug = u.path.rstrip("/").split("/")[-1]
+        match = YEAR.search(slug) or YEAR.search(card.get_text(" ", strip=True))
+        if not match:
             continue
-        result[url] = {"title": title, "year": year.group(),
-                       "url": url, "type": "series"}
-    return result
+        found[href] = {"title": title, "year": match.group(), "url": href, "type": "series"}
+    return found
 
 
-def next_page(html, current):
+def next_series_page(html, current):
     soup = BeautifulSoup(html, "html.parser")
-    match = PAGE.search(urlparse(current).path)
-    number = int(match.group(1)) if match else 1
+    path = urlparse(current).path.rstrip("/")
+    page_match = re.fullmatch(r"/latest-series/page/(\d+)", path)
+    number = int(page_match.group(1)) if page_match else 1
     for a in soup.select("a[href]"):
-        url = urljoin(current, a.get("href", ""))
-        u = urlparse(url)
-        m = PAGE.fullmatch(u.path)
-        if u.scheme == "https" and u.hostname == urlparse(BASE).hostname and m:
-            if int(m.group(1)) == number + 1:
-                return url
+        href = urljoin(current, a.get("href", ""))
+        parsed = urlparse(href)
+        if parsed.scheme != "https" or parsed.hostname != urlparse(BASE).hostname:
+            continue
+        candidate = re.fullmatch(r"/latest-series/page/(\d+)/?", parsed.path)
+        if candidate and int(candidate.group(1)) == number + 1:
+            return href
     return None
 
 
-def save(items, next_url, completed=False):
-    ROOT.mkdir(parents=True, exist_ok=True)
-    STORE.write_text(json.dumps(items, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    STATE.write_text(json.dumps({"next_url": next_url, "completed": completed}, indent=2) + "\n", encoding="utf-8")
+def save(items, next_url):
+    STORE.parent.mkdir(parents=True, exist_ok=True)
+    STORE.write_text(json.dumps(items, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    STATE.write_text(json.dumps({"next_url": next_url}, indent=2) + "\n", encoding="utf-8")
     try:
         with CSV.open("w", newline="", encoding="utf-8-sig") as f:
             writer = csv.DictWriter(f, fieldnames=["title", "year", "url", "type"])
             writer.writeheader()
-            writer.writerows(sorted(items.values(), key=lambda item: (item["title"].casefold(), item["year"])))
+            writer.writerows(sorted(items.values(), key=lambda x: (x["title"].casefold(), x["year"])))
     except PermissionError:
-        print("series_catalog.csv is open in Excel; JSON and checkpoint are safe. Close Excel before rerunning.")
+        print("Series CSV is open in Excel. JSON and state saved; close Excel to export CSV on next run.")
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Local LK21 series metadata collector")
     parser.add_argument("--pages", type=int, default=20)
-    parser.add_argument("--delay", type=float, default=3)
+    parser.add_argument("--delay", type=float, default=3.0)
     args = parser.parse_args()
     if not 1 <= args.pages <= 100 or args.delay < 2:
-        parser.error("--pages must be 1-100; --delay must be >= 2")
-    items = load(STORE, {})
-    state = load(STATE, {})
-    if state.get("completed"):
-        print(f"Series listing already completed through last linked page. {len(items)} unique series saved.")
-        return
-    url = state.get("next_url", START)
-    visited = set()
-    with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=False)
+        parser.error("--pages must be 1-100 and --delay must be >= 2")
+    items = load_json(STORE, {})
+    url = load_json(STATE, {}).get("next_url", START)
+    seen = set()
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
         page = browser.new_page()
         try:
             for _ in range(args.pages):
-                if url in visited:
+                if url in seen:
                     print("Pagination loop; stopped.")
                     break
-                visited.add(url)
+                seen.add(url)
                 try:
                     response = page.goto(url, wait_until="domcontentloaded", timeout=20000)
                 except Exception as e:
-                    print(f"Page load failed: {type(e).__name__}; stopped.")
+                    print(f"Navigation failed ({type(e).__name__}); stopped.")
                     break
-                if not response or response.status >= 400:
-                    print(f"HTTP {response.status if response else 'unknown'}; stopped without bypassing.")
+                if response is None or response.status >= 400:
+                    print(f"Page unavailable / access limited: {response.status if response else 'unknown'}; stopped.")
                     break
                 page.wait_for_timeout(900)
                 html = page.content()
                 if re.search(r"captcha|verify you are human|access denied", html, re.I):
-                    print("Verification required; stopped.")
+                    print("Verification requested; stopped without bypass.")
                     break
-                found = cards(html, url)
-                if not found:
-                    print("No series cards found; check layout. Stopped.")
+                cards = series_from_html(html, url)
+                if not cards:
+                    print("No series cards found; stopped. Check page markup.")
                     break
-                before = len(items)
-                items.update(found)
-                following = next_page(html, url)
-                save(items, following or url, completed=not bool(following))
-                print(f"{url}: {len(found)} cards; {len(items)-before} new; total series {len(items)}")
-                if not following:
-                    print("No next-page link on this series listing; stopped.")
+                items.update(cards)
+                following = next_series_page(html, url)
+                save(items, following or url)
+                print(f"{url}: {len(cards)} cards; total unique series {len(items)}")
+                if not following or following in seen:
+                    print("No linked next series page; stopped.")
                     break
                 url = following
                 time.sleep(args.delay)
