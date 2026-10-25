@@ -58,7 +58,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // Pop-up windows remain disabled by the Clean Player script.
   String get _matchTitle => widget.title.split(' • S').first.trim();
   bool get _isTv => widget.mediaType == 'tv' || widget.mediaType == 'series';
-  String get _cacheKey => 'fs_detail_v57_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
+  String get _cacheKey => 'fs_detail_v58_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
   bool get _canMatch => widget.tmdbId > 0 && widget.year.length == 4;
   String _normalizeTitle(String text) => text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
   Future<void> _loadTitleAliases() async {
@@ -160,9 +160,13 @@ class _WebSourcePageState extends State<WebSourcePage> {
           catch (_) {return;}
           if(u.protocol!=='https:' || u.host!==location.host ||
              u.pathname==='/' || u.pathname.startsWith('/search'))return;
-          const slug=decodeURIComponent(u.pathname.split('/').filter(Boolean).pop()||'');
+          let slug='';
+          try {slug=decodeURIComponent(u.pathname.split('/').filter(Boolean).pop()||'');}
+          catch (_) {slug=u.pathname.split('/').filter(Boolean).pop()||'';}
           const slugYear=slug.match(/(?:19|20)\d{2}$/)?.[0] || '';
-          const titleFromSlug=slug.replace(/-(?:19|20)\d{2}$/,'').replace(/-/g,' ');
+          const titleFromSlug=slug.replace(/-(?:19|20)\d{2}$/,'')
+            .replace(/^(?:nonton|watch|download|film|movie|series)-/i,'')
+            .replace(/-/g,' ');
           // Use each link's OWN title, not the text of neighboring results.
           const card=a.closest('article,li,.item,.movie,.film,.poster,.ml-item,.grid-item');
           const ownTitle=a.getAttribute('title') ||
@@ -177,12 +181,15 @@ class _WebSourcePageState extends State<WebSourcePage> {
           // Never classify a different title as exact using text from a broad card.
           const exact=title===expected && (!yearText || Math.abs(Number(yearText)-Number(year))<=1);
           const display=norm(ownTitle);
+          const score=exact?100:((title===expected || display===expected)?50:0);
+          // Ignore generic menu and footer links before limiting candidates.
+          if(score===0)return;
           const candidate={url:u.href,title:titleFromSlug || ownTitle,year:yearText,
-            exact:exact, score:exact?100:((title===expected || display===expected)?50:0)};
+            exact:exact, score};
           if(!found.has(u.href) || found.get(u.href).score<candidate.score)
             found.set(u.href,candidate);
         });
-        return JSON.stringify([...found.values()].slice(0,30));
+        return JSON.stringify([...found.values()].sort((a,b)=>b.score-a.score).slice(0,30));
       })()'''.replaceAll('TARGET_TITLE', jsonEncode(_matchTitle))
              .replaceAll('TARGET_YEAR', jsonEncode(widget.year)));
       dynamic decoded=raw;
