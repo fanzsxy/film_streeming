@@ -265,9 +265,16 @@ class _WebSourcePageState extends State<WebSourcePage> {
         final choices=candidates.where((e)=>((e['score'] as num?)??0)==bestScore).toList();
         // If multiple links have the same score, try another query rather
         // than pretending there is a playable result.
-        if(choices.length != 1 || bestScore < 12 ||
-          ((choices.first['matchedWords'] as num?)??0)<2 ||
-          ((choices.first['coverage'] as num?)??0)<0.55)return _searchNextAlias();
+        if(choices.length != 1 || bestScore < 12)return _searchNextAlias();
+        final best=choices.first;
+        final exactTitleYear=best['exact']==true;
+        final matched=((best['matchedWords'] as num?)??0).toInt();
+        final coverage=((best['coverage'] as num?)??0).toDouble();
+        // Exact full title + year is strong evidence even for a one-word
+        // title (#Float). For non-exact matches require two distinct terms.
+        if(!exactTitleYear && (matched<2 || coverage<0.55)){
+          return _searchNextAlias();
+        }
         final link = Uri.tryParse((choices.first as Map)['url']?.toString() ?? '');
         if (link != null && link.scheme == 'https' && link.host == widget.url.host && !_isSearchUrl(link.toString())) {
           _noMatch = false;
