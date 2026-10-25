@@ -89,7 +89,7 @@ class LocalCatalogMetadata {
     return uri;
   }
   static int _stableId(String source) {var hash = 0;for(final unit in source.codeUnits){hash=(hash*31+unit)&0x7fffffff;}return hash==0?1:hash;}
-  static String _norm(String s) => s.toLowerCase().replaceAll(RegExp(r'\\([^)]*\\)'), ' ').replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
+  static String _norm(String s) => s.toLowerCase().replaceAll(RegExp(r'\([^)]*\)'), ' ').replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
   static double _similarity(String a,String b){
     final x=_norm(a),y=_norm(b);
     if(x.isEmpty||y.isEmpty)return 0;
