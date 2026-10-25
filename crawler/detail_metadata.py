@@ -9,6 +9,7 @@ Does not change source catalogs or Flutter. Respect site access controls.
 import argparse
 import json
 import os
+import re
 import time
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -55,15 +56,27 @@ def parse_detail(html, page_url):
         node = soup.select_one(".desc, .description, .synopsis, .entry-content, .wp-content")
         description = node.get_text(" ", strip=True) if node else ""
     rating = None
-    for node in soup.select('[itemprop="ratingValue"], meta[property="video:rating"]'):
-        raw = node.get("content") or node.get_text(" ", strip=True)
-        try:
-            candidate = float(raw.strip().replace(",", "."))
+    rating_source = None
+    # Prefer ratings explicitly identified in page metadata or rating widgets.
+    selectors = [
+        '[itemprop="ratingValue"]', 'meta[property="video:rating"]',
+        'meta[name="rating"]', '.imdb-rating', '.imdb', '.rating',
+        '[class*="rating"]', '[class*="imdb"]',
+    ]
+    for selector in selectors:
+        for node in soup.select(selector):
+            raw = node.get("content") or node.get("data-rating") or node.get_text(" ", strip=True)
+            # Only accept a 0-10 value, never a year, vote count or duration.
+            match = re.search(r"(?<!\\d)(10(?:\\.0)?|[0-9](?:\\.[0-9])?)(?:\\s*/\\s*10)?(?!\\d)", raw or "")
+            if not match:
+                continue
+            candidate = float(match.group(1))
             if 0 <= candidate <= 10:
                 rating = candidate
+                rating_source = "source-page"
                 break
-        except (ValueError, AttributeError):
-            continue
+        if rating is not None:
+            break
     genres = []
     for a in soup.select('a[href*="/genre/"]'):
         name = a.get_text(" ", strip=True)
@@ -73,7 +86,7 @@ def parse_detail(html, page_url):
         "poster_url": image_url(poster, page_url),
         "synopsis": description[:4000],
         "rating": rating,
-        "rating_source": "source-page" if rating is not None else None,
+        "rating_source": rating_source,
         "genres": genres[:20],
     }
 
@@ -89,6 +102,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--delay", type=float, default=3)
+    parser.add_argument("--retry-missing-rating", action="store_true",
+                        help="Revisit existing entries without a rating; keep saved poster/synopsis")
     parser.add_argument("--type", choices=["movie", "series", "all"], default="all")
     args = parser.parse_args()
     if args.limit < 1 or args.delay < 2:
@@ -108,7 +123,7 @@ def main():
                 parsed = urlparse(url)
                 if parsed.scheme != "https" or parsed.hostname != HOSTS[kind]:
                     continue
-                if url in records:
+                if url in records and not (args.retry_missing_rating and records[url].get("rating") is None):
                     continue
                 if completed >= args.limit:
                     break
@@ -124,12 +139,14 @@ def main():
                         print("Access verification requested; stopping.")
                         break
                     details = parse_detail(html, page.url)
+                    previous = records.get(url, {})
                     records[url] = {
                         "title": item.get("title", ""),
                         "year": item.get("year"),
                         "type": kind,
                         "source_url": url,
-                        **details,
+                        **{key: (value if value not in (None, "", []) else previous.get(key, value))
+                           for key, value in details.items()},
                     }
                     save_atomic(OUTPUT, records)
                     completed += 1
