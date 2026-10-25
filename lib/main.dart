@@ -139,6 +139,45 @@ class LocalCatalogMetadata {
       });
   static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
     final source=await FilmStreamCatalog.load();
+    // TMDB supplies ranking only; crawler catalog remains the allow-list.
+    if (endpoint.startsWith('trending/')) {
+      final data=await Tmdb.get(endpoint, {'page':'$page'});
+      final typeFilter=endpoint.startsWith('trending/movie/')?'movie':
+          endpoint.startsWith('trending/tv/')?'tv':null;
+      final byIdentity=<String, List<CatalogEntry>>{};
+      for(final e in source){
+        if(typeFilter!=null && e.type!=typeFilter)continue;
+        byIdentity.putIfAbsent('${e.type}:${e.year}:${_norm(e.title)}',()=>[]).add(e);
+      }
+      final ranked=<Movie>[];
+      for(final raw in (data['results'] as List? ?? const [])){
+        if(raw is! Map)continue;
+        final item=Map<String,dynamic>.from(raw);
+        final media=(item['media_type']??(typeFilter=='tv'?'tv':'movie')).toString();
+        if(media!='tv'&&media!='movie')continue;
+        final date=(item['release_date']??item['first_air_date']??'').toString();
+        if(date.length<4)continue;
+        final year=int.tryParse(date.substring(0,4));
+        if(year==null)continue;
+        final titles=[(item['title']??item['name']??'').toString(),
+          (item['original_title']??item['original_name']??'').toString()];
+        final candidates=<CatalogEntry>{};
+        for(final title in titles){
+          candidates.addAll(byIdentity['${media}:${year}:${_norm(title)}']??const []);
+        }
+        if(candidates.length!=1)continue;
+        final entry=candidates.single;
+        if(item['id'] is! num)continue;
+        item['title']=entry.title;
+        item['name']=entry.title;
+        item['media_type']=entry.type;
+        item['source_url']=entry.url;
+        final movie=Movie.fromJson(item,fallback:entry.type);
+        _sourceByTmdb[_key(movie.type,movie.id)]=entry.url;
+        ranked.add(movie);
+      }
+      return ranked;
+    }
     final query=(params['query']??'').trim().toLowerCase();
     final category=endpoint.startsWith('search/')||endpoint=='trending/all/week'?null:
        endpoint.startsWith('tv/')||endpoint.contains('/tv/')?'tv':
