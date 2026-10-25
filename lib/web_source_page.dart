@@ -48,6 +48,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   String _selectedServer = '';
   bool _changingServer = false;
   final List<String> _titleAliases = [];
+  final List<String> _searchQueries = [];
   final Set<String> _searchedTitles = {};
   static const _tmdbToken = String.fromEnvironment('TMDB_TOKEN');
 
@@ -61,7 +62,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
   String _normalizeTitle(String text) => text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
   Future<void> _loadTitleAliases() async {
     _titleAliases.clear();
+    _searchQueries.clear();
     _titleAliases.add(_matchTitle);
+    _searchQueries.add(_matchTitle);
     // Search sources often return no results for long literal English titles.
     // Search with a short, recognizable prefix, then verify the full title
     // and year on the returned links before opening any detail page.
@@ -78,7 +81,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
       }
     }
     for (final q in generated.take(14)) {
-      if (_normalizeTitle(q) != _normalizeTitle(_matchTitle)) _titleAliases.add(q);
+      if (_normalizeTitle(q) != _normalizeTitle(_matchTitle)) _searchQueries.add(q);
     }
     if (!_canMatch || _tmdbToken.isEmpty) return;
     try {
@@ -97,13 +100,14 @@ class _WebSourcePageState extends State<WebSourcePage> {
         if (title.length < 3 || !RegExp(r'[A-Za-z]').hasMatch(title)) continue;
         if (_titleAliases.any((e) => _normalizeTitle(e) == _normalizeTitle(title))) continue;
         _titleAliases.add(title);
+        _searchQueries.add(title);
         if (_titleAliases.length >= 12) break;
       }
     } catch (_) { /* TMDB alternate titles are optional. */ }
   }
   Future<bool> _searchNextAlias() async {
     if (!_isSearchUrl(await _controller.currentUrl())) return false;
-    for (final title in _titleAliases) {
+    for (final title in _searchQueries) {
       final key = _normalizeTitle(title);
       if (key.isEmpty || !_searchedTitles.add(key)) continue;
       if (key == _normalizeTitle(_matchTitle)) continue;
