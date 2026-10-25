@@ -7,6 +7,7 @@ import argparse
 import csv
 import json
 import re
+import sys
 import time
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -75,7 +76,9 @@ def next_page(html, current):
 def save(items, next_url, completed=False):
     ROOT.mkdir(parents=True, exist_ok=True)
     STORE.write_text(json.dumps(items, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    STATE.write_text(json.dumps({"next_url": next_url, "completed": completed}, indent=2) + "\n", encoding="utf-8")
+    state = load(STATE, {})
+    state.update({"next_url": next_url, "completed": completed})
+    STATE.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
     try:
         with CSV.open("w", newline="", encoding="utf-8-sig") as f:
             writer = csv.DictWriter(f, fieldnames=["title", "year", "url", "type"])
@@ -109,10 +112,30 @@ def main():
     parser.add_argument("--pages", type=int, default=20)
     parser.add_argument("--delay", type=float, default=3)
     parser.add_argument("--year", type=int, help="Series year category, e.g. 2026")
+    parser.add_argument("--years", help="Comma-separated years, e.g. 2026,2025,2024")
     parser.add_argument("--url", help="Observed year category URL on the same host")
     args = parser.parse_args()
     if not 1 <= args.pages <= 100 or args.delay < 2:
         parser.error("--pages must be 1-100; --delay must be >= 2")
+    if args.years:
+        if args.year is not None or args.url:
+            parser.error("Choose --years OR --year (and optional --url)")
+        try:
+            years = [int(part.strip()) for part in args.years.split(",")]
+        except ValueError:
+            parser.error("--years must be comma-separated whole years")
+        if not years or any(y < 1900 or y > 2100 for y in years):
+            parser.error("Every year must be between 1900 and 2100")
+        original_argv = sys.argv[:]
+        try:
+            for year in dict.fromkeys(years):
+                print(f"\\n=== Year {year} ===")
+                sys.argv = [original_argv[0], "--year", str(year),
+                            "--pages", str(args.pages), "--delay", str(args.delay)]
+                main()
+        finally:
+            sys.argv = original_argv
+        return
     if args.url and args.year is None:
         parser.error("--url requires --year")
     if args.year is not None and not 1900 <= args.year <= 2100:
