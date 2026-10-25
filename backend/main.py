@@ -163,3 +163,80 @@ def source_manager_catalog(tmdb_id: int = Query(ge=1), media_type: Literal['movi
     return {'found': False, 'tmdb_id': tmdb_id, 'media_type': media_type,
             'season': season, 'episode': episode, 'source_count': 0, 'sources': [],
             'available_for_native_playback': False, 'status': 'not_inspected'}
+
+
+# Optional Gemini fallback for deciding between ALREADY-DISCOVERED metadata candidates.
+# Never allows Gemini to invent source URLs, and never exposes the API key to Flutter.
+import os
+import re
+import requests
+from typing import Literal
+
+class AiMatchCandidate(BaseModel):
+    title: str
+    year: str = ""
+    url: str
+
+class AiMatchRequest(BaseModel):
+    title: str
+    year: str
+    media_type: Literal["movie", "tv"]
+    candidates: list[AiMatchCandidate]
+
+@app.post("/ai/match")
+def ai_match(payload: AiMatchRequest):
+    from urllib.parse import urlparse
+    if not 2 <= len(payload.title) <= 180 or not re.fullmatch(r"(?:19|20)\d{2}", payload.year):
+        raise HTTPException(status_code=422, detail="Invalid film metadata")
+    if not 1 <= len(payload.candidates) <= 12:
+        raise HTTPException(status_code=422, detail="Supply 1-12 observed candidates")
+    observed = []
+    for item in payload.candidates:
+        u = urlparse(item.url)
+        if u.scheme != "https" or not u.hostname or not (
+            u.hostname == "lk21official.cc" or u.hostname.endswith(".lk21official.cc")
+        ):
+            raise HTTPException(status_code=422, detail="Source URL must be a recognized HTTPS site")
+        if len(item.title) > 180 or len(item.year) > 8 or len(item.url) > 500:
+            raise HTTPException(status_code=422, detail="Candidate field too long")
+        observed.append({"title": item.title, "year": item.year, "url": item.url})
+    key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not key:
+        return {"status": "not_configured", "matched": False}
+    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+    if not re.fullmatch(r"gemini-[a-z0-9.-]+", model):
+        raise HTTPException(status_code=500, detail="Invalid configured Gemini model")
+    instruction = (
+        "Compare TMDB film/TV metadata against webpage search candidates. "
+        "Select an index ONLY if the candidate clearly names the same work and "
+        "year is identical or within 1 year. Do not invent data or infer availability. "
+        "If uncertainty remains, return index -1. Output JSON object "
+        'with exactly keys "index" (integer) and "confidence" (number from 0 to 1).'
+    )
+    request_payload = {"contents": [{"role": "user", "parts": [{"text":
+        instruction + "\nTMDB: " + json.dumps({"title": payload.title,
+        "year": payload.year, "media_type": payload.media_type}, ensure_ascii=False) +
+        "\nObserved candidates: " + json.dumps(
+          [{"index": n, "title": x["title"], "year": x["year"]} for n,x in enumerate(observed)],
+          ensure_ascii=False)
+    }]}], "generationConfig": {"responseMimeType": "application/json",
+        "temperature": 0, "maxOutputTokens": 140}}
+    try:
+        response = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+            headers={"x-goog-api-key": key, "Content-Type": "application/json"},
+            json=request_payload, timeout=8)
+        response.raise_for_status()
+        answer = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+        decision = json.loads(answer)
+        index = decision.get("index", -1)
+        confidence = float(decision.get("confidence", 0))
+        if type(index) is not int or not 0 <= index < len(observed) or confidence < 0.9:
+            return {"status": "no_confident_match", "matched": False}
+        selected = observed[index]
+        year_match = re.search(r"(?:19|20)\d{2}", selected["year"])
+        if not year_match or abs(int(year_match.group()) - int(payload.year)) > 1:
+            return {"status": "year_mismatch", "matched": False}
+        return {"status": "matched", "matched": True, "url": selected["url"]}
+    except (requests.RequestException, ValueError, KeyError, IndexError, TypeError):
+        return {"status": "unavailable", "matched": False}
