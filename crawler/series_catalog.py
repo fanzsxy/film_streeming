@@ -205,7 +205,10 @@ def main():
                             m = re.fullmatch(re.escape(base_path) + r"/page/(\d+)/?", parsed.path)
                             if parsed.scheme == "https" and parsed.hostname == urlparse(BASE).hostname and m:
                                 numbered.append(int(m.group(1)))
-                        completed = current_num > 1 and bool(numbered) and max(numbered) <= current_num
+                        single_page = (current_num == 1 and not numbered and bool(re.search(
+                            r"Halaman\\s*1\\s*dari\\s*1\\s*total\\s*halaman",
+                            BeautifulSoup(html, "html.parser").get_text(" ", strip=True), re.I)))
+                        completed = (current_num > 1 and bool(numbered) and max(numbered) <= current_num) or single_page
                     save(items, category, following or url, completed=completed)
                     print(f"{url}: {len(new)} cards; total unique {len(items)}")
                     if not following or following in visited:
