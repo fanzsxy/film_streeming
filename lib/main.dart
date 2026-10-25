@@ -76,7 +76,6 @@ Future<void> openWatchDetail(BuildContext context, WatchEntry e) async {
 class HistoryPage extends StatelessWidget {const HistoryPage({super.key});
  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Riwayat Tontonan')),body:ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,builder:(context,items,_)=>items.isEmpty?const Center(child:Text('Belum ada riwayat. Putar video di FilmStream untuk mulai menyimpan progres.',textAlign:TextAlign.center)):ListView.builder(itemCount:items.length,itemBuilder:(context,i){final e=items[i];return ListTile(leading:e.poster.isEmpty?const SizedBox(width:50,child:Icon(Icons.movie)):Image.network('$imageRoot${e.poster}',width:50,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.movie)),title:Text(e.label,maxLines:2),subtitle:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(e.completed?'Pernah menekan player':e.subtitle=='__webview__'?(e.durationMs>0?'Terakhir ${clock(e.positionMs)} / ${clock(e.durationMs)}':'Episode/film pernah dibuka'):'Terakhir ${clock(e.positionMs)} / ${clock(e.durationMs)}'),LinearProgressIndicator(value:e.progress),const SizedBox(height:4),Text(e.completed?'Putar ulang':e.subtitle=='__webview__'?(e.durationMs>0?'Buka kembali (progres tercatat)':'Buka kembali player'):'Lanjutkan menonton',style:const TextStyle(fontSize:12))]),onTap:()=>openWatchDetail(context,e),trailing:IconButton(tooltip:'Hapus riwayat',icon:const Icon(Icons.delete_outline),onPressed:()=>WatchStore.remove(e.key)));})));
 }
-
 class LocalCatalogMetadata {
   static final Map<String, Future<Movie?>> _results = {};
   static final Map<String, String> _sourceByTmdb = {};
@@ -120,8 +119,98 @@ class LocalCatalogMetadata {
           return null;
         }
       });
-  static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) =>
-     LocalCatalogMetadata.list(endpoint,page:page,params:params,type:type);
+  static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
+    final source=await FilmStreamCatalog.load();
+    final query=(params['query']??'').trim().toLowerCase();
+    final category=endpoint.startsWith('search/')||endpoint=='trending/all/week'?null:
+       endpoint.startsWith('tv/')||endpoint.contains('/tv/')?'tv':
+       endpoint.startsWith('movie/')||endpoint.contains('/movie/')?'movie':type=='tv'?'tv':null;
+    final filtered=source.where((e)=>(category==null||e.type==category)&&(query.isEmpty||e.title.toLowerCase().contains(query))).toList()
+      ..sort((a,b){final x=b.year.compareTo(a.year);return x==0?a.title.compareTo(b.title):x;});
+    final start=(page-1)*20;
+    if(start>=filtered.length)return [];
+    final selected=filtered.skip(start).take(20).toList();
+    final found=<Movie>[];
+    for(var i=0;i<selected.length;i+=4){
+      found.addAll((await Future.wait(selected.skip(i).take(4).map(enrich))).whereType<Movie>());
+    }
+    return found;
+  }
+}
+class Tmdb {
+ static final Map<String,Future<String>> _translationCache = {};
+ // MyMemory public translation endpoint: 500 UTF-8 bytes per request.
+ static Future<String> translateOverview(String source) => _translationCache.putIfAbsent(source, () async {
+   if (source.trim().isEmpty) return source;
+   final chunks = <String>[];
+   var chunk = '';
+   for (final word in source.split(RegExp(r'\s+'))) {
+     if (word.isEmpty) continue;
+     final proposed = chunk.isEmpty ? word : '$chunk $word';
+     if (utf8.encode(proposed).length > 380 && chunk.isNotEmpty) {
+       chunks.add(chunk); chunk = word;
+     } else { chunk = proposed; }
+   }
+   if (chunk.isNotEmpty) chunks.add(chunk);
+   if (chunks.isEmpty || chunks.any((c) => utf8.encode(c).length > 500)) return source;
+   final output = <String>[];
+   for (final part in chunks) {
+     try {
+       final uri = Uri.https('api.mymemory.translated.net', '/get', {
+         'q':part, 'langpair':'en|id',
+       });
+       final r = await http.get(uri).timeout(const Duration(seconds:8));
+       if (r.statusCode != 200) return source;
+       final data = jsonDecode(r.body) as Map<String,dynamic>;
+       if ((data['responseStatus'] as num?)?.toInt() != 200) return source;
+       var result = (data['responseData']?['translatedText'] ?? '').toString().trim();
+       if (result.isEmpty || result.toUpperCase().contains('MYMEMORY WARNING')) return source;
+       result = result.replaceAll('&quot;', '"').replaceAll('&#39;', "'")
+         .replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>');
+       output.add(result);
+     } catch (_) { return source; }
+   }
+   return output.join(' ');
+ });
+ static final Map<String,Future<List<Movie>>> _railCache = {};
+ static Future<List<Movie>> rail(String endpoint, String type) => _railCache.putIfAbsent("$endpoint|$type", () => list(endpoint,type:type));
+ static Future<Map<String,dynamic>> get(String endpoint,[Map<String,String> params=const {}]) async {
+  if(tmdbToken.isEmpty)throw Exception('TMDB_TOKEN belum diatur.');
+  final uri=Uri.https('api.themoviedb.org','/3/$endpoint',{'language':'en-US',...params});
+  final r=await http.get(uri,headers:{'Authorization':'Bearer $tmdbToken','accept':'application/json'}).timeout(const Duration(seconds:20));
+  if(r.statusCode!=200)throw Exception('TMDB HTTP ${r.statusCode}');return jsonDecode(r.body) as Map<String,dynamic>;
+ }
+ // Keep titles, season names, and matching metadata in English; replace only
+ // descriptions with Indonesian when TMDB supplies a non-empty translation.
+ static Future<Map<String,dynamic>> bilingualDetail(String endpoint) async {
+  final english = await get(endpoint);
+  try {
+   final indonesian = await get(endpoint, {'language':'id-ID'});
+   final description = (indonesian['overview'] ?? '').toString().trim();
+   if (description.isNotEmpty) { english['overview'] = description; } else { english['overview'] = await translateOverview((english['overview'] ?? '').toString()); }
+   // Episode descriptions can also be localized without changing episode identity.
+   final englishEpisodes = english['episodes'];
+   final indonesianEpisodes = indonesian['episodes'];
+   if (englishEpisodes is List && indonesianEpisodes is List) {
+    final translatedByNumber = <int,String>{};
+    for (final item in indonesianEpisodes) {
+     if (item is Map && item['episode_number'] is num) {
+      final description = (item['overview'] ?? '').toString().trim();
+      if (description.isNotEmpty) translatedByNumber[(item['episode_number'] as num).toInt()] = description;
+     }
+    }
+    for (final item in englishEpisodes) {
+     if (item is Map<String,dynamic> && item['episode_number'] is num) {
+      final localized = translatedByNumber[(item['episode_number'] as num).toInt()];
+      if (localized != null) item['overview'] = localized;
+     }
+    }
+   }
+  } catch (_) { english['overview'] = await translateOverview((english['overview'] ?? '').toString()); }
+  return english;
+ }
+ static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) =>
+   LocalCatalogMetadata.list(endpoint,page:page,params:params,type:type);
 }
 class HomePage extends StatefulWidget {const HomePage({super.key});@override State<HomePage> createState()=>_HomePageState();}
 class _HomePageState extends State<HomePage> {
@@ -449,8 +538,8 @@ class _ExternalSourcePageState extends State<ExternalSourcePage> {
 }
 // Opens the known film page, or a catalogued page, or the site's normal search UI.
 Future<Uri> resolveSourcePage(Movie movie) async {
-  final saved = LocalCatalogMetadata.sourceFor(movie);
-  if (saved != null) return saved;
+  final saved=LocalCatalogMetadata.sourceFor(movie);
+  if(saved!=null)return saved;
   Uri? page;
   // A previously inspected, exact title match. No guessed embed URLs.
   if (movie.type == 'movie' && movie.id == 762509) {
