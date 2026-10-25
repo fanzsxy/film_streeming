@@ -51,6 +51,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   final List<String> _searchQueries = [];
   final Set<String> _searchedTitles = {};
   static const _tmdbToken = String.fromEnvironment('TMDB_TOKEN');
+  static const _sourceApiBase = String.fromEnvironment('SOURCE_API_BASE', defaultValue: 'https://film-streeming-api.vercel.app');
 
 
   // Follow normal HTTPS series redirects without a confirmation dialog.
@@ -162,6 +163,39 @@ class _WebSourcePageState extends State<WebSourcePage> {
     }
     await _controller.loadRequest(target);
   }
+  Future<bool> _geminiMatchCandidates(List<Map> candidates) async {
+    // Only evaluate links actually discovered in the current source DOM.
+    if (candidates.isEmpty || candidates.length > 12) return false;
+    try {
+      final base=Uri.tryParse(_sourceApiBase);
+      if(base==null || base.scheme!='https' || base.host.isEmpty)return false;
+      final values=<Map<String,String>>[];
+      for(final c in candidates){
+        final url=Uri.tryParse(c['url']?.toString()??'');
+        if(url==null || url.scheme!='https' || url.host!=widget.url.host ||
+           _isSearchUrl(url.toString()))continue;
+        values.add({'title': c['title']?.toString()??'', 'year':c['year']?.toString()??'', 'url':url.toString()});
+      }
+      if(values.isEmpty)return false;
+      final result=await http.post(base.replace(path:'/ai/match'),
+        headers:{'Content-Type':'application/json'},
+        body:jsonEncode({'title':_matchTitle,'year':widget.year,
+          'media_type':_isTv?'tv':'movie','candidates':values}))
+        .timeout(const Duration(seconds:10));
+      if(result.statusCode!=200)return false;
+      final decoded=jsonDecode(result.body);
+      if(decoded is! Map || decoded['matched']!=true)return false;
+      final target=Uri.tryParse(decoded['url']?.toString()??'');
+      if(target==null || !values.any((e)=>e['url']==target.toString()))return false;
+      if(!mounted)return false;
+      _noMatch=false;
+      _candidateUrl=target.toString();
+      setState((){_revealed=false;_loading=true;});
+      await _controller.loadRequest(target);
+      return true;
+    } catch (_) {return false;}
+  }
+
   Future<bool> _autoMatchSearch() async {
     if (!_canMatch || _matching) return false;
     _matching = true;
@@ -252,7 +286,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           const coverage=sharedWords/Math.max(expectedWords,candidateWords.length,1);
           const score=(sourceExact?25:0)+(slugYear?8:0)+(sameYear?4:0)+
             sharedWords*3+Math.round(coverage*10);
-          matches.set(u.href, {url:u.href, exact: sameYear && sourceExact,
+          matches.set(u.href, {url:u.href, title: slugTitle, year: slug.match(/(?:19|20)\\d{2}$/)?.[0] || years[0] || '', exact: sameYear && sourceExact,
             score, matchedWords:sharedWords, coverage});
         });
         return JSON.stringify([...matches.values()]);
@@ -273,7 +307,10 @@ class _WebSourcePageState extends State<WebSourcePage> {
         final choices=candidates.where((e)=>((e['score'] as num?)??0)==bestScore).toList();
         // If multiple links have the same score, try another query rather
         // than pretending there is a playable result.
-        if(choices.length != 1 || bestScore < 12)return _searchNextAlias();
+        if(choices.length != 1 || bestScore < 12){
+          if(await _geminiMatchCandidates(candidates))return true;
+          return _searchNextAlias();
+        }
         final best=choices.first;
         final exactTitleYear=best['exact']==true;
         final matched=((best['matchedWords'] as num?)??0).toInt();
@@ -281,6 +318,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
         // Exact full title + year is strong evidence even for a one-word
         // title (#Float). For non-exact matches require two distinct terms.
         if(!exactTitleYear && (matched<2 || coverage<0.55)){
+          if(await _geminiMatchCandidates(candidates))return true;
           return _searchNextAlias();
         }
         final link = Uri.tryParse((choices.first as Map)['url']?.toString() ?? '');
