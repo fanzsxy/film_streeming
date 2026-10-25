@@ -71,26 +71,49 @@ def parse_detail(html, page_url):
         description = candidates[0]
     rating = None
     rating_source = None
-    # Prefer ratings explicitly identified in page metadata or rating widgets.
-    selectors = [
-        '[itemprop="ratingValue"]', 'meta[property="video:rating"]',
-        'meta[name="rating"]', '.imdb-rating', '.imdb', '.rating',
-        '[class*="rating"]', '[class*="imdb"]',
-    ]
+    # Extract only explicit short numeric score elements; never parse arbitrary
+    # numbers from large rating containers (stars, vote counts, years).
+    score_re = re.compile(r"^(?:10(?:\.0)?|[0-9](?:\.[0-9])?)$")
+    selectors = (
+        '[itemprop="ratingValue"]', '[data-rating-value]',
+        '.rating .score', '.rating .value', '.rating .num',
+        '.rating-score', '.rating-number', '.rating-value',
+        '.imdb-rating .value', '.imdb-rating strong',
+        '.mvic-desc .rating strong',
+    )
     for selector in selectors:
         for node in soup.select(selector):
-            raw = node.get("content") or node.get("data-rating") or node.get_text(" ", strip=True)
-            # Only accept a 0-10 value, never a year, vote count or duration.
-            match = re.search(r"(?<!\\d)(10(?:\\.0)?|[0-9](?:\\.[0-9])?)(?:\\s*/\\s*10)?(?!\\d)", raw or "")
-            if not match:
-                continue
-            candidate = float(match.group(1))
-            if 0 <= candidate <= 10:
-                rating = candidate
-                rating_source = "source-page"
+            raw = (node.get("content") or node.get("data-rating-value")
+                   or node.get_text(" ", strip=True)).strip().replace(",", ".")
+            raw = re.sub(r"\s*/\s*10$", "", raw)
+            if score_re.fullmatch(raw):
+                rating = float(raw)
+                rating_source = f"source-page:{selector}"
                 break
         if rating is not None:
             break
+    # Schema.org ratingValue can also occur inside application/ld+json.
+    if rating is None:
+        for script in soup.select('script[type="application/ld+json"]'):
+            try:
+                structured = json.loads(script.string or script.get_text())
+            except (ValueError, TypeError):
+                continue
+            nodes = structured if isinstance(structured, list) else [structured]
+            for obj in nodes:
+                if not isinstance(obj, dict):
+                    continue
+                aggregate = obj.get("aggregateRating")
+                if not isinstance(aggregate, dict):
+                    continue
+                value = str(aggregate.get("ratingValue", "")).replace(",", ".")
+                best = str(aggregate.get("bestRating", "10"))
+                if score_re.fullmatch(value) and best in ("10", "10.0"):
+                    rating = float(value)
+                    rating_source = "source-page:json-ld"
+                    break
+            if rating is not None:
+                break
     genres = []
     for a in soup.select('a[href*="/genre/"]'):
         name = a.get_text(" ", strip=True)
@@ -116,6 +139,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--delay", type=float, default=3)
+    parser.add_argument("--retry-rating", action="store_true", help="Recheck saved ratings using strict selectors")
     parser.add_argument("--retry-synopsis", action="store_true",
                         help="Recheck saved entries for real story synopsis")
     parser.add_argument("--retry-missing-rating", action="store_true",
@@ -139,7 +163,7 @@ def main():
                 parsed = urlparse(url)
                 if parsed.scheme != "https" or parsed.hostname != HOSTS[kind]:
                     continue
-                if url in records and not ((args.retry_missing_rating and records[url].get("rating") is None) or args.retry_synopsis):
+                if url in records and not ((args.retry_missing_rating and records[url].get("rating") is None) or args.retry_synopsis or args.retry_rating):
                     continue
                 if completed >= args.limit:
                     break
@@ -156,6 +180,9 @@ def main():
                         break
                     details = parse_detail(html, page.url)
                     previous = records.get(url, {})
+                    if args.retry_rating and details["rating"] is None:
+                        print("No verified rating found; previous rating cleared.")
+                        previous = {**previous, "rating": None, "rating_source": None}
                     if args.retry_synopsis and not details["synopsis"]:
                         print("No story synopsis detected; existing value kept for review.")
                     records[url] = {
