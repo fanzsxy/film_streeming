@@ -58,43 +58,18 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // Pop-up windows remain disabled by the Clean Player script.
   String get _matchTitle => widget.title.split(' • S').first.trim();
   bool get _isTv => widget.mediaType == 'tv' || widget.mediaType == 'series';
-  String get _cacheKey => 'fs_detail_v55_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
+  String get _cacheKey => 'fs_detail_v56_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
   bool get _canMatch => widget.tmdbId > 0 && widget.year.length == 4;
   String _normalizeTitle(String text) => text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
   Future<void> _loadTitleAliases() async {
-    _titleAliases.clear();
-    _searchQueries.clear();
-    _titleAliases.add(_matchTitle);
-    _searchQueries.add(_matchTitle);
-    // Search sources often return no results for long literal English titles.
-    // Search with a short, recognizable prefix, then verify the full title
-    // and year on the returned links before opening any detail page.
-    final significant = _normalizeTitle(_matchTitle).split(' ')
-      .where((word) => word.length > 2 &&
-        !{'the','and','movie','film','new','with','from'}.contains(word))
-      .toList();
-    // Try overlapping windows across the WHOLE title, not just its prefix.
-    // Deduplicate and cap queries so a long title does not create dozens of loads.
-    final generated = <String>{};
-    for (var window = 4; window >= 2; window--) {
-      for (var i = 0; i + window <= significant.length; i++) {
-        generated.add(significant.skip(i).take(window).join(' '));
-      }
-    }
-    // Short titles such as "Boruto: Naruto the Movie" may be indexed by
-    // one character/name only on the source. Search individual distinctive
-    // names as fallback; these are NOT used to verify the matched film.
-    if (significant.length <= 3) {
-      for (final word in significant.where((word) => word.length >= 5)) {
-        generated.add(word);
-      }
-    }
-    for (final q in generated.take(14)) {
-      if (_normalizeTitle(q) != _normalizeTitle(_matchTitle)) _searchQueries.add(q);
-    }
-
+    _titleAliases
+      ..clear()
+      ..add(_matchTitle);
+    _searchQueries
+      ..clear()
+      ..add(_matchTitle);
   }
-  Future<bool> _searchNextAlias() async {
+    Future<bool> _searchNextAlias() async {
     if (!_isSearchUrl(await _controller.currentUrl())) return false;
     for (final title in _searchQueries) {
       final key = _normalizeTitle(title);
@@ -173,150 +148,67 @@ class _WebSourcePageState extends State<WebSourcePage> {
     _matching = true;
     try {
       final raw = await _controller.runJavaScriptReturningResult(r'''(() => {
-        const norm = s => (s || '').toLowerCase().normalize('NFKD')
-          .replace(/[\u0300-\u036f]/g, '').replace(/&amp;/g, '&')
-          .replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
-        const targets = TARGET_ALIASES.map(norm).filter(Boolean);
-        // Compare distinctive words when distributors use a different English
-        // title ordering (e.g. "Mafia in White" vs "Age of the White Mafia").
-        // This is never enough alone: year, media type and unique URL are checked.
-        const distinctive = v => norm(v).split(' ').filter(w =>
-          w && !['a','an','the','of','in','at','and','age'].includes(w)).sort().join(' ');
-        const targetWords = targets.map(distinctive).filter(v => v.split(' ').length >= 3);
-        const keywords = v => [...new Set(norm(v).split(' ').filter(w =>
-          w.length >= 3 && !['movie','film','series','episode','new','with','from','this','that','the','and','for','of'].includes(w)))];
-        // Prefer distinctive overlapping terms, not an arbitrary two-word match.
-        // "castle" remains eligible when paired with undersea and devil.
-        const overlapMatch = v => targets.some(title => {
-          const wanted = keywords(title), found = keywords(v);
-          if (wanted.length < 2 || found.length < 2) return false;
-          const shared = wanted.filter(w => found.includes(w)).length;
-          const coverage = shared / Math.max(wanted.length, found.length);
-          return shared >= 2 && coverage >= 0.55;
-        });
-        const expectedYear = TARGET_YEAR;
-        const isSeries = TARGET_SERIES;
-        const matches = new Map();
-        // A series search result often links its poster and title separately.
-        // Inspect a small shared card and avoid using unrelated surrounding results.
+        const norm = v => (v || '').toLowerCase().normalize('NFKD')
+          .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ')
+          .trim().replace(/\s+/g,' ');
+        const expected = norm(TARGET_TITLE);
+        const year = TARGET_YEAR;
+        const found = new Map();
         document.querySelectorAll('a[href]').forEach(a => {
-          let u; try { u = new URL(a.getAttribute('href') || '', location.href); } catch (_) { return; }
-          if (u.protocol !== 'https:' || u.host !== location.host ||
-              u.pathname === '/' || u.pathname.startsWith('/search')) return;
-          let card = a.closest('article,li,.item,.movie,.film,.video,.poster,.ml-item,.grid-item');
-          if (!card) {
-            card = a;
-            for (let i = 0; i < 5 && card.parentElement; i++) {
-              if (card.querySelector('img') && card.querySelectorAll('a[href]').length >= 2 &&
-                  (card.innerText || '').trim().length >= 5) break;
-              card = card.parentElement;
-            }
-          }
-          const poster = card.querySelector('img') || a.querySelector('img');
-          // Search result pages often store the authoritative title/year in
-          // the result URL rather than in the card's visible caption.
-          let slug = '';
-          try { slug = decodeURIComponent(u.pathname.split('/').filter(Boolean).pop() || ''); }
-          catch (_) { slug = u.pathname.split('/').filter(Boolean).pop() || ''; }
-          const slugTitle = slug.replace(/-(?:19|20)\d{2}$/, '').replace(/-/g, ' ');
-          // Do not match unrelated navigation links: require poster/card or
-          // a source-style dated detail URL.
-          if (!poster && !/-(?:19|20)\d{2}$/.test(slug)) return;
-          const heading = card.querySelector('.poster-title,.video-title,.title,h2,h3,h4,figcaption');
-          // Never borrow titles from neighboring result links. Each anchor
-          // must prove its own film identity using its slug or own poster/card.
-          const possible = [heading?.textContent, a.getAttribute('title'),
-            poster?.getAttribute('alt'), a.textContent, slugTitle
-          ].filter(Boolean);
-          const sourceTitle = norm(slugTitle.replace(/^nonton\s+/, '').replace(/^watch\s+/, ''));
-          const sourceExact = targets.some(target => sourceTitle === target);
-          const ownSlugWords = keywords(slugTitle);
-          const sourceOverlap = targets.some(target => {
-            const terms=keywords(target);
-            if(!terms.length)return false;
-            const shared=terms.filter(word=>ownSlugWords.includes(word)).length;
-            return shared>=Math.min(2,terms.length) &&
-              shared/Math.max(terms.length,ownSlugWords.length,1)>=0.55;
-          });
-          // A heading from a broad search-result container is insufficient:
-          // the actual destination slug must agree with the movie identity.
-          if (!sourceExact && !sourceOverlap) return;
-          const titleOK = sourceExact || possible.some(v => {
-            const cleaned = v.replace(/\s*\((?:19|20)\d{2}\)\s*[-–]?\s*(?:series|movie|film)?\s*$/i,'').trim();
-            const candidate = norm(cleaned);
-            return targets.includes(candidate) ||
-              // Source result titles may add a parenthesized original/alternate
-              // title, e.g. "Spirited Away (Sen to Chihiro no Kamikakushi)".
-              targets.some(target => candidate.startsWith(target + ' ') &&
-                /\s*\(/.test(cleaned.slice(target.length))) ||
-              (targetWords.length > 0 && targetWords.includes(distinctive(candidate))) ||
-              overlapMatch(cleaned);
-          });
-          if (!titleOK) return;
-          const text = [poster?.getAttribute('alt'), a.getAttribute('title'), slug,
-            card.querySelector('.year,.date,[itemprop="datePublished"]')?.textContent].filter(Boolean).join(' ');
-          const slugYearMatch=slug.match(/(?:19|20)\d{2}$/);
-          const years = slugYearMatch ? [slugYearMatch[0]] :
-            (text.match(/(?:19|20)\d{2}/g) || []);
-          if (expectedYear && !years.some(y => Math.abs(Number(y) - Number(expectedYear)) <= 1)) return;
-          const tag = (card.innerText || '').toLowerCase();
-          if (isSeries && /\b(movie|film)\b/.test(tag) && !/\b(series|eps|episode|s\.?[1-9])\b/.test(tag)) return;
-          // Only same-site title detail links are candidates; do not guess a URL.
-          const sameYear=years.includes(expectedYear);
-          const slugYear=slug.match(/(?:19|20)\d{2}$/)?.[0] === expectedYear;
-          const candidateWords=keywords(slugTitle);
-          const sharedWords=Math.max(0,...targets.map(title=>
-            keywords(title).filter(word=>candidateWords.includes(word)).length));
-          const expectedWords=Math.max(1,...targets.map(title=>keywords(title).length));
-          const coverage=sharedWords/Math.max(expectedWords,candidateWords.length,1);
-          const score=(sourceExact?25:0)+(slugYear?8:0)+(sameYear?4:0)+
-            sharedWords*3+Math.round(coverage*10);
-          matches.set(u.href, {url:u.href, title: slugTitle, year: slug.match(/(?:19|20)\\d{2}$/)?.[0] || years[0] || '', exact: sameYear && sourceExact,
-            score, matchedWords:sharedWords, coverage});
+          let u;
+          try { u=new URL(a.getAttribute('href') || '',location.href); }
+          catch (_) {return;}
+          if(u.protocol!=='https:' || u.host!==location.host ||
+             u.pathname==='/' || u.pathname.startsWith('/search'))return;
+          const slug=decodeURIComponent(u.pathname.split('/').filter(Boolean).pop()||'');
+          const slugYear=slug.match(/(?:19|20)\d{2}$/)?.[0] || '';
+          const titleFromSlug=slug.replace(/-(?:19|20)\d{2}$/,'').replace(/-/g,' ');
+          // Use each link's OWN title, not the text of neighboring results.
+          const card=a.closest('article,li,.item,.movie,.film,.poster,.ml-item,.grid-item');
+          const ownTitle=a.getAttribute('title') ||
+            a.querySelector('img')?.getAttribute('alt') ||
+            a.textContent?.trim() || '';
+          const heading=card?.querySelector('.poster-title,.video-title,.title,h2,h3,h4');
+          const title=norm(titleFromSlug) || norm(ownTitle);
+          if(!title) return;
+          const yearText=slugYear || card?.querySelector('.year,.date')?.textContent?.match(/(?:19|20)\d{2}/)?.[0] || '';
+          if(yearText && Math.abs(Number(yearText)-Number(year))>1)return;
+          // Never classify a different title as exact using text from a broad card.
+          const exact=title===expected && yearText===year;
+          const display=norm(ownTitle);
+          const candidate={url:u.href,title:titleFromSlug || ownTitle,year:yearText,
+            exact:exact, score:exact?100:((title===expected || display===expected)?50:0)};
+          if(!found.has(u.href) || found.get(u.href).score<candidate.score)
+            found.set(u.href,candidate);
         });
-        return JSON.stringify([...matches.values()]);
-      })()'''.replaceAll('TARGET_ALIASES', jsonEncode(_titleAliases))
-             .replaceAll('TARGET_YEAR', jsonEncode(widget.year))
-             .replaceAll('TARGET_SERIES', _isTv ? 'true' : 'false'));
-      // Android WebView can return either a JSON string or a JS-quoted JSON string.
-      dynamic decoded = raw;
-      if (decoded is String) { try { decoded = jsonDecode(decoded); } catch (_) {} }
-      if (decoded is String) { try { decoded = jsonDecode(decoded); } catch (_) {} }
-      if (decoded is List) {
+        return JSON.stringify([...found.values()].slice(0,30));
+      })()'''.replaceAll('TARGET_TITLE', jsonEncode(_matchTitle))
+             .replaceAll('TARGET_YEAR', jsonEncode(widget.year)));
+      dynamic decoded=raw;
+      if(decoded is String){try{decoded=jsonDecode(decoded);}catch(_){}}
+      if(decoded is String){try{decoded=jsonDecode(decoded);}catch(_){}}
+      if(decoded is List){
         final candidates=decoded.whereType<Map>().toList();
-        candidates.sort((a,b)=>((b['score'] as num?)??0).compareTo((a['score'] as num?)??0));
-        // A page with zero recognized results must advance to the next
-        // shorter source search, not immediately show the no-player state.
-        if(candidates.isEmpty)return _searchNextAlias();
-        final bestScore=(candidates.first['score'] as num?)??0;
-        final choices=candidates.where((e)=>((e['score'] as num?)??0)==bestScore).toList();
-        // If multiple links have the same score, try another query rather
-        // than pretending there is a playable result.
-        if(choices.length != 1 || bestScore < 12){
-          if(await _geminiMatchCandidates(candidates))return true;
-          return _searchNextAlias();
+        // A unique exact title+year can be opened without an AI call.
+        final exact=candidates.where((e)=>e['exact']==true).toList();
+        if(exact.length==1){
+          final link=Uri.tryParse(exact.single['url']?.toString()??'');
+          if(link!=null && link.scheme=='https' && link.host==widget.url.host &&
+             !_isSearchUrl(link.toString())){
+            _noMatch=false;
+            _candidateUrl=link.toString();
+            if(mounted)setState((){_revealed=false;_loading=true;});
+            await _controller.loadRequest(link);
+            return true;
+          }
         }
-        final best=choices.first;
-        final exactTitleYear=best['exact']==true;
-        final matched=((best['matchedWords'] as num?)??0).toInt();
-        final coverage=((best['coverage'] as num?)??0).toDouble();
-        // Exact full title + year is strong evidence even for a one-word
-        // title (#Float). For non-exact matches require two distinct terms.
-        if(!exactTitleYear && (matched<2 || coverage<0.55)){
-          if(await _geminiMatchCandidates(candidates))return true;
-          return _searchNextAlias();
-        }
-        final link = Uri.tryParse((choices.first as Map)['url']?.toString() ?? '');
-        if (link != null && link.scheme == 'https' && link.host == widget.url.host && !_isSearchUrl(link.toString())) {
-          _noMatch = false;
-          _candidateUrl = link.toString();
-          if (mounted) setState(() { _revealed = false; _loading = true; });
-          await _controller.loadRequest(link);
-          return true;
-        }
+        // Only observed search-page links are sent to Gemini.
+        final possible=candidates.where((e)=>
+          (e['year']?.toString()??'')==widget.year).toList();
+        if(possible.isNotEmpty && await _geminiMatchCandidates(possible))return true;
       }
-    } catch (_) { /* A changed site DOM must fall back to manual search. */ }
-    finally { _matching = false; }
+    }catch(_){/* Source layout can change; do not guess a URL. */}
+    finally{_matching=false;}
     return _searchNextAlias();
   }
   String _episodeCacheKey(int season, int episode) =>
