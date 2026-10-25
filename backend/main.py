@@ -186,7 +186,7 @@ class AiMatchRequest(BaseModel):
 @app.post("/ai/match")
 def ai_match(payload: AiMatchRequest):
     from urllib.parse import urlparse
-    if not 2 <= len(payload.title) <= 180 or not re.fullmatch(r"(?:19|20)\\d{2}", payload.year):
+    if not 2 <= len(payload.title) <= 180 or not re.fullmatch(r"(?:19|20)\d{2}", payload.year):
         raise HTTPException(status_code=422, detail="Invalid film metadata")
     if not 1 <= len(payload.candidates) <= 12:
         raise HTTPException(status_code=422, detail="Supply 1-12 observed candidates")
@@ -214,9 +214,9 @@ def ai_match(payload: AiMatchRequest):
         'with exactly keys "index" (integer) and "confidence" (number from 0 to 1).'
     )
     request_payload = {"contents": [{"role": "user", "parts": [{"text":
-        instruction + "\\nTMDB: " + json.dumps({"title": payload.title,
+        instruction + "\nTMDB: " + json.dumps({"title": payload.title,
         "year": payload.year, "media_type": payload.media_type}, ensure_ascii=False) +
-        "\\nObserved candidates: " + json.dumps(
+        "\nObserved candidates: " + json.dumps(
           [{"index": n, "title": x["title"], "year": x["year"]} for n,x in enumerate(observed)],
           ensure_ascii=False)
     }]}], "generationConfig": {"responseMimeType": "application/json",
@@ -234,7 +234,7 @@ def ai_match(payload: AiMatchRequest):
         if type(index) is not int or not 0 <= index < len(observed) or confidence < 0.9:
             return {"status": "no_confident_match", "matched": False}
         selected = observed[index]
-        year_match = re.search(r"(?:19|20)\\d{2}", selected["year"])
+        year_match = re.search(r"(?:19|20)\d{2}", selected["year"])
         if not year_match or abs(int(year_match.group()) - int(payload.year)) > 1:
             return {"status": "year_mismatch", "matched": False}
         return {"status": "matched", "matched": True, "url": selected["url"]}
