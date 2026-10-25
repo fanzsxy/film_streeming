@@ -206,7 +206,7 @@ def main():
                             if parsed.scheme == "https" and parsed.hostname == urlparse(BASE).hostname and m:
                                 numbered.append(int(m.group(1)))
                         single_page = (current_num == 1 and not numbered and bool(re.search(
-                            r"Halaman\\s*1\\s*dari\\s*1\\s*total\\s*halaman",
+                            r"Halaman\s*1\s*dari\s*1\s*total\s*halaman",
                             BeautifulSoup(html, "html.parser").get_text(" ", strip=True), re.I)))
                         completed = (current_num > 1 and bool(numbered) and max(numbered) <= current_num) or single_page
                     save(items, category, following or url, completed=completed)
