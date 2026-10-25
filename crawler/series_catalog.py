@@ -129,7 +129,7 @@ def main():
         original_argv = sys.argv[:]
         try:
             for year in dict.fromkeys(years):
-                print(f"\\n=== Year {year} ===")
+                print(f"\n=== Year {year} ===")
                 sys.argv = [original_argv[0], "--year", str(year),
                             "--pages", str(args.pages), "--delay", str(args.delay)]
                 main()
@@ -161,7 +161,10 @@ def main():
         entry = categories.get(category, old)
         if entry.get("start") and entry["start"] != initial:
             parser.error("Saved year category URL differs from --url")
-        if entry.get("completed"):
+        if entry.get("completed") and entry.get("next_url") == initial:
+            print(f"Rechecking year {category}: previous one-page completion is unverified.")
+            entry["completed"] = False
+        elif entry.get("completed"):
             print(f"Year {category} complete; {len(items)} series saved.")
             return
         url = entry.get("next_url", initial)
@@ -211,7 +214,7 @@ def main():
                 if category:
                     state.setdefault("categories", {})[category] = {
                         "start": initial, "next_url": following or url,
-                        "completed": not bool(following)}
+                        "completed": False}
                     ROOT.mkdir(parents=True, exist_ok=True)
                     STORE.write_text(json.dumps(items, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
                     STATE.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
@@ -230,7 +233,8 @@ def main():
                     STATE.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
                 print(f"{url}: {len(found)} cards; {len(items)-before} new; total {len(items)}")
                 if not following or following in visited:
-                    print("No next linked page; stopped.")
+                    print("No next linked page; year progress NOT marked complete." if category
+                          else "No next linked page; stopped.")
                     break
                 url = following
                 time.sleep(args.delay)
