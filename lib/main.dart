@@ -89,7 +89,21 @@ class LocalCatalogMetadata {
     return uri;
   }
   static int _stableId(String source) {var hash = 0;for(final unit in source.codeUnits){hash=(hash*31+unit)&0x7fffffff;}return hash==0?1:hash;}
-  static String _norm(String s) => s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
+  static String _norm(String s) => s.toLowerCase().replaceAll(RegExp(r'\\([^)]*\\)'), ' ').replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
+  static double _similarity(String a,String b){
+    final x=_norm(a),y=_norm(b);
+    if(x.isEmpty||y.isEmpty)return 0;
+    if(x==y)return 1;
+    final xs=x.split(' ').toSet(),ys=y.split(' ').toSet();
+    return 2*xs.intersection(ys).length/(xs.length+ys.length);
+  }
+  static bool _matches(CatalogEntry e,Map<String,dynamic> d){
+    final date=(d['release_date']??d['first_air_date']??'').toString();
+    final year=date.length>=4?int.tryParse(date.substring(0,4)):null;
+    if(year==null||(year-e.year).abs()>1)return false;
+    return _similarity(e.title,(d['title']??d['name']??'').toString())>=.86 ||
+      _similarity(e.title,(d['original_title']??d['original_name']??'').toString())>=.86;
+  }
   static Future<Movie?> enrich(CatalogEntry entry) =>
       _results.putIfAbsent(entry.url, () async {
         if (entry.year <= 0) return null;
@@ -103,8 +117,7 @@ class LocalCatalogMetadata {
             final title = (data['title'] ?? data['name'] ?? '').toString();
             final original = (data['original_title'] ?? data['original_name'] ?? '').toString();
             final date = (data['release_date'] ?? data['first_air_date'] ?? '').toString();
-            if (date.length < 4 || int.tryParse(date.substring(0, 4)) != entry.year) continue;
-            if (_norm(title) != _norm(entry.title) && _norm(original) != _norm(entry.title)) continue;
+            if (!_matches(entry,data)) continue;
             if (data['id'] is num) matches.add(data);
           }
           if (matches.length != 1) {
@@ -140,10 +153,10 @@ class LocalCatalogMetadata {
   static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
     final source=await FilmStreamCatalog.load();
     // TMDB supplies ranking only; crawler catalog remains the allow-list.
-    if (endpoint.startsWith('trending/')) {
+    if (endpoint.startsWith('trending/') || endpoint.endsWith('/popular') || endpoint.endsWith('/top_rated')) {
       final data=await Tmdb.get(endpoint, {'page':'$page'});
-      final typeFilter=endpoint.startsWith('trending/movie/')?'movie':
-          endpoint.startsWith('trending/tv/')?'tv':null;
+      final typeFilter=endpoint.startsWith('trending/movie/')||endpoint.startsWith('movie/')?'movie':
+          endpoint.startsWith('trending/tv/')||endpoint.startsWith('tv/')?'tv':null;
       final byIdentity=<String, List<CatalogEntry>>{};
       for(final e in source){
         if(typeFilter!=null && e.type!=typeFilter)continue;
@@ -164,6 +177,10 @@ class LocalCatalogMetadata {
         final candidates=<CatalogEntry>{};
         for(final title in titles){
           candidates.addAll(byIdentity['${media}:${year}:${_norm(title)}']??const []);
+        }
+        if(candidates.isEmpty){
+          candidates.addAll(source.where((e)=>e.type==media&&(e.year-year).abs()<=1 &&
+            titles.any((t)=>_similarity(e.title,t)>=.90)).take(2));
         }
         if(candidates.length!=1)continue;
         final entry=candidates.single;
