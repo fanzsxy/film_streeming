@@ -63,12 +63,12 @@ def parse_detail(html, page_url):
         value = node.get_text(" ", strip=True)
         if len(value) < 90 or len(value) > 4500:
             continue
-        if re.search(r"^(Streaming|Nonton|Download)\\b", value, re.I):
+        if re.search(r"^(Streaming|Nonton|Download)\b", value, re.I):
             continue
         if value not in candidates:
             candidates.append(value)
     if candidates:
-        description = max(candidates, key=len)
+        description = candidates[0]
     rating = None
     rating_source = None
     # Prefer ratings explicitly identified in page metadata or rating widgets.
@@ -157,7 +157,7 @@ def main():
                     details = parse_detail(html, page.url)
                     previous = records.get(url, {})
                     if args.retry_synopsis and not details["synopsis"]:
-                        details["synopsis"] = ""  # Keep existing for inspection until manually verified.
+                        print("No story synopsis detected; existing value kept for review.")
                     records[url] = {
                         "title": item.get("title", ""),
                         "year": item.get("year"),
