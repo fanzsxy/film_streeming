@@ -74,16 +74,26 @@ def save(items, next_url):
 
 
 def next_page(html, current):
+    """Follow actual numbered pagination links, not guessed URL patterns."""
     soup = BeautifulSoup(html, "html.parser")
-    selectors = ('a[rel="next"]', '.pagination a.next', '.pagination .next a')
-    for selector in selectors:
-        a = soup.select_one(selector)
-        if a and a.get("href"):
-            nxt = urljoin(current, a["href"])
-            if urlparse(nxt).hostname == urlparse(BASE).hostname:
-                return nxt
-    # Do not invent pagination URL schemes.
-    return None
+    current_path = urlparse(current).path.rstrip("/")
+    page_match = re.search(r"/page/(\\d+)$", current_path)
+    current_number = int(page_match.group(1)) if page_match else 1
+    candidates = []
+    for a in soup.select("a[href]"):
+        href = urljoin(current, a.get("href", ""))
+        parsed = urlparse(href)
+        if parsed.hostname != urlparse(BASE).hostname:
+            continue
+        next_match = re.fullmatch(r"/latest/page/(\\d+)/?", parsed.path)
+        if not next_match:
+            continue
+        number = int(next_match.group(1))
+        if number == current_number + 1:
+            candidates.append(href)
+    # The page displays numbered links (1, 2, 3, ») rather than a
+    # link styled .next. Only follow a next-page URL present in the DOM.
+    return candidates[0] if candidates else None
 
 
 def main():
