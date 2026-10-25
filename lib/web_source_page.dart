@@ -58,7 +58,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // Pop-up windows remain disabled by the Clean Player script.
   String get _matchTitle => widget.title.split(' • S').first.trim();
   bool get _isTv => widget.mediaType == 'tv' || widget.mediaType == 'series';
-  String get _cacheKey => 'fs_detail_v54_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
+  String get _cacheKey => 'fs_detail_v55_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
   bool get _canMatch => widget.tmdbId > 0 && widget.year.length == 4;
   String _normalizeTitle(String text) => text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
   Future<void> _loadTitleAliases() async {
@@ -223,13 +223,24 @@ class _WebSourcePageState extends State<WebSourcePage> {
           // a source-style dated detail URL.
           if (!poster && !/-(?:19|20)\d{2}$/.test(slug)) return;
           const heading = card.querySelector('.poster-title,.video-title,.title,h2,h3,h4,figcaption');
+          // Never borrow titles from neighboring result links. Each anchor
+          // must prove its own film identity using its slug or own poster/card.
           const possible = [heading?.textContent, a.getAttribute('title'),
-            poster?.getAttribute('alt'), a.textContent, slugTitle,
-            ...Array.from(card.querySelectorAll('a[title],a[href]')).slice(0,8)
-              .flatMap(link => [link.getAttribute('title'),link.textContent])
+            poster?.getAttribute('alt'), a.textContent, slugTitle
           ].filter(Boolean);
           const sourceTitle = norm(slugTitle.replace(/^nonton\s+/, '').replace(/^watch\s+/, ''));
           const sourceExact = targets.some(target => sourceTitle === target);
+          const ownSlugWords = keywords(slugTitle);
+          const sourceOverlap = targets.some(target => {
+            const terms=keywords(target);
+            if(!terms.length)return false;
+            const shared=terms.filter(word=>ownSlugWords.includes(word)).length;
+            return shared>=Math.min(2,terms.length) &&
+              shared/Math.max(terms.length,ownSlugWords.length,1)>=0.55;
+          });
+          // A heading from a broad search-result container is insufficient:
+          // the actual destination slug must agree with the movie identity.
+          if (!sourceExact && !sourceOverlap) return;
           const titleOK = sourceExact || possible.some(v => {
             const cleaned = v.replace(/\s*\((?:19|20)\d{2}\)\s*[-–]?\s*(?:series|movie|film)?\s*$/i,'').trim();
             const candidate = norm(cleaned);
@@ -242,9 +253,11 @@ class _WebSourcePageState extends State<WebSourcePage> {
               overlapMatch(cleaned);
           });
           if (!titleOK) return;
-          const text = [card.innerText, poster?.getAttribute('alt'), a.getAttribute('title'), slug,
+          const text = [poster?.getAttribute('alt'), a.getAttribute('title'), slug,
             card.querySelector('.year,.date,[itemprop="datePublished"]')?.textContent].filter(Boolean).join(' ');
-          const years = text.match(/(?:19|20)\d{2}/g) || [];
+          const slugYearMatch=slug.match(/(?:19|20)\d{2}$/);
+          const years = slugYearMatch ? [slugYearMatch[0]] :
+            (text.match(/(?:19|20)\d{2}/g) || []);
           if (expectedYear && !years.some(y => Math.abs(Number(y) - Number(expectedYear)) <= 1)) return;
           const tag = (card.innerText || '').toLowerCase();
           if (isSeries && /\b(movie|film)\b/.test(tag) && !/\b(series|eps|episode|s\.?[1-9])\b/.test(tag)) return;
