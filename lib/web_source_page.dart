@@ -69,9 +69,16 @@ class _WebSourcePageState extends State<WebSourcePage> {
       .where((word) => word.length > 2 &&
         !{'the','and','movie','film','new','with','from'}.contains(word))
       .toList();
-    if (significant.length >= 3) {
-      _titleAliases.add(significant.take(3).join(' '));
-      _titleAliases.add(significant.take(2).join(' '));
+    // Try overlapping windows across the WHOLE title, not just its prefix.
+    // Deduplicate and cap queries so a long title does not create dozens of loads.
+    final generated = <String>{};
+    for (var window = 4; window >= 2; window--) {
+      for (var i = 0; i + window <= significant.length; i++) {
+        generated.add(significant.skip(i).take(window).join(' '));
+      }
+    }
+    for (final q in generated.take(14)) {
+      if (_normalizeTitle(q) != _normalizeTitle(_matchTitle)) _titleAliases.add(q);
     }
     if (!_canMatch || _tmdbToken.isEmpty) return;
     try {
@@ -151,14 +158,15 @@ class _WebSourcePageState extends State<WebSourcePage> {
           w && !['a','an','the','of','in','at','and','age'].includes(w)).sort().join(' ');
         const targetWords = targets.map(distinctive).filter(v => v.split(' ').length >= 3);
         const keywords = v => [...new Set(norm(v).split(' ').filter(w =>
-          w.length >= 4 && !['movie','film','series','episode','nobita','doraemon','new','with','from','this','that',].includes(w)))];
+          w.length >= 3 && !['movie','film','series','episode','new','with','from','this','that','the','and','for','of'].includes(w)))];
         // Prefer distinctive overlapping terms, not an arbitrary two-word match.
         // "castle" remains eligible when paired with undersea and devil.
         const overlapMatch = v => targets.some(title => {
           const wanted = keywords(title), found = keywords(v);
-          if (wanted.length < 3 || found.length < 3) return false;
+          if (wanted.length < 2 || found.length < 2) return false;
           const shared = wanted.filter(w => found.includes(w)).length;
-          return shared >= 3 && shared / Math.min(wanted.length, found.length) >= 0.65;
+          const coverage = shared / Math.max(wanted.length, found.length);
+          return shared >= 2 && coverage >= 0.55;
         });
         const expectedYear = TARGET_YEAR;
         const isSeries = TARGET_SERIES;
@@ -217,7 +225,15 @@ class _WebSourcePageState extends State<WebSourcePage> {
           // Only same-site title detail links are candidates; do not guess a URL.
           const sameYear=years.includes(expectedYear);
           const slugYear=slug.match(/(?:19|20)\d{2}$/)?.[0] === expectedYear;
-          matches.set(u.href, {url:u.href, exact: sameYear && sourceExact, score: (sourceExact?10:0)+(slugYear?5:0)+(sameYear?2:0)});
+          const candidateWords=keywords(slugTitle);
+          const sharedWords=Math.max(0,...targets.map(title=>
+            keywords(title).filter(word=>candidateWords.includes(word)).length));
+          const expectedWords=Math.max(1,...targets.map(title=>keywords(title).length));
+          const coverage=sharedWords/Math.max(expectedWords,candidateWords.length,1);
+          const score=(sourceExact?25:0)+(slugYear?8:0)+(sameYear?4:0)+
+            sharedWords*3+Math.round(coverage*10);
+          matches.set(u.href, {url:u.href, exact: sameYear && sourceExact,
+            score, matchedWords:sharedWords, coverage});
         });
         return JSON.stringify([...matches.values()]);
       })()'''.replaceAll('TARGET_ALIASES', jsonEncode(_titleAliases))
@@ -237,7 +253,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
         final choices=candidates.where((e)=>((e['score'] as num?)??0)==bestScore).toList();
         // If multiple links have the same score, try another query rather
         // than pretending there is a playable result.
-        if(choices.length != 1 || bestScore < 2)return _searchNextAlias();
+        if(choices.length != 1 || bestScore < 12 ||
+          ((choices.first['matchedWords'] as num?)??0)<2 ||
+          ((choices.first['coverage'] as num?)??0)<0.55)return _searchNextAlias();
         final link = Uri.tryParse((choices.first as Map)['url']?.toString() ?? '');
         if (link != null && link.scheme == 'https' && link.host == widget.url.host && !_isSearchUrl(link.toString())) {
           _noMatch = false;
