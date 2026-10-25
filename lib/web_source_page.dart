@@ -80,6 +80,14 @@ class _WebSourcePageState extends State<WebSourcePage> {
         generated.add(significant.skip(i).take(window).join(' '));
       }
     }
+    // Short titles such as "Boruto: Naruto the Movie" may be indexed by
+    // one character/name only on the source. Search individual distinctive
+    // names as fallback; these are NOT used to verify the matched film.
+    if (significant.length <= 3) {
+      for (final word in significant.where((word) => word.length >= 5)) {
+        generated.add(word);
+      }
+    }
     for (final q in generated.take(14)) {
       if (_normalizeTitle(q) != _normalizeTitle(_matchTitle)) _searchQueries.add(q);
     }
