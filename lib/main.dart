@@ -31,7 +31,7 @@ class FilmStream extends StatelessWidget {
 }
 class Movie {
  final int id; final String title,overview,poster,backdrop,release,type,sourceUrl; final double rating; final List<int> genres;
- Movie.fromJson(Map<String,dynamic> j,{String fallback='movie'}):sourceUrl=(j['source_url']??'').toString(),id=(j['id'] as num).toInt(),title=(j['title']??j['name']??'Tanpa judul').toString(),overview=(j['overview']??'').toString(),poster=(j['poster_path']??'').toString(),backdrop=(j['backdrop_path']??'').toString(),release=(j['release_date']??j['first_air_date']??'').toString(),rating=((j['vote_average']??0) as num).toDouble(),type=(j['media_type']=='tv'||j['media_type']=='movie')?j['media_type'] as String:fallback,genres=(j['genre_ids'] as List? ?? []).whereType<num>().map((e)=>e.toInt()).toList();
+ Movie.fromJson(Map<String,dynamic> j,{String fallback='movie'}):sourceUrl=(j['source_url']??'').toString(),id=(j['id'] as num?)?.toInt() ?? 0,title=(j['title']??j['name']??'Tanpa judul').toString(),overview=(j['overview']??'').toString(),poster=(j['poster_path']??'').toString(),backdrop=(j['backdrop_path']??'').toString(),release=(j['release_date']??j['first_air_date']??'').toString(),rating=((j['vote_average']??0) as num).toDouble(),type=(j['media_type']=='tv'||j['media_type']=='movie')?j['media_type'] as String:fallback,genres=(j['genre_ids'] as List? ?? []).whereType<num>().map((e)=>e.toInt()).toList();
  String get year => release.length>=4?release.substring(0,4):'—';
 }
 
@@ -88,6 +88,7 @@ class LocalCatalogMetadata {
     if (movie.type == 'movie' && uri.host != 'tv12.lk21official.cc') return null;
     return uri;
   }
+  static int _stableId(String source) {var hash = 0;for(final unit in source.codeUnits){hash=(hash*31+unit)&0x7fffffff;}return hash==0?1:hash;}
   static String _norm(String s) => s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
   static Future<Movie?> enrich(CatalogEntry entry) =>
       _results.putIfAbsent(entry.url, () async {
@@ -106,7 +107,16 @@ class LocalCatalogMetadata {
             if (_norm(title) != _norm(entry.title) && _norm(original) != _norm(entry.title)) continue;
             if (data['id'] is num) matches.add(data);
           }
-          if (matches.length != 1) return null;
+          if (matches.length != 1) {
+            return Movie.fromJson({
+              'id': -_stableId(entry.url),
+              'title': entry.title,
+              'release_date': '${entry.year}-01-01',
+              'first_air_date': '${entry.year}-01-01',
+              'media_type': entry.type,
+              'source_url': entry.url,
+            }, fallback: entry.type);
+          }
           final data = matches.single;
           // The crawler owns title, type, release year, and source URL.
           data['title'] = entry.title;
@@ -642,7 +652,7 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0,
 
 class DetailPage extends StatefulWidget {final Movie movie;final bool isFavorite;final VoidCallback onFavorite; final int? initialSeason,initialEpisode; final Uri? initialPage; const DetailPage({super.key,required this.movie,required this.isFavorite,required this.onFavorite,this.initialSeason,this.initialEpisode,this.initialPage});@override State<DetailPage> createState()=>_DetailPageState();}
 class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingController(),subtitleUrl=TextEditingController(),sourcePage=TextEditingController();late bool favorite;late Future<Map<String,dynamic>> details; late Future<Uri> sourceFuture;
- @override void initState(){super.initState();favorite=widget.isFavorite;details=Tmdb.bilingualDetail('${widget.movie.type}/${widget.movie.id}'); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}}
+ @override void initState(){super.initState();favorite=widget.isFavorite;details=widget.movie.id>0?Tmdb.bilingualDetail('${widget.movie.type}/${widget.movie.id}'):Future.value(<String,dynamic>{}); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}}
  @override void dispose(){videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();detailScroll.dispose();super.dispose();}
  bool https(String input){final u=Uri.tryParse(input.trim());return u!=null&&u.scheme=='https'&&u.host.isNotEmpty;}
 
@@ -769,7 +779,7 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
                  return Text(description.isEmpty ? 'Sinopsis belum tersedia.' : description);
                },
              ),
-             if (m.type == 'tv') _seasonSection(m),
+             if (m.type == 'tv' && m.id > 0) _seasonSection(m),
            ],
          )),
        ])),
