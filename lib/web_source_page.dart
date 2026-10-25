@@ -207,7 +207,6 @@ class _WebSourcePageState extends State<WebSourcePage> {
         final possible=candidates.where((e){
           final year=e['year']?.toString()??'';
           return year.isEmpty || (RegExp(r'^(?:19|20)\d{2}
-        }).toList();
         possible.sort((a,b)=>((b['score'] as num?)??0).compareTo((a['score'] as num?)??0));
         if(possible.isNotEmpty && await _geminiMatchCandidates(possible.take(12).toList()))return true;
       }
@@ -892,9 +891,8 @@ class _FilmStreamLandscapeVideoState extends State<_FilmStreamLandscapeVideo> {
       ))),
     ])),
   );
-}
-).hasMatch(year) &&
-            (int.tryParse(year)!-int.parse(widget.year)).abs()<=1);
+}).hasMatch(year) &&
+              (int.parse(year)-int.parse(widget.year)).abs() <= 1);
         }).toList();
         possible.sort((a,b)=>((b['score'] as num?)??0).compareTo((a['score'] as num?)??0));
         if(possible.isNotEmpty && await _geminiMatchCandidates(possible.take(12).toList()))return true;
