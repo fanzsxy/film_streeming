@@ -7,8 +7,26 @@ Usage:
 import argparse
 import asyncio
 from urllib.parse import urlparse
+from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 from detail_metadata import CATALOG, OUTPUT, HOSTS, load, parse_detail, save_atomic
+
+
+def is_verification_page(html):
+    """Do not treat a CAPTCHA mention in a normal site's JavaScript as a block."""
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "noscript"]):
+        tag.decompose()
+    visible = soup.get_text(" ", strip=True).lower()[:4000]
+    title = (soup.title.get_text(" ", strip=True).lower() if soup.title else "")
+    challenge = any(term in visible or term in title for term in (
+        "verify you are human", "checking your browser", "access denied",
+        "just a moment...", "security verification", "captcha verification"
+    ))
+    movie_content = bool(soup.select_one(
+        ".rating-number, .rating-box, .mvic-desc, meta[property='og:image']"
+    ))
+    return challenge and not movie_content
 
 
 async def main():
@@ -73,8 +91,8 @@ async def main():
                             continue
                         await page.wait_for_timeout(800)
                         html = await page.content()
-                        if any(x in html.lower() for x in ("verify you are human", "access denied", "captcha")):
-                            print("Access verification detected; stopping.")
+                        if is_verification_page(html):
+                            print(f"Access verification page detected at {page.url}; stopping.")
                             stop.set()
                             return
                         details = parse_detail(html, page.url)
