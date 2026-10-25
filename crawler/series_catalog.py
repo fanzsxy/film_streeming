@@ -63,7 +63,7 @@ def cards_from_html(html, current):
     return found
 
 
-def save(items, category, next_url):
+def save(items, category, next_url, completed=False):
     STORE.parent.mkdir(parents=True, exist_ok=True)
     STORE.write_text(json.dumps(items, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     state = load_json(STATE, {})
@@ -73,10 +73,10 @@ def save(items, category, next_url):
     else:
         previous = state.setdefault("categories", {}).get(category, {})
         if isinstance(previous, dict):
-            previous.update({"next_url": next_url, "completed": False})
+            previous.update({"next_url": next_url, "completed": completed})
             state["categories"][category] = previous
         else:
-            state["categories"][category] = {"next_url": next_url, "completed": False}
+            state["categories"][category] = {"next_url": next_url, "completed": completed}
     STATE.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
     try:
         with CSV.open("w", newline="", encoding="utf-8-sig") as file:
@@ -191,10 +191,25 @@ def main():
                         break
                     items.update(new)
                     following = next_page(html, url, category)
-                    save(items, category, following or url)
+                    completed = False
+                    if category != "latest" and not following:
+                        # Treat end-of-year as confirmed only on a numbered page
+                        # whose visible pagination has no larger page number.
+                        path = urlparse(url).path.rstrip("/")
+                        match = re.search(r"/page/(\d+)$", path)
+                        current_num = int(match.group(1)) if match else 1
+                        base_path = f"/year/{category}" if category.isdigit() else category.removeprefix("path:")
+                        numbered = []
+                        for anchor in BeautifulSoup(html, "html.parser").select("a[href]"):
+                            parsed = urlparse(urljoin(url, anchor.get("href", "")))
+                            m = re.fullmatch(re.escape(base_path) + r"/page/(\d+)/?", parsed.path)
+                            if parsed.scheme == "https" and parsed.hostname == urlparse(BASE).hostname and m:
+                                numbered.append(int(m.group(1)))
+                        completed = current_num > 1 and bool(numbered) and max(numbered) <= current_num
+                    save(items, category, following or url, completed=completed)
                     print(f"{url}: {len(new)} cards; total unique {len(items)}")
                     if not following or following in visited:
-                        print(f"No linked next page in {category}; stopping without claiming the year is complete.")
+                        print(f"{category}: " + ("Last numbered page reached." if completed else "No linked next page; completion unverified."))
                         break
                     url = following
                     time.sleep(args.delay)
