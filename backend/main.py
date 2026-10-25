@@ -226,7 +226,21 @@ def ai_match(payload: AiMatchRequest):
             f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
             headers={"x-goog-api-key": key, "Content-Type": "application/json"},
             json=request_payload, timeout=8)
-        response.raise_for_status()
+    except requests.Timeout:
+        return {"status": "gemini_timeout", "matched": False}
+    except requests.RequestException:
+        return {"status": "gemini_network_error", "matched": False}
+    if response.status_code in (401, 403):
+        return {"status": "gemini_api_key_or_permission", "matched": False}
+    if response.status_code == 429:
+        return {"status": "gemini_quota_exceeded", "matched": False}
+    if response.status_code == 404:
+        return {"status": "gemini_model_not_found", "matched": False}
+    if response.status_code >= 500:
+        return {"status": "gemini_provider_error", "matched": False}
+    if response.status_code != 200:
+        return {"status": "gemini_http_" + str(response.status_code), "matched": False}
+    try:
         answer = response.json()["candidates"][0]["content"]["parts"][0]["text"]
         decision = json.loads(answer)
         index = decision.get("index", -1)
@@ -240,5 +254,5 @@ def ai_match(payload: AiMatchRequest):
         if abs(int(year_match.group()) - int(payload.year)) > 1:
             return {"status": "year_mismatch", "matched": False}
         return {"status": "matched", "matched": True, "url": selected["url"]}
-    except (requests.RequestException, ValueError, KeyError, IndexError, TypeError):
-        return {"status": "unavailable", "matched": False}
+    except (ValueError, KeyError, IndexError, TypeError):
+        return {"status": "gemini_response_invalid", "matched": False}
