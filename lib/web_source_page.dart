@@ -62,6 +62,17 @@ class _WebSourcePageState extends State<WebSourcePage> {
   Future<void> _loadTitleAliases() async {
     _titleAliases.clear();
     _titleAliases.add(_matchTitle);
+    // Search sources often return no results for long literal English titles.
+    // Search with a short, recognizable prefix, then verify the full title
+    // and year on the returned links before opening any detail page.
+    final significant = _normalizeTitle(_matchTitle).split(' ')
+      .where((word) => word.length > 2 &&
+        !{'the','and','movie','film','new','with','from'}.contains(word))
+      .toList();
+    if (significant.length >= 3) {
+      _titleAliases.add(significant.take(3).join(' '));
+      _titleAliases.add(significant.take(2).join(' '));
+    }
     if (!_canMatch || _tmdbToken.isEmpty) return;
     try {
       final kind = _isTv ? 'tv' : 'movie';
@@ -219,10 +230,14 @@ class _WebSourcePageState extends State<WebSourcePage> {
       if (decoded is List) {
         final candidates=decoded.whereType<Map>().toList();
         candidates.sort((a,b)=>((b['score'] as num?)??0).compareTo((a['score'] as num?)??0));
-        if(candidates.isEmpty)return false;
+        // A page with zero recognized results must advance to the next
+        // shorter source search, not immediately show the no-player state.
+        if(candidates.isEmpty)return _searchNextAlias();
         final bestScore=(candidates.first['score'] as num?)??0;
         final choices=candidates.where((e)=>((e['score'] as num?)??0)==bestScore).toList();
-        if(choices.length != 1 || bestScore < 2)return false;
+        // If multiple links have the same score, try another query rather
+        // than pretending there is a playable result.
+        if(choices.length != 1 || bestScore < 2)return _searchNextAlias();
         final link = Uri.tryParse((choices.first as Map)['url']?.toString() ?? '');
         if (link != null && link.scheme == 'https' && link.host == widget.url.host && !_isSearchUrl(link.toString())) {
           _noMatch = false;
