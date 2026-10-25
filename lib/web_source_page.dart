@@ -59,7 +59,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // Pop-up windows remain disabled by the Clean Player script.
   String get _matchTitle => widget.title.split(' • S').first.trim();
   bool get _isTv => widget.mediaType == 'tv' || widget.mediaType == 'series';
-  String get _cacheKey => 'fs_detail_v58_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
+  String get _cacheKey => 'fs_detail_v59_${widget.mediaType}_${widget.tmdbId}_${widget.season}_${widget.episode}';
   bool get _canMatch => widget.tmdbId > 0 && widget.year.length == 4;
   String _normalizeTitle(String text) => text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
   Future<void> _loadTitleAliases() async {
@@ -180,12 +180,17 @@ class _WebSourcePageState extends State<WebSourcePage> {
           const title=norm(titleFromSlug) || norm(ownTitle);
           if(!title) return;
           const yearText=slugYear || card?.querySelector('.year,.date')?.textContent?.match(/(?:19|20)\d{2}/)?.[0] ||
-            card?.querySelector('img')?.getAttribute('alt')?.match(/(?:19|20)\d{2}/)?.[0] || '';
+            card?.querySelector('img')?.getAttribute('alt')?.match(/(?:19|20)\d{2}/)?.[0] ||
+            card?.textContent?.match(/(?:19|20)\d{2}/)?.[0] || '';
           if(yearText && Math.abs(Number(yearText)-Number(year))>1)return;
           // Never classify a different title as exact using text from a broad card.
-          const exact=title===expected && (!yearText || Math.abs(Number(yearText)-Number(year))<=1);
           const display=norm(ownTitle);
-          const score=exact?100:((title===expected || display===expected)?50:0);
+          const cardTitle=norm(heading?.textContent || '');
+          // LK21 can use a shortened permalink while displaying the full
+          // English title on the same result tile.
+          const matchesTitle=title===expected || display===expected || cardTitle===expected;
+          const exact=matchesTitle && (!yearText || Math.abs(Number(yearText)-Number(year))<=1);
+          const score=exact?100:0;
           // Ignore generic menu and footer links before limiting candidates.
           if(score===0)return;
           const candidate={url:u.href,title:titleFromSlug || ownTitle,year:yearText,
