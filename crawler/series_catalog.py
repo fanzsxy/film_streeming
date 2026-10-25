@@ -133,6 +133,10 @@ def main():
                 sys.argv = [original_argv[0], "--year", str(year),
                             "--pages", str(args.pages), "--delay", str(args.delay)]
                 main()
+                checkpoint = load(STATE, {}).get("categories", {}).get(str(year), {})
+                if not checkpoint.get("completed"):
+                    print(f"Year {year} not confirmed complete; stopping batch before next year.")
+                    break
         finally:
             sys.argv = original_argv
         return
@@ -212,9 +216,22 @@ def main():
                 following = (next_year_page(html, page.url, category_path) if category
                              else next_page(html, page.url))
                 if category:
+                    # Confirm end only if the current numbered page is the last
+                    # numbered page visible in pagination. A missing next link alone
+                    # is NOT proof that a year is complete.
+                    current_match = re.fullmatch(re.escape(category_path) + r"/page/(\d+)/?", urlparse(page.url).path)
+                    current_number = int(current_match.group(1)) if current_match else 1
+                    page_numbers = []
+                    for anchor in BeautifulSoup(html, "html.parser").select("a[href]"):
+                        p = urlparse(urljoin(page.url, anchor.get("href", "")))
+                        m = re.fullmatch(re.escape(category_path) + r"/page/(\d+)/?", p.path)
+                        if p.scheme == "https" and p.hostname == urlparse(BASE).hostname and m:
+                            page_numbers.append(int(m.group(1)))
+                    end_confirmed = (not following and current_number > 1 and
+                                     bool(page_numbers) and max(page_numbers) <= current_number)
                     state.setdefault("categories", {})[category] = {
                         "start": initial, "next_url": following or url,
-                        "completed": False}
+                        "completed": end_confirmed}
                     ROOT.mkdir(parents=True, exist_ok=True)
                     STORE.write_text(json.dumps(items, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
                     STATE.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
@@ -233,7 +250,8 @@ def main():
                     STATE.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
                 print(f"{url}: {len(found)} cards; {len(items)-before} new; total {len(items)}")
                 if not following or following in visited:
-                    print("No next linked page; year progress NOT marked complete." if category
+                    print(("Year confirmed complete." if end_confirmed else
+                           "No next linked page; year NOT confirmed complete.") if category
                           else "No next linked page; stopped.")
                     break
                 url = following
