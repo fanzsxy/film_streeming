@@ -36,6 +36,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   String? _error;
   int _progress = 0;
   bool _matching = false;
+  String _aiStatus = 'Gemini belum dicoba';
   bool _resolvingEpisode = false;
   int _episodeAttempts = 0;
   int _navigationGeneration = 0;
@@ -112,7 +113,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   }
   Future<bool> _geminiMatchCandidates(List<Map> candidates) async {
     // Only evaluate links actually discovered in the current source DOM.
-    if (candidates.isEmpty || candidates.length > 12) return false;
+    if (candidates.isEmpty || candidates.length > 12) { _aiStatus = 'Tidak ada kandidat untuk Gemini'; return false; }
     try {
       final base=Uri.tryParse(_sourceApiBase);
       if(base==null || base.scheme!='https' || base.host.isEmpty)return false;
@@ -123,24 +124,27 @@ class _WebSourcePageState extends State<WebSourcePage> {
            _isSearchUrl(url.toString()))continue;
         values.add({'title': c['title']?.toString()??'', 'year':c['year']?.toString()??'', 'url':url.toString()});
       }
-      if(values.isEmpty)return false;
+      if(values.isEmpty){_aiStatus='Tidak ada tautan kandidat valid';return false;}
+      _aiStatus='Menghubungi Gemini';
       final result=await http.post(base.replace(path:'/ai/match'),
         headers:{'Content-Type':'application/json'},
         body:jsonEncode({'title':_matchTitle,'year':widget.year,
           'media_type':_isTv?'tv':'movie','candidates':values}))
         .timeout(const Duration(seconds:10));
-      if(result.statusCode!=200)return false;
+      if(result.statusCode!=200){_aiStatus='Backend Gemini HTTP ${result.statusCode}';return false;}
       final decoded=jsonDecode(result.body);
-      if(decoded is! Map || decoded['matched']!=true)return false;
+      if(decoded is! Map){_aiStatus='Respons Gemini tidak valid';return false;}
+      if(decoded['matched']!=true){_aiStatus='Gemini: ${decoded['status'] ?? 'tidak cocok'}';return false;}
       final target=Uri.tryParse(decoded['url']?.toString()??'');
       if(target==null || !values.any((e)=>e['url']==target.toString()))return false;
       if(!mounted)return false;
+      _aiStatus='Gemini menemukan kecocokan';
       _noMatch=false;
       _candidateUrl=target.toString();
       setState((){_revealed=false;_loading=true;});
       await _controller.loadRequest(target);
       return true;
-    } catch (_) {return false;}
+    } catch (_) {_aiStatus='Gagal terhubung ke backend Gemini';return false;}
   }
 
   Future<bool> _autoMatchSearch() async {
@@ -197,6 +201,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
       if(decoded is String){try{decoded=jsonDecode(decoded);}catch(_){}}
       if(decoded is List){
         final candidates=decoded.whereType<Map>().toList();
+        if(candidates.isEmpty)_aiStatus='Tidak ada kandidat LK21 untuk Gemini';
         // A unique exact title+year can be opened without an AI call.
         final exact=candidates.where((e)=>e['exact']==true).toList();
         if(exact.length==1){
@@ -828,9 +833,12 @@ class _WebSourcePageState extends State<WebSourcePage> {
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                 const SizedBox(height: 8),
                 Text(_noMatch
-                  ? 'Tidak ada hasil unik yang cocok setelah pencarian judul dan judul alternatif. Ketersediaan di sumber belum dapat dipastikan.'
+                  ? 'Tidak ditemukan hasil yang meyakinkan dengan judul lengkap dan tahun rilis. Ketersediaan di sumber belum dapat dipastikan.'
                   : 'Halaman sumber belum menyediakan player yang dapat dikenali.',
                   textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
+                if (_noMatch) Padding(padding: const EdgeInsets.only(top: 10),
+                  child: Text(_aiStatus, textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.amber, fontSize: 12))),
                 const SizedBox(height: 16),
                 TextButton(onPressed: _back, child: const Text('Kembali ke katalog')),
                 TextButton(onPressed: () { setState(() { _noMatch = false; _revealed = false; _loading = true; }); _initialLoad(); },
