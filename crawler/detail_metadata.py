@@ -139,6 +139,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--delay", type=float, default=3)
+    parser.add_argument("--debug-rating", action="store_true", help="Show rating HTML for diagnosis")
     parser.add_argument("--retry-rating", action="store_true", help="Recheck saved ratings using strict selectors")
     parser.add_argument("--retry-synopsis", action="store_true",
                         help="Recheck saved entries for real story synopsis")
@@ -179,6 +180,10 @@ def main():
                         print("Access verification requested; stopping.")
                         break
                     details = parse_detail(html, page.url)
+                    if args.debug_rating:
+                        soup = BeautifulSoup(html, "html.parser")
+                        for node in soup.select('[class*="rat"], [id*="rat"], [itemprop="ratingValue"]')[:8]:
+                            print("RATING HTML:", str(node)[:350].replace(chr(10), " "))
                     previous = records.get(url, {})
                     if args.retry_rating and details["rating"] is None:
                         print("No verified rating found; previous rating cleared.")
