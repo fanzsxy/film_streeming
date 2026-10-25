@@ -170,6 +170,7 @@ class Tmdb {
       // Remove very low-information TMDB submissions, even from search.
       // Search is slightly more permissive so niche works can still be found.
       // Stronger quality threshold on browse; search keeps a little room for niche titles.
+      if(search && (votes<5 || rating<3.0))return false;
       if(!search){
         // New releases and animated features may be legitimate before
         // accumulating dozens of votes. Do not gate them on 75 votes.
