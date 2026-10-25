@@ -30,8 +30,8 @@ class FilmStream extends StatelessWidget {
     theme:ThemeData.dark(useMaterial3:true).copyWith(scaffoldBackgroundColor:const Color(0xff101218),cardColor:const Color(0xff20252e),appBarTheme:const AppBarTheme(backgroundColor:Color(0xff101218),surfaceTintColor:Colors.transparent),colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xffe5aa55),brightness:Brightness.dark),navigationBarTheme:NavigationBarThemeData(backgroundColor:const Color(0xff191c23),indicatorColor:const Color(0xff62492e),height:76)),home:const StartupGate());
 }
 class Movie {
- final int id; final String title,overview,poster,backdrop,release,type,sourceUrl; final double rating; final List<int> genres;
- Movie.fromJson(Map<String,dynamic> j,{String fallback='movie'}):sourceUrl=(j['source_url']??'').toString(),id=(j['id'] as num?)?.toInt() ?? 0,title=(j['title']??j['name']??'Tanpa judul').toString(),overview=(j['overview']??'').toString(),poster=(j['poster_path']??'').toString(),backdrop=(j['backdrop_path']??'').toString(),release=(j['release_date']??j['first_air_date']??'').toString(),rating=((j['vote_average']??0) as num).toDouble(),type=(j['media_type']=='tv'||j['media_type']=='movie')?j['media_type'] as String:fallback,genres=(j['genre_ids'] as List? ?? []).whereType<num>().map((e)=>e.toInt()).toList();
+ final int id; final String title,overview,poster,backdrop,release,type,sourceUrl,originalLanguage; final double rating,popularity; final List<int> genres;
+ Movie.fromJson(Map<String,dynamic> j,{String fallback='movie'}):sourceUrl=(j['source_url']??'').toString(),originalLanguage=(j['original_language']??'').toString(),popularity=((j['popularity']??0) as num).toDouble(),id=(j['id'] as num?)?.toInt() ?? 0,title=(j['title']??j['name']??'Tanpa judul').toString(),overview=(j['overview']??'').toString(),poster=(j['poster_path']??'').toString(),backdrop=(j['backdrop_path']??'').toString(),release=(j['release_date']??j['first_air_date']??'').toString(),rating=((j['vote_average']??0) as num).toDouble(),type=(j['media_type']=='tv'||j['media_type']=='movie')?j['media_type'] as String:fallback,genres=(j['genre_ids'] as List? ?? []).whereType<num>().map((e)=>e.toInt()).toList();
  String get year => release.length>=4?release.substring(0,4):'—';
 }
 
@@ -316,30 +316,48 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  }
  Future<void> _fetch() async {
   if(busy||!more)return;
-  final token=epoch,nextPage=page+1;
+  final token=epoch;
   setState(()=>busy=true);
   try {
-   final kinds=type=='all'?const ['movie','tv']:[type];
-   final batches=await Future.wait(kinds.map((k)=>Tmdb.list('discover/$k',page:nextPage,type:k,params:_params(k))));
-   if(!mounted||token!=epoch)return;
-   final incoming=batches.expand((x)=>x).where((m) =>
-    m.poster.isNotEmpty && m.backdrop.isNotEmpty && m.overview.trim().length >= 20 &&
-    m.release.length >= 4 && m.rating >= 3.0 &&
-    !(m.type == 'tv' && m.genres.any((g) => const [10763,10764,10767].contains(g)))
-   ).toList();
-   // Only sort the newly fetched page. Resorting all previous cards shifts
-   // their indices while the user scrolls, making content appear repeated.
-   if(sort=='title')incoming.sort((a,b)=>a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-   else if(sort=='latest')incoming.sort((a,b)=>b.release.compareTo(a.release));
-   setState((){
-    page=nextPage;
-    for(final m in incoming){
-     if(seenResults.add('${m.type}:${m.id}'))results.add(m);
+    final incoming=<Movie>[];
+    // Scan catalog pages until enough metadata matches the chosen filters.
+    // A single page can contain zero matches without meaning end of catalog.
+    var scanned=0;
+    var ended=false;
+    while(incoming.length<16 && scanned<5 && page<50) {
+      final nextPage=page+1;
+      final kinds=type=='all'?const ['movie','tv']:[type];
+      final batches=await Future.wait(kinds.map((k)=>
+        Tmdb.list('discover/$k',page:nextPage,type:k)));
+      if(!mounted||token!=epoch)return;
+      page=nextPage;
+      scanned++;
+      if(batches.every((x)=>x.isEmpty)){ended=true;break;}
+      for(final m in batches.expand((x)=>x)) {
+        if(genre1>0&&!m.genres.contains(genre1))continue;
+        if(genre2>0&&!m.genres.contains(genre2))continue;
+        // Search-result metadata exposes original_language. This is a language
+        // filter, not a claim about country of production.
+        if(country.isNotEmpty&&m.originalLanguage!=country)continue;
+        if(!seenResults.contains(m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}'))incoming.add(m);
+      }
     }
-    more=batches.any((x)=>x.isNotEmpty)&&page<50;error='';
-   });
-  }catch(e){if(mounted&&token==epoch)setState(()=>error='Gagal mengambil katalog. Coba lagi.');}
-  finally{if(mounted&&token==epoch)setState(()=>busy=false);}
+    if(sort=='title')incoming.sort((a,b)=>a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+    else if(sort=='latest')incoming.sort((a,b)=>b.release.compareTo(a.release));
+    else incoming.sort((a,b)=>b.popularity.compareTo(a.popularity));
+    if(!mounted||token!=epoch)return;
+    setState((){
+      for(final m in incoming){
+        if(seenResults.add(m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}'))results.add(m);
+      }
+      more=!ended&&page<50;
+      error='';
+    });
+  } catch(e) {
+    if(mounted&&token==epoch)setState(()=>error='Gagal mengambil katalog. Coba lagi.');
+  } finally {
+    if(mounted&&token==epoch)setState(()=>busy=false);
+  }
  }
  Widget _pick<T>(String caption,T value,List<DropdownMenuItem<T>> options,ValueChanged<T?> update)=>DropdownButtonFormField<T>(
   value:value,isExpanded:true,decoration:InputDecoration(labelText:caption,isDense:true,filled:true,fillColor:const Color(0xff20252e),border:OutlineInputBorder(borderRadius:BorderRadius.circular(12))),items:options,onChanged:(v){update(v);_reset();});
@@ -360,9 +378,9 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     Expanded(child:_pick<int>('Genre 2',genre2,genres.entries.map((g)=>DropdownMenuItem(value:g.key,child:Text(g.value))).toList(),(v){genre2=v??0;})),
    ]),
    const SizedBox(height:9),
-   _pick<String>('Negara',country,const [
-    DropdownMenuItem(value:'',child:Text('Semua negara')),
-    DropdownMenuItem(value:'JP',child:Text('Jepang')),DropdownMenuItem(value:'KR',child:Text('Korea')),DropdownMenuItem(value:'CN',child:Text('China'))],(v){country=v??'';}),
+   _pick<String>('Bahasa asli',country,const [
+    DropdownMenuItem(value:'',child:Text('Semua bahasa')),
+    DropdownMenuItem(value:'ja',child:Text('Jepang')),DropdownMenuItem(value:'ko',child:Text('Korea')),DropdownMenuItem(value:'zh',child:Text('Mandarin'))],(v){country=v??'';}),
   ])),
   Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:6),child:Align(alignment:Alignment.centerLeft,child:Text('Katalog ${type=='all'?'Film & Series':type=='tv'?'Series':'Film'}',style:const TextStyle(fontSize:19,fontWeight:FontWeight.w800)))),
   ])),
