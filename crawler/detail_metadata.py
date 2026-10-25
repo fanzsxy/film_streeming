@@ -51,10 +51,24 @@ def parse_detail(html, page_url):
     if not poster:
         img = soup.select_one(".poster img, .mvic-desc img, .info img, article img")
         poster = (img.get("data-src") or img.get("src") or "") if img else ""
-    description = text_meta(soup, ("property", "og:description"), ("name", "description"))
-    if not description:
-        node = soup.select_one(".desc, .description, .synopsis, .entry-content, .wp-content")
-        description = node.get_text(" ", strip=True) if node else ""
+    # Site SEO meta description is promotional copy, not a plot synopsis.
+    # Prefer narrative text near the rating/votes in the main detail panel.
+    description = ""
+    candidates = []
+    for node in soup.select(
+        ".mvic-desc .desc, .mvic-desc p, .entry-content p, "
+        ".description p, .synopsis, .desc, .wp-content p, "
+        ".mvic-desc, .entry-content"
+    ):
+        value = node.get_text(" ", strip=True)
+        if len(value) < 90 or len(value) > 4500:
+            continue
+        if re.search(r"^(Streaming|Nonton|Download)\\b", value, re.I):
+            continue
+        if value not in candidates:
+            candidates.append(value)
+    if candidates:
+        description = max(candidates, key=len)
     rating = None
     rating_source = None
     # Prefer ratings explicitly identified in page metadata or rating widgets.
@@ -102,6 +116,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--delay", type=float, default=3)
+    parser.add_argument("--retry-synopsis", action="store_true",
+                        help="Recheck saved entries for real story synopsis")
     parser.add_argument("--retry-missing-rating", action="store_true",
                         help="Revisit existing entries without a rating; keep saved poster/synopsis")
     parser.add_argument("--type", choices=["movie", "series", "all"], default="all")
@@ -123,7 +139,7 @@ def main():
                 parsed = urlparse(url)
                 if parsed.scheme != "https" or parsed.hostname != HOSTS[kind]:
                     continue
-                if url in records and not (args.retry_missing_rating and records[url].get("rating") is None):
+                if url in records and not ((args.retry_missing_rating and records[url].get("rating") is None) or args.retry_synopsis):
                     continue
                 if completed >= args.limit:
                     break
@@ -140,6 +156,8 @@ def main():
                         break
                     details = parse_detail(html, page.url)
                     previous = records.get(url, {})
+                    if args.retry_synopsis and not details["synopsis"]:
+                        details["synopsis"] = ""  # Keep existing for inspection until manually verified.
                     records[url] = {
                         "title": item.get("title", ""),
                         "year": item.get("year"),
