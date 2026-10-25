@@ -106,6 +106,14 @@ class _WebSourcePageState extends State<WebSourcePage> {
         if (value is! Map) continue;
         final title = (value['title'] ?? '').toString().trim();
         if (title.length < 3 || !RegExp(r'[A-Za-z]').hasMatch(title)) continue;
+        // Ignore alternative names that drop the distinctive character/movie
+        // identity (e.g. generic "Gekijouban Naruto" for Boruto).
+        final mainWords = _normalizeTitle(_matchTitle).split(' ')
+            .where((word) => word.length >= 5 &&
+                !{'movie','series','film','naruto','gekijouban'}.contains(word))
+            .toSet();
+        final alternativeWords = _normalizeTitle(title).split(' ').toSet();
+        if (mainWords.isNotEmpty && mainWords.intersection(alternativeWords).isEmpty) continue;
         if (_titleAliases.any((e) => _normalizeTitle(e) == _normalizeTitle(title))) continue;
         _titleAliases.add(title);
         _searchQueries.add(title);
