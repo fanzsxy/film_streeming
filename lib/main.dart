@@ -30,8 +30,8 @@ class FilmStream extends StatelessWidget {
     theme:ThemeData.dark(useMaterial3:true).copyWith(scaffoldBackgroundColor:const Color(0xff101218),cardColor:const Color(0xff20252e),appBarTheme:const AppBarTheme(backgroundColor:Color(0xff101218),surfaceTintColor:Colors.transparent),colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xffe5aa55),brightness:Brightness.dark),navigationBarTheme:NavigationBarThemeData(backgroundColor:const Color(0xff191c23),indicatorColor:const Color(0xff62492e),height:76)),home:const StartupGate());
 }
 class Movie {
- final int id; final String title,overview,poster,backdrop,release,type; final double rating; final List<int> genres;
- Movie.fromJson(Map<String,dynamic> j,{String fallback='movie'}):id=(j['id'] as num).toInt(),title=(j['title']??j['name']??'Tanpa judul').toString(),overview=(j['overview']??'').toString(),poster=(j['poster_path']??'').toString(),backdrop=(j['backdrop_path']??'').toString(),release=(j['release_date']??j['first_air_date']??'').toString(),rating=((j['vote_average']??0) as num).toDouble(),type=(j['media_type']=='tv'||j['media_type']=='movie')?j['media_type'] as String:fallback,genres=(j['genre_ids'] as List? ?? []).whereType<num>().map((e)=>e.toInt()).toList();
+ final int id; final String title,overview,poster,backdrop,release,type,sourceUrl; final double rating; final List<int> genres;
+ Movie.fromJson(Map<String,dynamic> j,{String fallback='movie'}):sourceUrl=(j['source_url']??'').toString(),id=(j['id'] as num).toInt(),title=(j['title']??j['name']??'Tanpa judul').toString(),overview=(j['overview']??'').toString(),poster=(j['poster_path']??'').toString(),backdrop=(j['backdrop_path']??'').toString(),release=(j['release_date']??j['first_air_date']??'').toString(),rating=((j['vote_average']??0) as num).toDouble(),type=(j['media_type']=='tv'||j['media_type']=='movie')?j['media_type'] as String:fallback,genres=(j['genre_ids'] as List? ?? []).whereType<num>().map((e)=>e.toInt()).toList();
  String get year => release.length>=4?release.substring(0,4):'—';
 }
 
@@ -81,7 +81,7 @@ class LocalCatalogMetadata {
   static final Map<String, String> _sourceByTmdb = {};
   static String _key(String type, int id) => '$type:$id';
   static Uri? sourceFor(Movie movie) {
-    final raw = _sourceByTmdb[_key(movie.type, movie.id)];
+    final raw = movie.sourceUrl.isNotEmpty ? movie.sourceUrl : _sourceByTmdb[_key(movie.type, movie.id)];
     final uri = raw == null ? null : Uri.tryParse(raw);
     if (uri == null || uri.scheme != 'https') return null;
     if (movie.type == 'tv' && uri.host != 'tv9.nontondrama.my') return null;
@@ -112,6 +112,7 @@ class LocalCatalogMetadata {
           data['title'] = entry.title;
           data['name'] = entry.title;
           data['media_type'] = entry.type;
+          data['source_url'] = entry.url;
           final movie = Movie.fromJson(data, fallback: entry.type);
           _sourceByTmdb[_key(movie.type, movie.id)] = entry.url;
           return movie;
@@ -127,6 +128,12 @@ class LocalCatalogMetadata {
        endpoint.startsWith('movie/')||endpoint.contains('/movie/')?'movie':type=='tv'?'tv':null;
     final filtered=source.where((e)=>(category==null||e.type==category)&&(query.isEmpty||e.title.toLowerCase().contains(query))).toList()
       ..sort((a,b){final x=b.year.compareTo(a.year);return x==0?a.title.compareTo(b.title):x;});
+    // Unusually distant future years remain searchable but do not bury current titles.
+    filtered.sort((a,b) {
+      final af=a.year>DateTime.now().year+2;
+      final bf=b.year>DateTime.now().year+2;
+      return af==bf?0:(af?1:-1);
+    });
     final start=(page-1)*20;
     if(start>=filtered.length)return [];
     final selected=filtered.skip(start).take(20).toList();
