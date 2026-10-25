@@ -20,8 +20,8 @@ async def main():
     ap.add_argument("--retry-rating", action="store_true")
     ap.add_argument("--retry-synopsis", action="store_true")
     args = ap.parse_args()
-    if args.limit < 1 or not 1 <= args.workers <= 3 or args.delay < 2:
-        ap.error("limit >= 1, workers 1-3, delay >= 2 seconds")
+    if args.limit < 1 or not 1 <= args.workers <= 5 or args.delay < 2:
+        ap.error("limit >= 1, workers 1-5, delay >= 2 seconds")
     records = load(OUTPUT, {})
     catalog = load(CATALOG, {}).get("items", [])
     pending = []
