@@ -1,4 +1,31 @@
 {
   "next_url": "https://tv9.nontondrama.my/latest-series/page/50",
-  "completed": true
+  "completed": true,
+  "categories": {
+    "2026": {
+      "start": "https://tv9.nontondrama.my/year/2026",
+      "next_url": "https://tv9.nontondrama.my/year/2026",
+      "completed": true
+    },
+    "2025": {
+      "start": "https://tv9.nontondrama.my/year/2025",
+      "next_url": "https://tv9.nontondrama.my/year/2025",
+      "completed": true
+    },
+    "2024": {
+      "start": "https://tv9.nontondrama.my/year/2024",
+      "next_url": "https://tv9.nontondrama.my/year/2024",
+      "completed": true
+    },
+    "2023": {
+      "start": "https://tv9.nontondrama.my/year/2023",
+      "next_url": "https://tv9.nontondrama.my/year/2023",
+      "completed": true
+    },
+    "2022": {
+      "start": "https://tv9.nontondrama.my/year/2022",
+      "next_url": "https://tv9.nontondrama.my/year/2022",
+      "completed": true
+    }
+  }
 }
