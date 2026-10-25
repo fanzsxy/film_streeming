@@ -88,7 +88,9 @@ def next_page(html, current, category):
     path = urlparse(current).path.rstrip("/")
     m = re.search(r"/page/(\d+)$", path)
     current_number = int(m.group(1)) if m else 1
-    base_path = "/latest" if category == "latest" else f"/year/{category}"
+    base_path = ("/latest" if category == "latest" else
+                 f"/year/{category}" if category.isdigit() else
+                 category.removeprefix("path:"))
     found = []
     for a in soup.select("a[href]"):
         href = urljoin(current, a.get("href", ""))
@@ -106,7 +108,8 @@ def next_page(html, current, category):
 def start_url(category, state):
     if category == "latest":
         return state.get("next_url", BASE + "/latest")
-    return state.get("categories", {}).get(category, BASE + f"/year/{category}")
+    base_path = f"/year/{category}" if category.isdigit() else category.removeprefix("path:")
+    return state.get("categories", {}).get(category, BASE + base_path)
 
 
 def main():
@@ -115,12 +118,25 @@ def main():
     parser.add_argument("--delay", type=float, default=3.0)
     parser.add_argument("--year", type=int, help="Collect a single year, e.g. 2025")
     parser.add_argument("--years", help="Comma-separated list of years, e.g. 2026,2025,2024")
+    parser.add_argument("--category-path", action="append", default=[],
+                        help="Additional observed catalog path, e.g. /genre/action (repeatable)")
     args = parser.parse_args()
     if not 1 <= args.pages <= 100 or args.delay < 2:
         parser.error("--pages must be 1-100 and --delay must be >= 2")
     if args.year and args.years:
         parser.error("Choose either --year or --years")
+    if args.category_path and (args.year or args.years):
+        parser.error("Run year categories separately from --category-path")
     categories = ["latest"]
+    if args.category_path:
+        categories = []
+        for path in args.category_path:
+            parsed = urlparse(path)
+            if (parsed.scheme or parsed.netloc or parsed.query or parsed.fragment or
+                    not re.fullmatch(r"/[A-Za-z0-9/_-]+", path) or
+                    "/page/" in path or path == "/"):
+                parser.error("--category-path must be a plain catalog path, e.g. /genre/action")
+            categories.append("path:" + path.rstrip("/"))
     if args.year or args.years:
         try:
             years = [args.year] if args.year else [int(x.strip()) for x in args.years.split(",")]
