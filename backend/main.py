@@ -235,8 +235,15 @@ def ai_match(payload: AiMatchRequest):
             return {"status": "no_confident_match", "matched": False}
         selected = observed[index]
         year_match = re.search(r"(?:19|20)\d{2}", selected["year"])
-        if not year_match or abs(int(year_match.group()) - int(payload.year)) > 1:
-            return {"status": "year_mismatch", "matched": False}
+        if year_match:
+            if abs(int(year_match.group()) - int(payload.year)) > 1:
+                return {"status": "year_mismatch", "matched": False}
+        else:
+            # Missing year is not a conflicting year. Only permit an
+            # undated result when its full normalized English title agrees.
+            normalize = lambda value: re.sub(r"[^a-z0-9]+", " ", value.casefold()).strip()
+            if normalize(selected["title"]) != normalize(payload.title):
+                return {"status": "year_unverified", "matched": False}
         return {"status": "matched", "matched": True, "url": selected["url"]}
     except (requests.RequestException, ValueError, KeyError, IndexError, TypeError):
         return {"status": "unavailable", "matched": False}
