@@ -86,6 +86,9 @@ def save(items, next_url, completed=False):
 
 
 
+YEAR_STATE = ROOT / "series_years_state.json"
+
+
 def next_year_page(html, current, category_path):
     """Only follow a linked next numbered page inside the same year category."""
     path = urlparse(current).path.rstrip("/")
