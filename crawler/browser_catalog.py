@@ -77,7 +77,7 @@ def next_page(html, current):
     """Follow actual numbered pagination links, not guessed URL patterns."""
     soup = BeautifulSoup(html, "html.parser")
     current_path = urlparse(current).path.rstrip("/")
-    page_match = re.search(r"/page/(\\d+)$", current_path)
+    page_match = re.search(r"/page/(\d+)$", current_path)
     current_number = int(page_match.group(1)) if page_match else 1
     candidates = []
     for a in soup.select("a[href]"):
@@ -85,7 +85,7 @@ def next_page(html, current):
         parsed = urlparse(href)
         if parsed.hostname != urlparse(BASE).hostname:
             continue
-        next_match = re.fullmatch(r"/latest/page/(\\d+)/?", parsed.path)
+        next_match = re.fullmatch(r"/latest/page/(\d+)/?", parsed.path)
         if not next_match:
             continue
         number = int(next_match.group(1))
@@ -93,6 +93,11 @@ def next_page(html, current):
             candidates.append(href)
     # The page displays numbered links (1, 2, 3, ») rather than a
     # link styled .next. Only follow a next-page URL present in the DOM.
+    if not candidates:
+        pagination = [(a.get_text(" ", strip=True), a.get("href", ""))
+                      for a in soup.select("a[href]")
+                      if a.get_text(" ", strip=True) in ("2", "3", "»", "Next", "Berikutnya")]
+        print(f"No numeric pagination URL recognized; visible navigation: {pagination[:10]}")
     return candidates[0] if candidates else None
 
 
