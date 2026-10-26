@@ -56,6 +56,10 @@ jobs:
       - name: Update bundled catalog from cached matches
         run: python tools/prepare_app_catalog.py
 
+      - name: Overall TMDB and Indonesian synopsis progress
+        if: always()
+        run: python tools/tmdb_progress.py
+
       - name: Commit metadata cache and catalog
         run: |
           git config user.name "github-actions[bot]"
