@@ -1,4 +1,5 @@
 import 'filmstream_catalog.dart';
+import 'source_domain_config.dart';
 import 'source_manager.dart';
 import 'web_source_page.dart';
 import 'dart:async';
@@ -641,7 +642,7 @@ class _ExternalSourcePageState extends State<ExternalSourcePage> {
 // Opens the known film page, or a catalogued page, or the site's normal search UI.
 Future<Uri> resolveSourcePage(Movie movie) async {
   final saved=LocalCatalogMetadata.sourceFor(movie);
-  if(saved!=null)return saved;
+  if(saved!=null)return movie.type == 'tv' ? SourceDomainConfig.seriesPage(saved) : saved;
   Uri? page;
   // A previously inspected, exact title match. No guessed embed URLs.
   if (movie.type == 'movie' && movie.id == 762509) {
@@ -668,7 +669,7 @@ Future<Uri> resolveSourcePage(Movie movie) async {
     }
   }
   page ??= Uri.https('tv12.lk21official.cc', '/search', {'s': movie.title});
-  return page;
+  return movie.type == 'tv' ? SourceDomainConfig.seriesPage(page) : page;
 }
 
 Future<void> recordWebOpen(Movie movie, Uri url, {int season = 0, int episode = 0}) async {
