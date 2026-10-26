@@ -85,7 +85,7 @@ class LocalCatalogMetadata {
     final raw = movie.sourceUrl.isNotEmpty ? movie.sourceUrl : _sourceByTmdb[_key(movie.type, movie.id)];
     final uri = raw == null ? null : Uri.tryParse(raw);
     if (uri == null || uri.scheme != 'https') return null;
-    if (movie.type == 'tv' && uri.host != 'tv9.nontondrama.my') return null;
+    if (movie.type == 'tv' && uri.host != 'tv9.nontondrama.my' && uri.host != 'tv.nontondrama.vip') return null;
     if (movie.type == 'movie' && uri.host != 'tv12.lk21official.cc') return null;
     return uri;
   }
@@ -115,7 +115,11 @@ class LocalCatalogMetadata {
     data['release_date']='${entry.year}-01-01';
     data['first_air_date']='${entry.year}-01-01';
     data['media_type']=entry.type;
-    data['source_url']=entry.url;
+    final active = Uri.tryParse(entry.activeSourceUrl);
+    final original = Uri.tryParse(entry.url);
+    data['source_url'] = entry.type == 'tv' && active?.scheme == 'https' &&
+        active?.host == 'tv.nontondrama.vip' && active?.path == original?.path
+        ? entry.activeSourceUrl : entry.url;
     return Movie.fromJson(data,fallback:entry.type);
   }
   static Future<Movie?> enrich(CatalogEntry entry) =>
@@ -144,7 +148,7 @@ class LocalCatalogMetadata {
           data['media_type'] = entry.type;
           data['source_url'] = entry.url;
           final movie = _withCollectedMetadata(entry,data);
-          _sourceByTmdb[_key(movie.type, movie.id)] = entry.url;
+          _sourceByTmdb[_key(movie.type, movie.id)] = movie.sourceUrl;
           return movie;
         } catch (_) {
           return _withCollectedMetadata(entry, {'id': -_stableId(entry.url)});
@@ -190,7 +194,7 @@ class LocalCatalogMetadata {
         item['media_type']=entry.type;
         item['source_url']=entry.url;
         final movie=_withCollectedMetadata(entry,item);
-        _sourceByTmdb[_key(movie.type,movie.id)]=entry.url;
+        _sourceByTmdb[_key(movie.type,movie.id)]=movie.sourceUrl;
         ranked.add(movie);
       }
       return ranked;
