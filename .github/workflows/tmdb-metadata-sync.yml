@@ -1,0 +1,64 @@
+name: FilmStream TMDB Metadata Sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Number of new series TMDB lookups (max 200)'
+        required: true
+        default: '100'
+        type: choice
+        options:
+          - '25'
+          - '50'
+          - '100'
+          - '200'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: filmstream-tmdb-metadata-sync
+  cancel-in-progress: false
+
+jobs:
+  match-series:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+    steps:
+      - name: Checkout catalog
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify TMDB token
+        run: |
+          if [ -z "$TMDB_TOKEN" ]; then
+            echo "::error::Missing repository secret TMDB_TOKEN"
+            exit 1
+          fi
+
+      - name: Match series against TMDB
+        run: python tools/enrich_tmdb.py --type series --limit ${{ inputs.limit }} --delay 0.35
+
+      - name: Update bundled catalog from cached matches
+        run: python tools/prepare_app_catalog.py
+
+      - name: Commit metadata cache and catalog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/catalog/tmdb_cache.jsonl assets/catalog/filmstream_catalog.json
+          if git diff --cached --quiet; then
+            echo "No new metadata changes."
+          else
+            git commit -m "Sync offline series TMDB metadata"
+            git push
+          fi
