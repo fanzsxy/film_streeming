@@ -388,7 +388,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
     if (!_isTv) return false;
     // Only known source site families may redirect the TOP-LEVEL series page.
     // Do not allow an arbitrary HTTPS advertising/gambling page to replace it.
-    const sources = ['nontondrama.my', 'layanfilem.my', 'lk21.de', 'lk21official.cc'];
+    const sources = ['nontondrama.my', 'nontondrama.vip', 'layanfilem.my', 'lk21.de', 'lk21official.cc'];
     return sources.any((base) => host == base || host.endsWith('.$base'));
   }
 
