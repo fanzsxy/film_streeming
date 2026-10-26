@@ -12,6 +12,7 @@ Writes:
 import json
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 CATALOG = Path("assets/catalog/filmstream_catalog.json")
 METADATA = Path("crawler/data/detail_metadata.json")
@@ -24,10 +25,22 @@ def main():
     catalog = json.loads(raw.decode("utf-8-sig"))
     metadata = json.loads(METADATA.read_text(encoding="utf-8-sig"))
     counts = {"movie": 0, "series": 0}
+    active_count = 0
+    # Browser-confirmed pages missing from category metadata.
+    verified_series = {
+        "gotham-2014": "https://tv.nontondrama.vip/gotham-2014",
+        "pinocchio-2014": "https://tv.nontondrama.vip/pinocchio-2014",
+    }
     for entry in catalog.get("items", []):
         url = entry.get("url", "")
         record = metadata.get(url)
         if not isinstance(record, dict):
+            record = {}
+        if entry.get("type") == "series":
+            verified = verified_series.get(urlparse(url).path.strip("/"))
+            if verified:
+                record = {**record, "active_source_url": verified}
+        if not record:
             continue
         kind = entry.get("type")
         if kind not in counts or record.get("type") != kind:
@@ -43,6 +56,14 @@ def main():
             genres = [x for x in record["genres"] if isinstance(x, str) and x.strip()]
             if genres and len(genres) <= 10:
                 entry["genres"] = genres
+        if kind == "series":
+            active = record.get("active_source_url")
+            if isinstance(active, str):
+                parsed = urlparse(active)
+                if (parsed.scheme == "https" and parsed.hostname == "tv.nontondrama.vip"
+                        and parsed.path.rstrip("/") == urlparse(url).path.rstrip("/")):
+                    entry["active_source_url"] = active
+                    active_count += 1
         counts[kind] += 1
     backup = CATALOG.with_name(
         "filmstream_catalog.backup_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
@@ -52,6 +73,7 @@ def main():
     temp.write_text(json.dumps(catalog, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     temp.replace(CATALOG)
     print("Merged metadata into existing Flutter catalog:", counts)
+    print("Series with verified active URL:", active_count)
     print("Backup:", backup)
     print("No source URLs or titles changed. No server requests made.")
 
