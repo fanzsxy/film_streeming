@@ -50,6 +50,9 @@ jobs:
       - name: Match series against TMDB
         run: python tools/enrich_tmdb.py --type series --limit ${{ inputs.limit }} --delay 0.35
 
+      - name: Fetch Indonesian synopses for cached matches
+        run: python tools/localize_tmdb.py --limit ${{ inputs.limit }} --delay 0.35
+
       - name: Update bundled catalog from cached matches
         run: python tools/prepare_app_catalog.py
 
