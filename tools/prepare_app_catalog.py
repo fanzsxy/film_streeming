@@ -26,6 +26,7 @@ def main():
     metadata = json.loads(METADATA.read_text(encoding="utf-8-sig"))
     counts = {"movie": 0, "series": 0}
     active_count = 0
+    missing_active = 0
     # Browser-confirmed pages missing from category metadata.
     verified_series = {
         "gotham-2014": "https://tv.nontondrama.vip/gotham-2014",
@@ -39,7 +40,7 @@ def main():
         if entry.get("type") == "series":
             verified = verified_series.get(urlparse(url).path.strip("/"))
             if verified:
-                record = {**record, "active_source_url": verified}
+                record = {**record, "type": "series", "active_source_url": verified}
         if not record:
             continue
         kind = entry.get("type")
@@ -64,6 +65,8 @@ def main():
                         and parsed.path.rstrip("/") == urlparse(url).path.rstrip("/")):
                     entry["active_source_url"] = active
                     active_count += 1
+        if kind == "series" and not entry.get("active_source_url"):
+            missing_active += 1
         counts[kind] += 1
     backup = CATALOG.with_name(
         "filmstream_catalog.backup_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
@@ -74,6 +77,7 @@ def main():
     temp.replace(CATALOG)
     print("Merged metadata into existing Flutter catalog:", counts)
     print("Series with verified active URL:", active_count)
+    print("Series still without active URL:", missing_active)
     print("Backup:", backup)
     print("No source URLs or titles changed. No server requests made.")
 
