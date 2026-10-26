@@ -58,6 +58,7 @@ def main():
     parser.add_argument('--limit', type=int, default=100, help='Maximum new TMDB requests in this run')
     parser.add_argument('--delay', type=float, default=0.35)
     parser.add_argument('--type', choices=['series', 'movie', 'all'], default='series')
+    parser.add_argument('--priority', choices=['catalog', 'missing-synopsis-newest'], default='catalog')
     args = parser.parse_args()
     if args.limit < 1 or args.delay < 0.25:
         parser.error('--limit >= 1 and --delay >= 0.25')
@@ -73,6 +74,13 @@ def main():
             if line.strip():
                 obj = json.loads(line)
                 cached[obj['source_url']] = obj
+    if args.priority == 'missing-synopsis-newest':
+        catalog = sorted(catalog, key=lambda i: (
+            i['type'] != 'movie',
+            bool((i.get('synopsis') or '').strip()),
+            -(int(i.get('year') or 0) if str(i.get('year') or '').isdigit() else 0),
+            i.get('title', '')
+        ))
     completed = 0
     with cache_path.open('a', encoding='utf-8') as out:
         for item in catalog:
