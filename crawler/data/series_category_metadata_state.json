@@ -4,7 +4,27 @@
     "completed": false
   },
   "2025": {
-    "next_url": "https://tv9.nontondrama.my/year/2025/page/20",
+    "next_url": null,
+    "completed": false
+  },
+  "2024": {
+    "next_url": null,
+    "completed": false
+  },
+  "2023": {
+    "next_url": null,
+    "completed": false
+  },
+  "2022": {
+    "next_url": null,
+    "completed": false
+  },
+  "2021": {
+    "next_url": null,
+    "completed": false
+  },
+  "2020": {
+    "next_url": null,
     "completed": false
   }
 }
