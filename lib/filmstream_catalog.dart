@@ -22,67 +22,16 @@ class CatalogEntry {
 
   factory CatalogEntry.fromJson(Map<String, dynamic> json) {
     final yearValue = json['year'];
-    final year = yearValue is num
+    final originalYear = yearValue is num
         ? yearValue.toInt()
         : int.tryParse(yearValue?.toString() ?? '') ?? 0;
     final url = (json['url'] ?? '').toString();
-    // A title may contain a year (e.g. "2099"), which is not its release year.
-    // Series source slugs end in the actual release year.
-    final slugYear = RegExp(r'-(19|20)\d{2}/?
-      type: (json['type'] ?? '') == 'series' ? 'tv' : 'movie',
-      posterUrl: (json['poster_url'] ?? '').toString(),
-      synopsis: (json['synopsis'] ?? '').toString(),
-      rating: json['rating'] is num ? (json['rating'] as num).toDouble() : null,
-    );
-  }
-}
-
-/// Loads the bundled catalog once. TMDB is used separately for enrichment,
-/// not as the source of titles displayed by FilmStream.
-class FilmStreamCatalog {
-  FilmStreamCatalog._();
-
-  static Future<List<CatalogEntry>>? _cached;
-
-  static Future<List<CatalogEntry>> load() =>
-      _cached ??= _loadFromAssets();
-
-  static Future<List<CatalogEntry>> _loadFromAssets() async {
-    final raw = await rootBundle.loadString(
-      'assets/catalog/filmstream_catalog.json',
-    );
-    final decoded = jsonDecode(raw) as Map<String, dynamic>;
-    final items = (decoded['items'] as List<dynamic>? ?? const []);
-    return List<CatalogEntry>.unmodifiable(
-      items.whereType<Map<String, dynamic>>().map(CatalogEntry.fromJson).where(
-        (entry) =>
-            entry.title.trim().isNotEmpty &&
-            entry.url.startsWith('https://') &&
-            (entry.type == 'movie' || entry.type == 'tv'),
-      ),
-    );
-  }
-
-  static Future<List<CatalogEntry>> find(
-    String query, {
-    String? type,
-    int limit = 100,
-  }) async {
-    final entries = await load();
-    final term = query.toLowerCase().trim();
-    if (term.isEmpty) return const [];
-    return entries
-        .where((entry) =>
-            (type == null || entry.type == type) &&
-            entry.title.toLowerCase().contains(term))
-        .take(limit)
-        .toList(growable: false);
-  }
-}
-).firstMatch(url);
-    final releaseYear = (json['type'] == 'series' && slugYear != null)
-        ? int.tryParse(slugYear.group(0)!.replaceAll(RegExp(r'[^0-9]'), '')) ?? year
-        : year;
+    final path = Uri.tryParse(url)?.path ?? '';
+    // Prefer the trailing release year: titles such as "2099" can be misleading.
+    final slugYear = RegExp(r'-(19|20)[0-9]{2}/?$').firstMatch(path);
+    final releaseYear = json['type'] == 'series' && slugYear != null
+        ? int.tryParse(slugYear.group(0)!.replaceAll(RegExp(r'[^0-9]'), '')) ?? originalYear
+        : originalYear;
     return CatalogEntry(
       title: (json['title'] ?? '').toString(),
       year: releaseYear,
@@ -95,45 +44,30 @@ class FilmStreamCatalog {
   }
 }
 
-/// Loads the bundled catalog once. TMDB is used separately for enrichment,
-/// not as the source of titles displayed by FilmStream.
 class FilmStreamCatalog {
   FilmStreamCatalog._();
-
   static Future<List<CatalogEntry>>? _cached;
-
-  static Future<List<CatalogEntry>> load() =>
-      _cached ??= _loadFromAssets();
+  static Future<List<CatalogEntry>> load() => _cached ??= _loadFromAssets();
 
   static Future<List<CatalogEntry>> _loadFromAssets() async {
-    final raw = await rootBundle.loadString(
-      'assets/catalog/filmstream_catalog.json',
-    );
+    final raw = await rootBundle.loadString('assets/catalog/filmstream_catalog.json');
     final decoded = jsonDecode(raw) as Map<String, dynamic>;
     final items = (decoded['items'] as List<dynamic>? ?? const []);
     return List<CatalogEntry>.unmodifiable(
       items.whereType<Map<String, dynamic>>().map(CatalogEntry.fromJson).where(
-        (entry) =>
-            entry.title.trim().isNotEmpty &&
+        (entry) => entry.title.trim().isNotEmpty &&
             entry.url.startsWith('https://') &&
             (entry.type == 'movie' || entry.type == 'tv'),
       ),
     );
   }
 
-  static Future<List<CatalogEntry>> find(
-    String query, {
-    String? type,
-    int limit = 100,
-  }) async {
+  static Future<List<CatalogEntry>> find(String query, {String? type, int limit = 100}) async {
     final entries = await load();
     final term = query.toLowerCase().trim();
     if (term.isEmpty) return const [];
-    return entries
-        .where((entry) =>
-            (type == null || entry.type == type) &&
-            entry.title.toLowerCase().contains(term))
-        .take(limit)
-        .toList(growable: false);
+    return entries.where((entry) =>
+      (type == null || entry.type == type) &&
+      entry.title.toLowerCase().contains(term)).take(limit).toList(growable: false);
   }
 }
