@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "series": {
+    "legacy_hosts": ["tv9.nontondrama.my"],
+    "active_base_url": "https://tv.nontondrama.vip"
+  }
+}

@@ -57,6 +57,7 @@ def main():
     parser.add_argument('--cache', default='assets/catalog/tmdb_cache.jsonl')
     parser.add_argument('--limit', type=int, default=100, help='Maximum new TMDB requests in this run')
     parser.add_argument('--delay', type=float, default=0.35)
+    parser.add_argument('--type', choices=['series', 'movie', 'all'], default='series')
     args = parser.parse_args()
     if args.limit < 1 or args.delay < 0.25:
         parser.error('--limit >= 1 and --delay >= 0.25')
@@ -75,6 +76,8 @@ def main():
     completed = 0
     with cache_path.open('a', encoding='utf-8') as out:
         for item in catalog:
+            if args.type != 'all' and item['type'] != args.type:
+                continue
             if completed >= args.limit:
                 break
             if item['url'] in cached:
@@ -106,6 +109,7 @@ def main():
                 print('Processed', completed, 'new; cache size', len(cached))
             time.sleep(args.delay)
     print('Finished: new', completed, 'cached', len(cached), 'of', len(catalog))
+    print('Run prepare_app_catalog.py afterward to copy verified matches into the APK catalog.')
 
 
 if __name__ == '__main__':

@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 
 CATALOG = Path("assets/catalog/filmstream_catalog.json")
 METADATA = Path("crawler/data/detail_metadata.json")
+TMDB_CACHE = Path("assets/catalog/tmdb_cache.jsonl")
 
 
 def main():
@@ -24,6 +25,15 @@ def main():
     raw = CATALOG.read_bytes()
     catalog = json.loads(raw.decode("utf-8-sig"))
     metadata = json.loads(METADATA.read_text(encoding="utf-8-sig"))
+    tmdb_by_source = {}
+    if TMDB_CACHE.is_file():
+        for line in TMDB_CACHE.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            item = json.loads(line)
+            if item.get("match_status") == "matched" and isinstance(item.get("tmdb_id"), int):
+                tmdb_by_source[item["source_url"]] = item
+    matched_tmdb = 0
     counts = {"movie": 0, "series": 0}
     active_count = 0
     missing_active = 0
@@ -67,6 +77,15 @@ def main():
                     active_count += 1
         if kind == "series" and not entry.get("active_source_url"):
             missing_active += 1
+        tmdb = tmdb_by_source.get(url)
+        if tmdb and tmdb.get("tmdb_type") == ("tv" if kind == "series" else "movie"):
+            entry["tmdb_id"] = tmdb["tmdb_id"]
+            # Fill gaps only; crawler metadata retains priority.
+            if not entry.get("synopsis") and tmdb.get("overview"):
+                entry["synopsis"] = tmdb["overview"]
+            if not entry.get("poster_url") and tmdb.get("poster_path"):
+                entry["tmdb_poster_path"] = tmdb["poster_path"]
+            matched_tmdb += 1
         counts[kind] += 1
     backup = CATALOG.with_name(
         "filmstream_catalog.backup_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
@@ -77,6 +96,7 @@ def main():
     temp.replace(CATALOG)
     print("Merged metadata into existing Flutter catalog:", counts)
     print("Series with verified active URL:", active_count)
+    print("Cached verified TMDB IDs applied:", matched_tmdb)
     print("Series still without active URL:", missing_active)
     print("Backup:", backup)
     print("No source URLs or titles changed. No server requests made.")

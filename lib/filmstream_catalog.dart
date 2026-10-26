@@ -9,6 +9,8 @@ class CatalogEntry {
   final String type;
   final String posterUrl, synopsis, activeSourceUrl;
   final double? rating;
+  final int? tmdbId;
+  final String tmdbPosterPath;
 
   const CatalogEntry({
     required this.title,
@@ -19,6 +21,8 @@ class CatalogEntry {
     this.synopsis = '',
     this.activeSourceUrl = '',
     this.rating,
+    this.tmdbId,
+    this.tmdbPosterPath = '',
   });
 
   factory CatalogEntry.fromJson(Map<String, dynamic> json) {
@@ -42,6 +46,8 @@ class CatalogEntry {
       synopsis: (json['synopsis'] ?? '').toString(),
       activeSourceUrl: (json['active_source_url'] ?? '').toString(),
       rating: json['rating'] is num ? (json['rating'] as num).toDouble() : null,
+      tmdbId: json['tmdb_id'] is int && json['tmdb_id'] > 0 ? json['tmdb_id'] as int : null,
+      tmdbPosterPath: (json['tmdb_poster_path'] ?? '').toString(),
     );
   }
 }
