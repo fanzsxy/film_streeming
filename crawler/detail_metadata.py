@@ -115,10 +115,14 @@ def parse_detail(html, page_url):
             if rating is not None:
                 break
     genres = []
-    for a in soup.select('a[href*="/genre/"]'):
-        name = a.get_text(" ", strip=True)
-        if name and name not in genres:
-            genres.append(name)
+    # Detail genre links must be scoped to film information, never site menus.
+    for selector in (".mvic-desc a[href*='/genre/']", ".mvic-info a[href*='/genre/']",
+                     ".movie-info a[href*='/genre/']", ".entry-content a[href*='/genre/']"):
+        for a in soup.select(selector):
+            name = a.get_text(" ", strip=True)
+            if name and name not in genres:
+                genres.append(name)
+    genres = genres[:8]
     return {
         "poster_url": image_url(poster, page_url),
         "synopsis": description[:4000],
