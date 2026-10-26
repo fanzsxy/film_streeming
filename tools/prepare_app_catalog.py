@@ -85,6 +85,8 @@ def main():
             # If unavailable, retain crawler synopsis or existing English fallback.
             if tmdb.get("overview_id"):
                 entry["synopsis"] = tmdb["overview_id"]
+            elif tmdb.get("overview_translated_id"):
+                entry["synopsis"] = tmdb["overview_translated_id"]
             elif not entry.get("synopsis") and tmdb.get("overview"):
                 entry["synopsis"] = tmdb["overview"]
             if not entry.get("poster_url") and tmdb.get("poster_path"):
