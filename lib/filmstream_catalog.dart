@@ -7,12 +7,17 @@ class CatalogEntry {
   final int year;
   final String url;
   final String type;
+  final String posterUrl, synopsis;
+  final double? rating;
 
   const CatalogEntry({
     required this.title,
     required this.year,
     required this.url,
     required this.type,
+    this.posterUrl = '',
+    this.synopsis = '',
+    this.rating,
   });
 
   factory CatalogEntry.fromJson(Map<String, dynamic> json) {
@@ -25,6 +30,9 @@ class CatalogEntry {
       year: year,
       url: (json['url'] ?? '').toString(),
       type: (json['type'] ?? '') == 'series' ? 'tv' : 'movie',
+      posterUrl: (json['poster_url'] ?? '').toString(),
+      synopsis: (json['synopsis'] ?? '').toString(),
+      rating: json['rating'] is num ? (json['rating'] as num).toDouble() : null,
     );
   }
 }
