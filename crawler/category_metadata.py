@@ -117,7 +117,12 @@ def merge(old, data):
             if not result.get(key):
                 result[key] = value
         elif value not in (None, "", []):
-            if not result.get(key):
+            if key == "genres":
+                # Many earlier detail records accidentally captured every genre
+                # in the global navigation (typically 15-20 genres).
+                if not result.get("genres") or len(result["genres"]) >= 12:
+                    result[key] = value
+            elif not result.get(key):
                 result[key] = value
     return result
 
