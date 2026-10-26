@@ -34,6 +34,9 @@ jobs:
           python-version: '3.11'
       - name: Check token
         run: test -n "$TMDB_TOKEN"
+      - name: Validate and normalize metadata cache
+        run: python tools/validate_tmdb_cache.py
+
       - name: Match newest movies with missing synopsis
         run: python tools/enrich_tmdb.py --type movie --priority missing-synopsis-newest --limit ${{ inputs.limit }} --delay 0.35
       - name: Check Indonesian descriptions
