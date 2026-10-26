@@ -109,6 +109,7 @@ class LocalCatalogMetadata {
   static Movie _withCollectedMetadata(CatalogEntry entry, Map<String,dynamic> base) {
     final data=Map<String,dynamic>.from(base);
     if(entry.posterUrl.startsWith('https://')) data['poster_path']=entry.posterUrl;
+    else if(entry.tmdbPosterPath.startsWith('/')) data['poster_path']=entry.tmdbPosterPath;
     if(entry.synopsis.isNotEmpty) data['overview']=entry.synopsis;
     if(entry.rating!=null) data['vote_average']=entry.rating;
     data['title']=entry.title;
@@ -125,6 +126,12 @@ class LocalCatalogMetadata {
   }
   static Future<Movie?> enrich(CatalogEntry entry) =>
       _results.putIfAbsent(entry.url, () async {
+        // Offline verified mapping: avoid search request for every catalog item.
+        if (entry.tmdbId != null) {
+          final movie = _withCollectedMetadata(entry, {'id': entry.tmdbId});
+          _sourceByTmdb[_key(movie.type, movie.id)] = movie.sourceUrl;
+          return movie;
+        }
         if (entry.year <= 0) return null;
         try {
           final response = await Tmdb.get(entry.type == 'tv' ? 'search/tv' : 'search/movie',
