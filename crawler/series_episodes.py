@@ -4,7 +4,7 @@ Usage:
   py crawler/series_episodes.py --limit 3 --delay 3
   py crawler/series_episodes.py --limit 100 --delay 3
 
-Saves to crawler/data/series_episodes.json, separate from film metadata.
+Saves episode fields into existing crawler/data/detail_metadata.json.
 Only stores episode URLs explicitly present in HTML. Never guesses URLs.
 """
 import argparse
@@ -19,7 +19,7 @@ from playwright.sync_api import sync_playwright
 
 from detail_metadata import CATALOG, load, save_atomic
 
-OUTPUT = Path("crawler/data/series_episodes.json")
+from detail_metadata import OUTPUT
 HOST = "tv9.nontondrama.my"
 SEASON = re.compile(r"(?:season|musim|saison|s)\s*[-:#.]?\s*(\d{1,2})", re.I)
 EPISODE = re.compile(r"(?:episode|episod|ep|e)\s*[-:#.]?\s*(\d{1,4})", re.I)
@@ -73,7 +73,7 @@ def main():
     pending = [x for x in catalog if x.get("type") == "series"
                and urlparse(x.get("url", "")).scheme == "https"
                and urlparse(x["url"]).hostname == HOST
-               and x["url"] not in existing][:args.limit]
+               and "episodes" not in existing.get(x["url"], {})][:args.limit]
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
         page = browser.new_page()
@@ -97,19 +97,20 @@ def main():
                     episodes = parse_episodes(html, page.url)
                     # An empty result could mean JS-rendered controls or a different DOM.
                     # Keep it visible as unverified, rather than declaring 0 episodes.
-                    existing[url] = {
-                        "title": item.get("title", ""), "source_url": url,
-                        "status": "links_found" if episodes else "needs_review",
-                        "episodes": episodes,
-                    }
+                    record = existing.setdefault(url, {
+                        "title": item.get("title", ""), "year": item.get("year"),
+                        "type": "series", "source_url": url
+                    })
+                    record["episode_status"] = "links_found" if episodes else "needs_review"
+                    record["episodes"] = episodes
                     save_atomic(OUTPUT, existing)
-                    print(f"{item.get('title')}: {len(episodes)} explicit episode links; {existing[url]['status']}")
+                    print(f"{item.get('title')}: {len(episodes)} explicit episode links; {record['episode_status']}")
                 except Exception as exc:
                     print(f"Error: {type(exc).__name__} on {url}")
                 time.sleep(args.delay)
         finally:
             browser.close()
-    print(f"Cached series detail checks: {len(existing)}")
+    print(f"Total combined metadata records: {len(existing)}")
 
 
 if __name__ == "__main__":
