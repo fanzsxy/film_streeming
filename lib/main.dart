@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const tmdbToken = String.fromEnvironment('TMDB_TOKEN');
 const imageRoot = 'https://image.tmdb.org/t/p/w500';
+String filmstreamImageUrl(String path) => path.startsWith('https://') ? path : '$imageRoot$path';
 void main() {WidgetsFlutterBinding.ensureInitialized();PaintingBinding.instance.imageCache.maximumSize = 500; PaintingBinding.instance.imageCache.maximumSizeBytes = 200 << 20;runApp(const FilmStream());}
 class StartupGate extends StatefulWidget {const StartupGate({super.key});@override State<StartupGate> createState()=>_StartupGateState();}
 class _StartupGateState extends State<StartupGate> {
@@ -74,7 +75,7 @@ Future<void> openWatchDetail(BuildContext context, WatchEntry e) async {
   }
 }
 class HistoryPage extends StatelessWidget {const HistoryPage({super.key});
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Riwayat Tontonan')),body:ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,builder:(context,items,_)=>items.isEmpty?const Center(child:Text('Belum ada riwayat. Putar video di FilmStream untuk mulai menyimpan progres.',textAlign:TextAlign.center)):ListView.builder(itemCount:items.length,itemBuilder:(context,i){final e=items[i];return ListTile(leading:e.poster.isEmpty?const SizedBox(width:50,child:Icon(Icons.movie)):Image.network('$imageRoot${e.poster}',width:50,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.movie)),title:Text(e.label,maxLines:2),subtitle:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(e.completed?'Pernah menekan player':e.subtitle=='__webview__'?(e.durationMs>0?'Terakhir ${clock(e.positionMs)} / ${clock(e.durationMs)}':'Episode/film pernah dibuka'):'Terakhir ${clock(e.positionMs)} / ${clock(e.durationMs)}'),LinearProgressIndicator(value:e.progress),const SizedBox(height:4),Text(e.completed?'Putar ulang':e.subtitle=='__webview__'?(e.durationMs>0?'Buka kembali (progres tercatat)':'Buka kembali player'):'Lanjutkan menonton',style:const TextStyle(fontSize:12))]),onTap:()=>openWatchDetail(context,e),trailing:IconButton(tooltip:'Hapus riwayat',icon:const Icon(Icons.delete_outline),onPressed:()=>WatchStore.remove(e.key)));})));
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Riwayat Tontonan')),body:ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,builder:(context,items,_)=>items.isEmpty?const Center(child:Text('Belum ada riwayat. Putar video di FilmStream untuk mulai menyimpan progres.',textAlign:TextAlign.center)):ListView.builder(itemCount:items.length,itemBuilder:(context,i){final e=items[i];return ListTile(leading:e.poster.isEmpty?const SizedBox(width:50,child:Icon(Icons.movie)):Image.network(filmstreamImageUrl(e.poster),width:50,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.movie)),title:Text(e.label,maxLines:2),subtitle:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(e.completed?'Pernah menekan player':e.subtitle=='__webview__'?(e.durationMs>0?'Terakhir ${clock(e.positionMs)} / ${clock(e.durationMs)}':'Episode/film pernah dibuka'):'Terakhir ${clock(e.positionMs)} / ${clock(e.durationMs)}'),LinearProgressIndicator(value:e.progress),const SizedBox(height:4),Text(e.completed?'Putar ulang':e.subtitle=='__webview__'?(e.durationMs>0?'Buka kembali (progres tercatat)':'Buka kembali player'):'Lanjutkan menonton',style:const TextStyle(fontSize:12))]),onTap:()=>openWatchDetail(context,e),trailing:IconButton(tooltip:'Hapus riwayat',icon:const Icon(Icons.delete_outline),onPressed:()=>WatchStore.remove(e.key)));})));
 }
 class LocalCatalogMetadata {
   static final Map<String, Future<Movie?>> _results = {};
@@ -104,6 +105,19 @@ class LocalCatalogMetadata {
     return _similarity(e.title,(d['title']??d['name']??'').toString())>=.86 ||
       _similarity(e.title,(d['original_title']??d['original_name']??'').toString())>=.86;
   }
+  static Movie _withCollectedMetadata(CatalogEntry entry, Map<String,dynamic> base) {
+    final data=Map<String,dynamic>.from(base);
+    if(entry.posterUrl.startsWith('https://')) data['poster_path']=entry.posterUrl;
+    if(entry.synopsis.isNotEmpty) data['overview']=entry.synopsis;
+    if(entry.rating!=null) data['vote_average']=entry.rating;
+    data['title']=entry.title;
+    data['name']=entry.title;
+    data['release_date']='${entry.year}-01-01';
+    data['first_air_date']='${entry.year}-01-01';
+    data['media_type']=entry.type;
+    data['source_url']=entry.url;
+    return Movie.fromJson(data,fallback:entry.type);
+  }
   static Future<Movie?> enrich(CatalogEntry entry) =>
       _results.putIfAbsent(entry.url, () async {
         if (entry.year <= 0) return null;
@@ -121,14 +135,7 @@ class LocalCatalogMetadata {
             if (data['id'] is num) matches.add(data);
           }
           if (matches.length != 1) {
-            return Movie.fromJson({
-              'id': -_stableId(entry.url),
-              'title': entry.title,
-              'release_date': '${entry.year}-01-01',
-              'first_air_date': '${entry.year}-01-01',
-              'media_type': entry.type,
-              'source_url': entry.url,
-            }, fallback: entry.type);
+            return _withCollectedMetadata(entry, {'id': -_stableId(entry.url)});
           }
           final data = matches.single;
           // The crawler owns title, type, release year, and source URL.
@@ -136,18 +143,11 @@ class LocalCatalogMetadata {
           data['name'] = entry.title;
           data['media_type'] = entry.type;
           data['source_url'] = entry.url;
-          final movie = Movie.fromJson(data, fallback: entry.type);
+          final movie = _withCollectedMetadata(entry,data);
           _sourceByTmdb[_key(movie.type, movie.id)] = entry.url;
           return movie;
         } catch (_) {
-          return Movie.fromJson({
-            'id': -_stableId(entry.url),
-            'title': entry.title,
-            'release_date': '${entry.year}-01-01',
-            'first_air_date': '${entry.year}-01-01',
-            'media_type': entry.type,
-            'source_url': entry.url,
-          }, fallback: entry.type);
+          return _withCollectedMetadata(entry, {'id': -_stableId(entry.url)});
         }
       });
   static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
@@ -189,7 +189,7 @@ class LocalCatalogMetadata {
         item['name']=entry.title;
         item['media_type']=entry.type;
         item['source_url']=entry.url;
-        final movie=Movie.fromJson(item,fallback:entry.type);
+        final movie=_withCollectedMetadata(entry,item);
         _sourceByTmdb[_key(movie.type,movie.id)]=entry.url;
         ranked.add(movie);
       }
@@ -428,7 +428,7 @@ class _CinemaHeroState extends State<CinemaHero> {
   return Column(children:[
    SizedBox(height:202,child:PageView.builder(controller:pager,itemCount:entries.length,onPageChanged:(i)=>setState(()=>selected=i),
     itemBuilder:(context,i){final m=entries[i];return Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:7),child:InkWell(onTap:()=>widget.onTap(m),borderRadius:BorderRadius.circular(16),child:ClipRRect(borderRadius:BorderRadius.circular(16),child:Stack(fit:StackFit.expand,children:[
-      Image.network('$imageRoot${m.backdrop}',fit:BoxFit.cover,gaplessPlayback:true,errorBuilder:(_,__,___)=>const ColoredBox(color:Color(0xff252a34))),
+      Image.network(filmstreamImageUrl(m.backdrop),fit:BoxFit.cover,gaplessPlayback:true,errorBuilder:(_,__,___)=>const ColoredBox(color:Color(0xff252a34))),
       const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Colors.transparent,Color(0xdd000000)]))),
       Positioned(bottom:13,left:15,right:15,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m.title,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800,fontSize:21)),Text('Film · ${m.year}  ★ ${m.rating.toStringAsFixed(1)}',style:const TextStyle(fontSize:12,color:Colors.white70))]))
     ]))));})),
@@ -463,7 +463,7 @@ class MovieTile extends StatelessWidget {
   child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
    Expanded(child:ClipRRect(borderRadius:BorderRadius.circular(16),child:Stack(fit:StackFit.expand,children:[
     movie.poster.isEmpty?const ColoredBox(color:Color(0xff252a34),child:Center(child:Icon(Icons.movie_outlined,size:40))):
-      Image.network('$imageRoot${movie.poster}',fit:BoxFit.cover,gaplessPlayback:true,errorBuilder:(_,__,___)=>const ColoredBox(color:Color(0xff252a34),child:Center(child:Icon(Icons.broken_image_outlined)))),
+      Image.network(filmstreamImageUrl(movie.poster),fit:BoxFit.cover,gaplessPlayback:true,errorBuilder:(_,__,___)=>const ColoredBox(color:Color(0xff252a34),child:Center(child:Icon(Icons.broken_image_outlined)))),
     Positioned(top:8,right:8,child:DecoratedBox(decoration:BoxDecoration(color:const Color(0xdd16191f),borderRadius:BorderRadius.circular(7)),child:Padding(padding:const EdgeInsets.symmetric(horizontal:6,vertical:4),child:Row(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.star_rounded,color:Color(0xffe5aa55),size:13),const SizedBox(width:3),Text(movie.rating.toStringAsFixed(1),style:const TextStyle(fontSize:11,fontWeight:FontWeight.bold))])))),
    ]))),
    const SizedBox(height:8),
@@ -500,7 +500,7 @@ class LastWatchedRail extends StatelessWidget {
      SizedBox(height:187,child:ListView.separated(key:const PageStorageKey('last-watched-rail'),scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:16),itemCount:recent.length,separatorBuilder:(_,__)=>const SizedBox(width:12),itemBuilder:(context,i){
        final e=recent[i];return SizedBox(width:176,child:InkWell(borderRadius:BorderRadius.circular(12),onTap:()=>_open(context,e),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
          ClipRRect(borderRadius:BorderRadius.circular(10),child:Stack(children:[
-           SizedBox(height:106,width:176,child:e.poster.isEmpty?const ColoredBox(color:Color(0xff303038),child:Icon(Icons.play_circle_outline)):Image.network('$imageRoot${e.poster}',fit:BoxFit.cover,gaplessPlayback:true,errorBuilder:(_,__,___)=>const ColoredBox(color:Color(0xff303038),child:Icon(Icons.movie)))),
+           SizedBox(height:106,width:176,child:e.poster.isEmpty?const ColoredBox(color:Color(0xff303038),child:Icon(Icons.play_circle_outline)):Image.network(filmstreamImageUrl(e.poster),fit:BoxFit.cover,gaplessPlayback:true,errorBuilder:(_,__,___)=>const ColoredBox(color:Color(0xff303038),child:Icon(Icons.movie)))),
            Positioned(left:7,bottom:9,child:Container(padding:const EdgeInsets.symmetric(horizontal:5,vertical:3),color:Colors.black54,child:Text(e.type=='tv'?'S${e.season} · Eps ${e.episode}':'Film',style:const TextStyle(fontWeight:FontWeight.bold,fontSize:12)))),
            Positioned(left:0,right:0,bottom:0,child:LinearProgressIndicator(minHeight:4,value:e.progress,backgroundColor:Colors.white24,color:const Color(0xffe64653))),
          ])),const SizedBox(height:7),Text(e.title,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:13,fontWeight:FontWeight.w600))
@@ -845,7 +845,7 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
              if (detailScroll.hasClients) detailScroll.jumpTo(0);
            })
        else if (m.type == 'tv' && m.backdrop.isNotEmpty)
-         Stack(children:[Image.network('$imageRoot${m.backdrop}',height:205,width:double.infinity,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink()),const Positioned.fill(child:DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Colors.transparent,Color(0xff101218)]))))]),
+         Stack(children:[Image.network(filmstreamImageUrl(m.backdrop),height:205,width:double.infinity,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink()),const Positioned.fill(child:DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Colors.transparent,Color(0xff101218)]))))]),
        Expanded(child: ListView(controller: detailScroll, children: [
          Padding(padding: const EdgeInsets.all(16), child: Column(
            crossAxisAlignment: CrossAxisAlignment.start, children: [
