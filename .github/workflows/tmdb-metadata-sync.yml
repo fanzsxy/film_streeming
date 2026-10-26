@@ -50,8 +50,14 @@ jobs:
       - name: Match series against TMDB
         run: python tools/enrich_tmdb.py --type series --limit ${{ inputs.limit }} --delay 0.35
 
+      - name: Retry unmatched series with strict alternate-title validation
+        run: python tools/retry_unmatched_tmdb.py --limit ${{ inputs.limit }} --delay 0.5
+
       - name: Fetch Indonesian synopses for cached matches
         run: python tools/localize_tmdb.py --limit ${{ inputs.limit }} --delay 0.35
+
+      - name: Translate a small batch of remaining English synopses
+        run: python tools/translate_missing_synopsis.py --limit 20 --delay 2.5
 
       - name: Update bundled catalog from cached matches
         run: python tools/prepare_app_catalog.py
