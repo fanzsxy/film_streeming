@@ -856,7 +856,9 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
              FutureBuilder<Map<String,dynamic>>(
                future: details,
                builder: (context, localized) {
-                 final description = (localized.data?['overview'] ?? m.overview).toString().trim();
+                 final fromCrawler = m.overview.trim();
+                 final fromTmdb = (localized.data?['overview'] ?? '').toString().trim();
+                 final description = fromCrawler.isNotEmpty ? fromCrawler : fromTmdb;
                  return Text(description.isEmpty ? 'Sinopsis belum tersedia.' : description);
                },
              ),
