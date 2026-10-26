@@ -14,7 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 const tmdbToken = String.fromEnvironment('TMDB_TOKEN');
 const imageRoot = 'https://image.tmdb.org/t/p/w500';
 String filmstreamImageUrl(String path) => path.startsWith('https://') ? path : '$imageRoot$path';
-void main() {WidgetsFlutterBinding.ensureInitialized();PaintingBinding.instance.imageCache.maximumSize = 500; PaintingBinding.instance.imageCache.maximumSizeBytes = 200 << 20;runApp(const FilmStream());}
+void main() {WidgetsFlutterBinding.ensureInitialized();PaintingBinding.instance.imageCache.maximumSize = 160; PaintingBinding.instance.imageCache.maximumSizeBytes = 80 << 20;runApp(const FilmStream());}
 class StartupGate extends StatefulWidget {const StartupGate({super.key});@override State<StartupGate> createState()=>_StartupGateState();}
 class _StartupGateState extends State<StartupGate> {
  late Future<void> loading;

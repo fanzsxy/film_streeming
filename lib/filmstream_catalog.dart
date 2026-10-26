@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/services.dart' show rootBundle;
 
 /// One entry from the crawler's own film/series catalog.
@@ -59,15 +60,9 @@ class FilmStreamCatalog {
 
   static Future<List<CatalogEntry>> _loadFromAssets() async {
     final raw = await rootBundle.loadString('assets/catalog/filmstream_catalog.json');
-    final decoded = jsonDecode(raw) as Map<String, dynamic>;
-    final items = (decoded['items'] as List<dynamic>? ?? const []);
-    return List<CatalogEntry>.unmodifiable(
-      items.whereType<Map<String, dynamic>>().map(CatalogEntry.fromJson).where(
-        (entry) => entry.title.trim().isNotEmpty &&
-            entry.url.startsWith('https://') &&
-            (entry.type == 'movie' || entry.type == 'tv'),
-      ),
-    );
+    // Decode the large bundled catalog on a background isolate to avoid
+    // blocking the UI thread during startup or the first catalog search.
+    return compute(_parseCatalog, raw);
   }
 
   static Future<List<CatalogEntry>> find(String query, {String? type, int limit = 100}) async {
@@ -78,4 +73,17 @@ class FilmStreamCatalog {
       (type == null || entry.type == type) &&
       entry.title.toLowerCase().contains(term)).take(limit).toList(growable: false);
   }
+}
+
+// Top-level function required by compute(). It runs outside the UI isolate.
+List<CatalogEntry> _parseCatalog(String raw) {
+  final decoded = jsonDecode(raw) as Map<String, dynamic>;
+  final items = decoded['items'] as List<dynamic>? ?? const [];
+  return List<CatalogEntry>.unmodifiable(
+    items.whereType<Map<String, dynamic>>().map(CatalogEntry.fromJson).where(
+      (entry) => entry.title.trim().isNotEmpty &&
+          entry.url.startsWith('https://') &&
+          (entry.type == 'movie' || entry.type == 'tv'),
+    ),
+  );
 }
