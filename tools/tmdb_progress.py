@@ -23,6 +23,7 @@ def report():
     unmatched = sum(r.get("match_status") == "unmatched" for r in cached.values())
     id_checked = sum(r.get("overview_id_checked") is True for r in cached.values())
     localized = sum(bool((r.get("overview_id") or "").strip()) for r in cached.values())
+    translated = sum(bool((r.get("overview_translated_id") or "").strip()) for r in cached.values())
     pending = total - processed
     unclassified = processed - matched - unmatched
     percent = 100 * processed / total if total else 0
@@ -41,6 +42,7 @@ def report():
         f"| Tidak cocok (butuh peninjauan) | {unmatched:,} |",
         f"| Status lain/tidak lengkap | {unclassified:,} |",
         f"| Sinopsis Indonesia tersedia dari TMDB | {localized:,} |",
+        f"| Sinopsis diterjemahkan offline | {translated:,} |",
         f"| Sudah dicek bahasa Indonesia | {id_checked:,} |",
         f"| Belum dicek bahasa Indonesia (dari yang cocok) | {matched - id_checked:,} |",
         "",
