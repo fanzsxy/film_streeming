@@ -1,0 +1,54 @@
+name: FilmStream TMDB Movie Sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: New movie matches per run
+        required: true
+        type: choice
+        default: '1000'
+        options:
+          - '100'
+          - '250'
+          - '500'
+          - '1000'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: filmstream-metadata-write
+  cancel-in-progress: false
+
+jobs:
+  match-movies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check token
+        run: test -n "$TMDB_TOKEN"
+      - name: Match newest movies with missing synopsis
+        run: python tools/enrich_tmdb.py --type movie --priority missing-synopsis-newest --limit ${{ inputs.limit }} --delay 0.35
+      - name: Check Indonesian descriptions
+        run: python tools/localize_tmdb.py --limit ${{ inputs.limit }} --delay 0.35
+      - name: Merge cached movie metadata
+        run: python tools/prepare_app_catalog.py
+      - name: Movie progress summary
+        if: always()
+        run: python tools/tmdb_movie_progress.py
+      - name: Commit cache and catalog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/catalog/tmdb_cache.jsonl assets/catalog/filmstream_catalog.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Sync prioritized TMDB movie metadata"
+            git push
+          fi
