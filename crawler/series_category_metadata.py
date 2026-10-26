@@ -61,7 +61,7 @@ def card_metadata(html, page_url):
         if not 1 <= len(title) <= 180:
             continue
         text = card.get_text(" ", strip=True)
-        yr = YEAR.search(urlparse(url).path) or YEAR.search(text)
+        yr = re.search(r"((?:19|20)\\d{2})/?$", urlparse(url).path) or YEAR.search(text)
         # Resolve lazy-load URLs; do not use placeholder data: or blobs.
         poster = ""
         for attr in ("data-src", "data-original", "data-lazy-src", "src"):
@@ -114,7 +114,9 @@ def merge(old, data):
         elif key == "rating_source":
             continue
         elif key in ("title", "year", "type", "source_url"):
-            if not result.get(key):
+            if key == "year" and value and result.get("type") == "series":
+                result[key] = value
+            elif not result.get(key):
                 result[key] = value
         elif value not in (None, "", []):
             if key == "genres":
