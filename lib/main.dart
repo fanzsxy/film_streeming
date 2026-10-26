@@ -12,7 +12,7 @@ import 'package:video_player/video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const tmdbToken = String.fromEnvironment('TMDB_TOKEN');
-const imageRoot = 'https://image.tmdb.org/t/p/w342';
+const imageRoot = 'https://image.tmdb.org/t/p/w500';
 String filmstreamImageUrl(String path) => path.startsWith('https://') ? path : '$imageRoot$path';
 void main() {WidgetsFlutterBinding.ensureInitialized();PaintingBinding.instance.imageCache.maximumSize = 160; PaintingBinding.instance.imageCache.maximumSizeBytes = 80 << 20;runApp(const FilmStream());}
 class StartupGate extends StatefulWidget {const StartupGate({super.key});@override State<StartupGate> createState()=>_StartupGateState();}
