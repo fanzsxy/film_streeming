@@ -20,7 +20,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: filmstream-tmdb-metadata-sync
+  group: filmstream-metadata-write
   cancel-in-progress: false
 
 jobs:
@@ -46,6 +46,9 @@ jobs:
             echo "::error::Missing repository secret TMDB_TOKEN"
             exit 1
           fi
+
+      - name: Validate and normalize metadata cache
+        run: python tools/validate_tmdb_cache.py
 
       - name: Match series against TMDB
         run: python tools/enrich_tmdb.py --type series --limit ${{ inputs.limit }} --delay 0.35
