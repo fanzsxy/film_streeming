@@ -7,7 +7,7 @@ class CatalogEntry {
   final int year;
   final String url;
   final String type;
-  final String posterUrl, synopsis;
+  final String posterUrl, synopsis, activeSourceUrl;
   final double? rating;
 
   const CatalogEntry({
@@ -17,6 +17,7 @@ class CatalogEntry {
     required this.type,
     this.posterUrl = '',
     this.synopsis = '',
+    this.activeSourceUrl = '',
     this.rating,
   });
 
@@ -39,6 +40,7 @@ class CatalogEntry {
       type: (json['type'] ?? '') == 'series' ? 'tv' : 'movie',
       posterUrl: (json['poster_url'] ?? '').toString(),
       synopsis: (json['synopsis'] ?? '').toString(),
+      activeSourceUrl: (json['active_source_url'] ?? '').toString(),
       rating: json['rating'] is num ? (json['rating'] as num).toDouble() : null,
     );
   }
