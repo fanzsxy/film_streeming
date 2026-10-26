@@ -81,7 +81,11 @@ def main():
         if tmdb and tmdb.get("tmdb_type") == ("tv" if kind == "series" else "movie"):
             entry["tmdb_id"] = tmdb["tmdb_id"]
             # Fill gaps only; crawler metadata retains priority.
-            if not entry.get("synopsis") and tmdb.get("overview"):
+            # Indonesian synopsis wins whenever TMDB provides one.
+            # If unavailable, retain crawler synopsis or existing English fallback.
+            if tmdb.get("overview_id"):
+                entry["synopsis"] = tmdb["overview_id"]
+            elif not entry.get("synopsis") and tmdb.get("overview"):
                 entry["synopsis"] = tmdb["overview"]
             if not entry.get("poster_url") and tmdb.get("poster_path"):
                 entry["tmdb_poster_path"] = tmdb["poster_path"]
