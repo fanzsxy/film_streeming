@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       limit:
-        description: 'Number of new series TMDB lookups (max 200)'
+        description: 'Number of new series TMDB lookups (max 1000)'
         required: true
         default: '100'
         type: choice
@@ -13,6 +13,8 @@ on:
           - '50'
           - '100'
           - '200'
+          - '500'
+          - '1000'
 
 permissions:
   contents: write
