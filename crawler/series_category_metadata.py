@@ -16,11 +16,12 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
-from series_catalog import BASE, next_page
+BASE = 'https://tv.nontondrama.vip'
+LEGACY_BASE = 'https://tv9.nontondrama.my'
 from detail_metadata import OUTPUT, load, save_atomic
 from detail_metadata_fast import is_verification_page
 
-STATE = Path("crawler/data/series_category_metadata_state.json")
+STATE = Path("crawler/data/series_category_metadata_state_vip.json")
 ALLOWED_HOST = urlparse(BASE).hostname
 SCORE = re.compile(r"^(?:10(?:\.0)?|[0-9](?:\.[0-9])?)$")
 DURATION = re.compile(r"\b\d{1,2}:\d{2}(?::\d{2})?\b")
@@ -61,7 +62,7 @@ def card_metadata(html, page_url):
         if not 1 <= len(title) <= 180:
             continue
         text = card.get_text(" ", strip=True)
-        yr = re.search(r"((?:19|20)\\d{2})/?$", urlparse(url).path) or YEAR.search(text)
+        yr = re.search(r"((?:19|20)[0-9]{2})/?$", urlparse(url).path) or YEAR.search(text)
         # Resolve lazy-load URLs; do not use placeholder data: or blobs.
         poster = ""
         for attr in ("data-src", "data-original", "data-lazy-src", "src"):
@@ -91,9 +92,11 @@ def card_metadata(html, page_url):
                 if genre and len(genre) < 40 and genre not in genres:
                     genres.append(genre)
         duration_match = DURATION.search(text)
-        results[url] = {
+        legacy_url = LEGACY_BASE + parsed.path.rstrip("/")
+        results[legacy_url] = {
             "title": title, "year": int(yr.group()) if yr else None,
-            "type": "series", "source_url": url,
+            "type": "series", "source_url": legacy_url,
+            "active_source_url": url,
             "poster_url": poster, "rating": rating,
             "rating_source": "category-card" if rating is not None else None,
             "genres": genres, "duration": duration_match.group() if duration_match else None
@@ -157,6 +160,8 @@ def main():
                     print(f"{year}: already completed; skipping")
                     continue
                 url = saved.get("next_url") or f"{BASE}/year/{year}"
+                if urlparse(url).hostname != ALLOWED_HOST:
+                    url = f"{BASE}/year/{year}"
                 visited = set()
                 for _ in range(args.pages):
                     if url in visited:
@@ -178,9 +183,23 @@ def main():
                             return
                         for item_url, entry in found.items():
                             data[item_url] = merge(data.get(item_url, {}), entry)
+                            data[item_url]["active_source_url"] = entry["active_source_url"]
                         # Save records before checkpoint to prevent data loss on restart.
                         save_atomic(OUTPUT, data)
-                        next_url = next_page(html, page.url, key)
+                        # Follow only an observed numbered link within the active domain.
+                        next_url = None
+                        soup = BeautifulSoup(html, "html.parser")
+                        here = urlparse(page.url).path.rstrip("/")
+                        page_num = re.search(r"/page/([0-9]+)$", here)
+                        current_num = int(page_num.group(1)) if page_num else 1
+                        for link in soup.select("a[href]"):
+                            candidate = urljoin(page.url, link.get("href", ""))
+                            parsed_next = urlparse(candidate)
+                            match = re.fullmatch(r"/year/" + key + r"/page/([0-9]+)/?", parsed_next.path)
+                            if (parsed_next.hostname == ALLOWED_HOST and match
+                                    and int(match.group(1)) == current_num + 1):
+                                next_url = candidate
+                                break
                         state[key] = {
                             "next_url": next_url,
                             "completed": False,  # No link alone does not prove completion
