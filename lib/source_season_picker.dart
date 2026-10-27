@@ -19,6 +19,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
   List<int> seasons=[];
   int? selected;
   bool loading=true;
+  bool changingSeason=false;
   bool triedSearch=false;
   bool showSourcePage=false;
   Uri? resolvedPage;
@@ -120,13 +121,19 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
       for(final list in found.values)list.sort((a,b)=>a.episode.compareTo(b.episode));
       final ordered=seasonNums.toList()..sort();
       setState((){
-        seasons=ordered;episodes..clear()..addAll(found);selected=ordered.contains(selected)?selected:(ordered.isEmpty?null:ordered.first);
-        loading=false;error=null;
+        seasons=ordered;
+        // Preserve previously visited seasons; a new page may expose only one season.
+        for(final entry in found.entries){if(entry.value.isNotEmpty)episodes[entry.key]=entry.value;}
+        selected=ordered.contains(selected)?selected:(ordered.isEmpty?null:ordered.first);
+        loading=false;changingSeason=false;error=null;
       });
-    }catch(_){if(mounted)setState((){loading=false;error='Pilihan episode belum dapat dibaca.';});}
+    }catch(_){if(mounted)setState((){loading=false;changingSeason=false;error='Pilihan episode belum dapat dibaca.';});}
   }
   Future<void> _changeSeason(int season) async {
-    setState((){selected=season;loading=true;});
+    if(selected==season || changingSeason)return;
+    // Already resolved once: switch instantly without touching the WebView.
+    if(episodes[season]?.isNotEmpty==true){setState(()=>selected=season);return;}
+    setState((){selected=season;changingSeason=true;error=null;});
     try {
       final js=r'''(() => {
         const n=SEASON;
@@ -147,16 +154,16 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
       await controller.runJavaScript(js);
       await Future<void>.delayed(const Duration(milliseconds:900));
       if(mounted) await _scan();
-    }catch(_){if(mounted)setState(()=>loading=false);}
+    }catch(_){if(mounted)setState((){changingSeason=false;error='Season tidak dapat diperbarui dari sumber.';});}
   }
   @override Widget build(BuildContext context){
-    final active=selected,visible=episodes[active]??const <({int episode,Uri uri})>[];
+    final active=selected,visible=changingSeason ? const <({int episode,Uri uri})>[] : (episodes[active]??const <({int episode,Uri uri})>[]);
     return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       // Keep the source document mounted to read its real selectors, but do
       // not display its player until an episode is picked.
       SizedBox(height:showSourcePage?420:1,width:double.infinity,child:Opacity(opacity:showSourcePage?1:0.01,child:WebViewWidget(controller:controller))),
       const Text('Pilih Season',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
-      if(loading)const LinearProgressIndicator(),
+      if(loading && seasons.isEmpty)const LinearProgressIndicator(),
       if(error!=null)Text(error!,style:const TextStyle(color:Colors.orangeAccent)),
       if(seasons.isNotEmpty)SizedBox(height:58,child:ListView.separated(
         scrollDirection:Axis.horizontal,itemCount:seasons.length,
@@ -166,7 +173,9 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
       if(active!=null)...[
         const SizedBox(height:12),
         Text('Episode • Season $active',style:const TextStyle(fontSize:17,fontWeight:FontWeight.bold)),
-        if(visible.isEmpty)const Padding(padding:EdgeInsets.symmetric(vertical:12),
+        if(changingSeason)const Padding(padding:EdgeInsets.symmetric(vertical:12),
+          child:Text('Memperbarui daftar episode…',style:TextStyle(color:Colors.white70)))
+        else if(visible.isEmpty)const Padding(padding:EdgeInsets.symmetric(vertical:12),
           child:Text('Episode belum ditemukan di halaman sumber.')),
         Wrap(spacing:8,runSpacing:8,children:visible.map((e)=>OutlinedButton(
           onPressed:()=>widget.onEpisodeSelected(active,e.episode,e.uri),
