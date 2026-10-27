@@ -20,6 +20,8 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
   int? selected;
   bool loading=true;
   bool changingSeason=false;
+  int _scanVersion=0;
+  int? _pendingSeason;
   bool triedSearch=false;
   bool showSourcePage=false;
   Uri? resolvedPage;
@@ -29,14 +31,15 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
     controller=WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(NavigationDelegate(
-        onPageFinished:(_)=>_scan(),
+        onPageFinished:(_){ if(mounted) _scan(expectedSeason:_pendingSeason); },
         onWebResourceError:(e){
           if(e.isForMainFrame==true && mounted)setState((){loading=false;error='Halaman sumber gagal dibuka.';});
         },
       ))
       ..loadRequest(widget.source);
   }
-  Future<void> _scan() async {
+  Future<void> _scan({int? expectedSeason}) async {
+    final version=++_scanVersion;
     try {
       if(!triedSearch && widget.source.path.startsWith('/search')){
         triedSearch=true;
@@ -98,12 +101,14 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
             episodes.push({season:sn,episode:ep,url:uri.href});
           }
         });
-        return JSON.stringify({opts,episodes});
+        return JSON.stringify({opts,episodes,active});
       })()''');
       dynamic decoded=result;
       if(decoded is String){try{decoded=jsonDecode(decoded);}catch(_){}}
       if(decoded is String){try{decoded=jsonDecode(decoded);}catch(_){}}
-      if(decoded is! Map || !mounted)return;
+      if(decoded is! Map || !mounted || version!=_scanVersion)return;
+      final actualSeason=(decoded['active'] as num?)?.toInt()??0;
+      if(expectedSeason!=null && actualSeason!=expectedSeason)return;
       final found=<int,List<({int episode,Uri uri})>>{};
       final seasonNums=<int>{};
       for(final raw in (decoded['opts'] as List? ?? const [])){
@@ -123,16 +128,24 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
       setState((){
         seasons=ordered;
         // Preserve previously visited seasons; a new page may expose only one season.
-        for(final entry in found.entries){if(entry.value.isNotEmpty)episodes[entry.key]=entry.value;}
+        for(final entry in found.entries){
+          final existing=episodes[entry.key]??const <({int episode,Uri uri})>[];
+          // A delayed or partially rendered DOM must not shrink an indexed season.
+          if(entry.value.length>=existing.length && entry.value.isNotEmpty)episodes[entry.key]=entry.value;
+        }
         selected=ordered.contains(selected)?selected:(ordered.isEmpty?null:ordered.first);
-        loading=false;changingSeason=false;error=null;
+        loading=false;changingSeason=false;_pendingSeason=null;error=null;
       });
-    }catch(_){if(mounted)setState((){loading=false;changingSeason=false;error='Pilihan episode belum dapat dibaca.';});}
+    }catch(_){if(mounted && version==_scanVersion)setState((){loading=false;changingSeason=false;error='Pilihan episode belum dapat dibaca.';});}
   }
   Future<void> _changeSeason(int season) async {
     if(selected==season || changingSeason)return;
-    // Already resolved once: switch instantly without touching the WebView.
-    if(episodes[season]?.isNotEmpty==true){setState(()=>selected=season);return;}
+    if(episodes[season]?.isNotEmpty==true){
+      setState(()=>selected=season);
+      return;
+    }
+    final version=++_scanVersion;
+    _pendingSeason=season;
     setState((){selected=season;changingSeason=true;error=null;});
     try {
       final js=r'''(() => {
@@ -145,16 +158,36 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
           s.value=option.value;
           s.dispatchEvent(new Event('input',{bubbles:true}));
           s.dispatchEvent(new Event('change',{bubbles:true}));
-          // Some sources use a native onchange handler for navigation.
-          // Let the site's own handler run rather than constructing episode URLs.
           return true;
         }
         return false;
       })()'''.replaceAll('SEASON','$season');
-      await controller.runJavaScript(js);
-      await Future<void>.delayed(const Duration(milliseconds:900));
-      if(mounted) await _scan();
-    }catch(_){if(mounted)setState((){changingSeason=false;error='Season tidak dapat diperbarui dari sumber.';});}
+      final applied=await controller.runJavaScriptReturningResult(js);
+      if(applied==false || applied.toString()=='false')throw StateError('Season selector missing');
+      // The site's dropdown can update episodes asynchronously. Re-read the
+      // page after it settles rather than assuming a fixed 900ms is enough.
+      for(var attempt=0;attempt<9;attempt++){
+        await Future<void>.delayed(const Duration(milliseconds:450));
+        if(!mounted || _pendingSeason!=season)return;
+        await _scan(expectedSeason:season);
+        if(episodes[season]?.isNotEmpty==true && !changingSeason)return;
+      }
+      if(mounted && _pendingSeason==season){
+        setState((){
+          changingSeason=false;
+          _pendingSeason=null;
+          error='Daftar episode season ini belum dapat dibaca dari situs.';
+        });
+      }
+    }catch(_){
+      if(mounted && _pendingSeason==season){
+        setState((){
+          changingSeason=false;
+          _pendingSeason=null;
+          error='Gagal mengganti season dari situs.';
+        });
+      }
+    }
   }
   @override Widget build(BuildContext context){
     final active=selected,visible=changingSeason ? const <({int episode,Uri uri})>[] : (episodes[active]??const <({int episode,Uri uri})>[]);
