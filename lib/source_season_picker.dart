@@ -7,8 +7,10 @@ import 'package:webview_flutter/webview_flutter.dart';
 /// after the user explicitly chooses an episode link.
 class SourceSeasonPicker extends StatefulWidget {
   final Uri source;
+  final String title;
+  final String year;
   final void Function(int season, int episode, Uri url) onEpisodeSelected;
-  const SourceSeasonPicker({super.key, required this.source, required this.onEpisodeSelected});
+  const SourceSeasonPicker({super.key, required this.source, required this.title, required this.year, required this.onEpisodeSelected});
   @override State<SourceSeasonPicker> createState()=>_SourceSeasonPickerState();
 }
 class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
@@ -17,6 +19,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
   List<int> seasons=[];
   int? selected;
   bool loading=true;
+  bool triedSearch=false;
   String? error;
   @override void initState(){
     super.initState();
@@ -32,6 +35,28 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
   }
   Future<void> _scan() async {
     try {
+      if(!triedSearch && widget.source.path.startsWith('/search')){
+        triedSearch=true;
+        final js=r'''(() => {
+          const norm=x=>(x||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+          const wanted=norm(TITLE),year=YEAR;
+          const found=[...document.querySelectorAll('a[href]')].filter(a=>{
+            const item=a.closest('article,.item,.result,.movie,.film,.poster');
+            return norm(a.textContent||a.getAttribute('title'))===wanted &&
+                   (item?.textContent||a.textContent||'').includes(year);
+          });
+          if(found.length!==1)return '';
+          const u=new URL(found[0].href,location.href);
+          return u.protocol==='https:'&&u.host===location.host?u.href:'';
+        })()'''.replaceAll('TITLE',jsonEncode(widget.title))
+          .replaceAll('YEAR',jsonEncode(widget.year));
+        final raw=await controller.runJavaScriptReturningResult(js);
+        final target=Uri.tryParse(raw.toString().replaceAll('"',''));
+        if(target!=null && target.scheme=='https' && target.host==widget.source.host){
+          await controller.loadRequest(target);
+          return;
+        }
+      }
       final result=await controller.runJavaScriptReturningResult(r'''(() => {
         // Do not start playback while only selecting episodes.
         document.querySelectorAll('video').forEach(v => {try { v.pause(); } catch (_) {}});
