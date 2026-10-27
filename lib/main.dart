@@ -1075,20 +1075,36 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
          inlineSource(m, resolved: sourceFuture, onFullscreenExit: () {
            if (detailScroll.hasClients) detailScroll.jumpTo(0);
          })
-       else if (m.type == 'tv' && playingSeason != null && playingEpisode != null)
-         inlineSource(m, season: playingSeason!, episode: playingEpisode!,
-           resolved: episodeSourceFuture, onFullscreenExit: () {
+       else if (m.type == 'tv')
+         inlineSource(m, season: 0, episode: 0,
+           resolved: widget.initialPage != null ? Future.value(widget.initialPage!) : sourceFuture,
+           onFullscreenExit: () {
              if (detailScroll.hasClients) detailScroll.jumpTo(0);
-           })
-       else if (m.type == 'tv' && m.backdrop.isNotEmpty)
-         Stack(children:[Image.network(filmstreamImageUrl(m.backdrop),height:205,width:double.infinity,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink()),const Positioned.fill(child:DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Colors.transparent,Color(0xff101218)]))))]),
+           }),
        Expanded(child: ListView(controller: detailScroll, children: [
          Padding(padding: const EdgeInsets.all(16), child: Column(
            crossAxisAlignment: CrossAxisAlignment.start, children: [
              Text(m.title, style: const TextStyle(fontSize: 29, fontWeight: FontWeight.w800,height:1.12)),
              const SizedBox(height: 8),
              Wrap(spacing:8,runSpacing:6,crossAxisAlignment:WrapCrossAlignment.center,children:[Chip(label:Text(m.type == 'tv' ? 'SERIES' : 'FILM'),visualDensity:VisualDensity.compact,side:BorderSide.none,backgroundColor:const Color(0xff62492e),labelStyle:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)),Text(m.year,style:const TextStyle(color:Colors.white70)),const Icon(Icons.star_rounded,color:Color(0xffe5aa55),size:18),Text(m.rating.toStringAsFixed(1),style:const TextStyle(fontWeight:FontWeight.w700))]),
+             const SizedBox(height: 12),
+             FutureBuilder<Map<String,dynamic>>(
+               future:details,
+               builder:(context,snapshot){
+                 final genres=(snapshot.data?['genres'] as List? ?? const [])
+                   .whereType<Map>().map((g)=>(g['name']??'').toString())
+                   .where((g)=>g.isNotEmpty).toList();
+                 if(genres.isEmpty)return const SizedBox.shrink();
+                 return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                   const Text('Genre',style:TextStyle(fontSize:17,fontWeight:FontWeight.bold)),
+                   const SizedBox(height:8),
+                   Wrap(spacing:7,runSpacing:4,children:genres.map((g)=>
+                     Chip(label:Text(g),visualDensity:VisualDensity.compact)).toList()),
+                 ]);
+               }),
              const SizedBox(height: 14),
+             const Text('Sinopsis',style:TextStyle(fontSize:17,fontWeight:FontWeight.bold)),
+             const SizedBox(height: 7),
              FutureBuilder<Map<String,dynamic>>(
                future: details,
                builder: (context, localized) {
@@ -1098,7 +1114,8 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
                  return Text(description.isEmpty ? 'Sinopsis belum tersedia.' : description);
                },
              ),
-             if (m.type == 'tv' && m.id > 0) _seasonSection(m),
+             // Season and episodes are sourced exclusively from the website WebView.
+             // TMDB episode numbering can differ from the streaming source.
            ],
          )),
        ])),
