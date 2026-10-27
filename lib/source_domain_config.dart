@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 class SourceDomainConfig {
   static const _configUrl =
       'https://raw.githubusercontent.com/fanzsxy/film_streeming/main/config/source_domains.json';
-  static const _fallbackHost = 'tv.nontondrama.vip';
+  static const _fallbackHost = 'tv.lk21online.de';
   static Future<String>? _hostFuture;
 
   static Future<String> _readHost() async {
@@ -76,5 +76,15 @@ class SourceDomainConfig {
   /// WebView must receive the original catalog detail URL so the website can
   /// redirect it using cookies, JavaScript or HTTP just like a normal browser.
   /// Do not preflight with an HTTP client or replace a valid detail URL with search.
-  static Future<Uri> seriesPage(Uri original) async => original;
+  static Future<Uri> seriesPage(Uri original) async {
+    if (original.scheme != 'https' || original.userInfo.isNotEmpty ||
+        original.hasPort) return original;
+    const legacy = {'tv9.nontondrama.my', 'tv.nontondrama.vip'};
+    if (!legacy.contains(original.host)) return original;
+    // The legacy hostname no longer resolves, so no HTTP redirect can happen.
+    // Keep the original detail permalink, query and fragment; replace ONLY
+    // its hostname with the active, explicitly approved source domain.
+    final current = await (_hostFuture ??= _readHost());
+    return original.replace(host:current);
+  }
 }
