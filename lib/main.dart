@@ -166,30 +166,53 @@ class LocalCatalogMetadata {
           return _withCollectedMetadata(entry, {'id': -_stableId(entry.url)});
         }
       });
+  static final Map<String,Future<Map<String,dynamic>?>> _filterDetails={};
+  static Future<Map<String,dynamic>?> _filterMetadataFor(CatalogEntry entry) {
+    final key='${entry.type}:${entry.tmdbId}';
+    if(_filterDetails.length>240)_filterDetails.remove(_filterDetails.keys.first);
+    return _filterDetails.putIfAbsent(key,() async {
+      try {return await Tmdb.get('${entry.type}/${entry.tmdbId}');}
+      catch (_) {return null;}
+    });
+  }
   static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
     final source=await FilmStreamCatalog.load();
-    // Discover filters run at TMDB, then intersect with the local catalog.
+    // Filter starting from catalog entries, not only TMDB's globally popular
+    // discover results. An intersection with discover's first 100 pages is
+    // often empty even when the owner's catalog contains matching movies.
     if(endpoint.startsWith('discover/')) {
       final media=endpoint.endsWith('/tv')?'tv':'movie';
-      final response=await Tmdb.get(endpoint,{'page':'$page',...params});
-      final byTmdbId=<int,CatalogEntry>{};
-      for(final entry in source) {
-        if(entry.type==media && entry.tmdbId!=null) {
-          byTmdbId.putIfAbsent(entry.tmdbId!,()=>entry);
-        }
+      final candidates=source.where((e)=>e.type==media && e.tmdbId!=null).toList()
+        ..sort((a,b)=>b.year.compareTo(a.year));
+      final start=(page-1)*20;
+      if(start>=candidates.length)return [];
+      final chunk=candidates.skip(start).take(20).toList();
+      final genreSet=(params['with_genres']??'').split(',')
+        .map(int.tryParse).whereType<int>().toSet();
+      final language=params['with_original_language']??'';
+      final results=<Movie>[];
+      // Limit concurrent calls and reuse metadata for repeat searches.
+      for(var i=0;i<chunk.length;i+=4) {
+        final group=await Future.wait(chunk.skip(i).take(4).map((entry) async {
+          try {
+            final details=await _filterMetadataFor(entry);
+            if(details==null)return null;
+            final rawGenres=(details['genres'] as List? ?? const [])
+              .whereType<Map>().map((g)=>g['id']).whereType<num>()
+              .map((id)=>id.toInt()).toSet();
+            if(!rawGenres.containsAll(genreSet))return null;
+            if(language.isNotEmpty && details['original_language']!=language)return null;
+            final data=Map<String,dynamic>.from(details);
+            data['genre_ids']=rawGenres.toList();
+            data['media_type']=entry.type;
+            final movie=_withCollectedMetadata(entry,data);
+            _sourceByTmdb[_key(movie.type,movie.id)]=movie.sourceUrl;
+            return movie;
+          } catch (_) {return null;}
+        }));
+        results.addAll(group.whereType<Movie>());
       }
-      final found=<Movie>[];
-      for(final raw in (response['results'] as List? ?? const [])) {
-        if(raw is! Map || raw['id'] is! num)continue;
-        final entry=byTmdbId[(raw['id'] as num).toInt()];
-        if(entry==null)continue;
-        final data=Map<String,dynamic>.from(raw);
-        data['media_type']=media;
-        final movie=_withCollectedMetadata(entry,data);
-        _sourceByTmdb[_key(media,movie.id)]=movie.sourceUrl;
-        found.add(movie);
-      }
-      return found;
+      return results;
     }
     // TMDB supplies ranking only; crawler catalog remains the allow-list.
     if (endpoint.startsWith('trending/') || endpoint.endsWith('/popular') || endpoint.endsWith('/top_rated')) {
@@ -437,7 +460,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     var scanned=0;
     var ended=false;
     final hasFilter=genre1>0||genre2>0||country.isNotEmpty;
-    while(incoming.length<16 && scanned<(hasFilter?12:2) && page<100) {
+    while(incoming.length<16 && scanned<(hasFilter?3:2) && page<500) {
       final nextPage=page+1;
       final kinds=type=='all'?const ['movie','tv']:[type];
       final batches=await Future.wait(kinds.map((k)=>
@@ -464,7 +487,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
       for(final m in incoming){
         if(seenResults.add(m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}'))results.add(m);
       }
-      more=!ended&&page<100;
+      more=!ended&&page<500;
       error='';
     });
   } catch(e) {
