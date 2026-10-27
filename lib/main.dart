@@ -1137,7 +1137,7 @@ class _DetailPageState extends State<DetailPage> {
                  if(!snapshot.hasData)return const LinearProgressIndicator();
                  return SourceSeasonPicker(
                    key:ValueKey('source-season-${m.id}'),
-                   source:snapshot.data!,
+                   source:snapshot.data!, title:m.title, year:m.year,
                    onEpisodeSelected:(season,episode,url){
                      setState((){
                        sourceSeason=season;
