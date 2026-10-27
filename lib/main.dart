@@ -1,6 +1,7 @@
 import 'filmstream_catalog.dart';
 import 'source_domain_config.dart';
 import 'source_manager.dart';
+import 'source_season_picker.dart';
 import 'web_source_page.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -970,7 +971,10 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0,
 }
 
 class DetailPage extends StatefulWidget {final Movie movie;final bool isFavorite;final VoidCallback onFavorite; final int? initialSeason,initialEpisode; final Uri? initialPage; const DetailPage({super.key,required this.movie,required this.isFavorite,required this.onFavorite,this.initialSeason,this.initialEpisode,this.initialPage});@override State<DetailPage> createState()=>_DetailPageState();}
-class _DetailPageState extends State<DetailPage> {String sourceSynopsis='';
+class _DetailPageState extends State<DetailPage> {
+ Uri? selectedEpisodeUrl;
+ int? sourceSeason,sourceEpisode;
+ String sourceSynopsis='';
  void _receiveSynopsis(String text){final clean=text.trim();if(clean.isNotEmpty && mounted && clean!=sourceSynopsis)setState(()=>sourceSynopsis=clean);}
  final videoUrl=TextEditingController(),subtitleUrl=TextEditingController(),sourcePage=TextEditingController();late bool favorite;late Future<Map<String,dynamic>> details; late Future<Uri> sourceFuture;
  @override void initState(){super.initState();favorite=widget.isFavorite;details=widget.movie.id>0?Tmdb.bilingualDetail('${widget.movie.type}/${widget.movie.id}'):Future.value(<String,dynamic>{}); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}}
@@ -1079,13 +1083,19 @@ class _DetailPageState extends State<DetailPage> {String sourceSynopsis='';
          inlineSource(m, resolved: sourceFuture, onSynopsisFound:_receiveSynopsis, onFullscreenExit: () {
            if (detailScroll.hasClients) detailScroll.jumpTo(0);
          })
-       else if (m.type == 'tv')
-         inlineSource(m, resolved: widget.initialPage != null
-           ? Future.value(widget.initialPage!) : sourceFuture,
+       else if (m.type == 'tv' && selectedEpisodeUrl != null)
+         inlineSource(m, season:sourceSeason ?? 0, episode:sourceEpisode ?? 0,
+           resolved:Future.value(selectedEpisodeUrl!),
            onSynopsisFound:_receiveSynopsis,
-           onFullscreenExit: () {
-             if (detailScroll.hasClients) detailScroll.jumpTo(0);
-           }),
+           onFullscreenExit:(){
+             if(detailScroll.hasClients)detailScroll.jumpTo(0);
+           })
+       else if (m.type == 'tv')
+         SizedBox(height:215,width:double.infinity,
+           child:m.poster.isNotEmpty
+             ? Image.network(filmstreamImageUrl(m.poster),fit:BoxFit.contain,
+                 errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.movie_outlined,size:72)))
+             : const Center(child:Icon(Icons.movie_outlined,size:72))),
        Expanded(child: ListView(controller: detailScroll, children: [
          Padding(padding: const EdgeInsets.all(16), child: Column(
            crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1120,8 +1130,27 @@ class _DetailPageState extends State<DetailPage> {String sourceSynopsis='';
                  return Text(description.isEmpty ? 'Sinopsis LK21 belum tersedia.' : description);
                },
              ),
-             // Season and episodes are sourced exclusively from the website WebView.
-             // TMDB episode numbering can differ from the streaming source.
+             if(m.type=='tv')...[
+               const SizedBox(height:20),
+               FutureBuilder<Uri>(future:sourceFuture,builder:(context,snapshot){
+                 if(snapshot.hasError)return const Text('Sumber series belum tersedia.');
+                 if(!snapshot.hasData)return const LinearProgressIndicator();
+                 return SourceSeasonPicker(
+                   key:ValueKey('source-season-${m.id}'),
+                   source:snapshot.data!,
+                   onEpisodeSelected:(season,episode,url){
+                     setState((){
+                       sourceSeason=season;
+                       sourceEpisode=episode;
+                       selectedEpisodeUrl=url;
+                     });
+                     if(detailScroll.hasClients)detailScroll.animateTo(0,
+                       duration:const Duration(milliseconds:250),curve:Curves.easeOut);
+                   },
+                 );
+               }),
+             ],
+             // No TMDB episode picker: source numbering is authoritative.
            ],
          )),
        ])),
