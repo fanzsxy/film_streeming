@@ -230,42 +230,48 @@ class LocalCatalogMetadata {
   }
   static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
     final source=await FilmStreamCatalog.load();
-    // Filter starting from catalog entries, not only TMDB's globally popular
-    // discover results. An intersection with discover's first 100 pages is
-    // often empty even when the owner's catalog contains matching movies.
+    // TMDB discovers movies by genre/language first. Only show titles that
+    // can be matched safely with entries from the owner's catalog.
     if(endpoint.startsWith('discover/')) {
       final media=endpoint.endsWith('/tv')?'tv':'movie';
-      final candidates=source.where((e)=>e.type==media && e.tmdbId!=null).toList()
-        ..sort((a,b)=>b.year.compareTo(a.year));
-      final start=(page-1)*20;
-      if(start>=candidates.length)return [];
-      final chunk=candidates.skip(start).take(20).toList();
-      final genreSet=(params['with_genres']??'').split(',')
-        .map(int.tryParse).whereType<int>().toSet();
-      final language=params['with_original_language']??'';
-      final results=<Movie>[];
-      // Limit concurrent calls and reuse metadata for repeat searches.
-      for(var i=0;i<chunk.length;i+=4) {
-        final group=await Future.wait(chunk.skip(i).take(4).map((entry) async {
-          try {
-            final details=await _filterMetadataFor(entry);
-            if(details==null)return null;
-            final rawGenres=(details['genre_ids'] as List? ?? const [])
-              .whereType<num>().map((id)=>id.toInt()).toSet();
-            if(!rawGenres.containsAll(genreSet))return null;
-            if(language.isNotEmpty && details['original_language']!=language)return null;
-            final data=Map<String,dynamic>.from(details);
-            data['genre_ids']=rawGenres.toList();
-            data['media_type']=entry.type;
-            final movie=_withCollectedMetadata(entry,data);
-            _sourceByTmdb[_key(movie.type,movie.id)]=movie.sourceUrl;
-            return movie;
-          } catch (_) {return null;}
-        }));
-        results.addAll(group.whereType<Movie>());
+      final response=await Tmdb.get(endpoint,{'page':'$page',...params});
+      final catalog=source.where((e)=>e.type==media).toList();
+      final byId=<int,List<CatalogEntry>>{};
+      final byTitleYear=<String,List<CatalogEntry>>{};
+      for(final entry in catalog) {
+        if(entry.tmdbId!=null)byId.putIfAbsent(entry.tmdbId!,()=>[]).add(entry);
+        byTitleYear.putIfAbsent('${entry.year}:${_norm(entry.title)}',()=>[]).add(entry);
       }
-      await _flushFilterIndex();
-      return results;
+      final matches=<Movie>[];
+      for(final raw in (response['results'] as List? ?? const [])) {
+        if(raw is! Map || raw['id'] is! num)continue;
+        final item=Map<String,dynamic>.from(raw);
+        final id=(item['id'] as num).toInt();
+        CatalogEntry? entry;
+        final exactId=byId[id]??const <CatalogEntry>[];
+        if(exactId.length==1) {
+          entry=exactId.single;
+        } else if(exactId.isEmpty) {
+          final date=(item['release_date']??item['first_air_date']??'').toString();
+          final year=date.length>=4?int.tryParse(date.substring(0,4)):null;
+          if(year==null)continue;
+          final candidates=<CatalogEntry>{};
+          for(final title in <String>[
+            (item['title']??item['name']??'').toString(),
+            (item['original_title']??item['original_name']??'').toString()
+          ]) {
+            if(title.trim().isEmpty)continue;
+            candidates.addAll(byTitleYear['${year}:${_norm(title)}']??const []);
+          }
+          if(candidates.length==1)entry=candidates.single;
+        }
+        if(entry==null)continue;
+        item['media_type']=entry.type;
+        final movie=_withCollectedMetadata(entry,item);
+        _sourceByTmdb[_key(movie.type,movie.id)]=movie.sourceUrl;
+        matches.add(movie);
+      }
+      return matches;
     }
     // TMDB supplies ranking only; crawler catalog remains the allow-list.
     if (endpoint.startsWith('trending/') || endpoint.endsWith('/popular') || endpoint.endsWith('/top_rated')) {
@@ -513,7 +519,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     var scanned=0;
     var ended=false;
     final hasFilter=genre1>0||genre2>0||country.isNotEmpty;
-    while(incoming.length<16 && scanned<(hasFilter?3:2) && page<500) {
+    while(incoming.length<16 && scanned<(hasFilter?8:2) && page<500) {
       final nextPage=page+1;
       final kinds=type=='all'?const ['movie','tv']:[type];
       final batches=await Future.wait(kinds.map((k)=>
