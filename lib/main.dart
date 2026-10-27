@@ -166,13 +166,66 @@ class LocalCatalogMetadata {
           return _withCollectedMetadata(entry, {'id': -_stableId(entry.url)});
         }
       });
+  // Compact persistent index. Cache only filter metadata, never huge TMDB detail responses.
+  static const _filterIndexKey='tmdb_filter_index_v2';
   static final Map<String,Future<Map<String,dynamic>?>> _filterDetails={};
-  static Future<Map<String,dynamic>?> _filterMetadataFor(CatalogEntry entry) {
+  static Map<String,dynamic> _filterIndex={};
+  static Future<void>? _indexLoading;
+  static Future<void> _loadFilterIndex() => _indexLoading ??= _readFilterIndex();
+  static Future<void> _readFilterIndex() async {
+    try {
+      final prefs=await SharedPreferences.getInstance();
+      final saved=prefs.getString(_filterIndexKey);
+      if(saved!=null) _filterIndex=Map<String,dynamic>.from(jsonDecode(saved) as Map);
+    } catch (_) {_filterIndex={};}
+  }
+  static Future<void> _saveFilterIndex() async {
+    try {
+      // Keep disk storage bounded; stale entries can be refreshed on demand.
+      if(_filterIndex.length>6000){
+        final keys=_filterIndex.keys.take(_filterIndex.length-6000).toList();
+        for(final key in keys)_filterIndex.remove(key);
+      }
+      final prefs=await SharedPreferences.getInstance();
+      await prefs.setString(_filterIndexKey,jsonEncode(_filterIndex));
+    } catch (_) { /* Metadata can always be fetched again. */ }
+  }
+  static bool _filterIndexDirty=false;
+  static Future<void> _flushFilterIndex() async {
+    if(!_filterIndexDirty)return;
+    _filterIndexDirty=false;
+    await _saveFilterIndex();
+  }
+  static Future<Map<String,dynamic>?> _filterMetadataFor(CatalogEntry entry) async {
+    await _loadFilterIndex();
     final key='${entry.type}:${entry.tmdbId}';
+    final stored=_filterIndex[key];
+    if(stored is Map) {
+      final value=Map<String,dynamic>.from(stored);
+      final updated=(value['_cachedAt'] as num?)?.toInt()??0;
+      if(DateTime.now().millisecondsSinceEpoch-updated < const Duration(days:30).inMilliseconds) {
+        return value;
+      }
+    }
     if(_filterDetails.length>240)_filterDetails.remove(_filterDetails.keys.first);
     return _filterDetails.putIfAbsent(key,() async {
-      try {return await Tmdb.get('${entry.type}/${entry.tmdbId}');}
-      catch (_) {return null;}
+      try {
+        final details=await Tmdb.get('${entry.type}/${entry.tmdbId}');
+        final compact=<String,dynamic>{
+          'id':entry.tmdbId,
+          'genre_ids':(details['genres'] as List? ?? const [])
+              .whereType<Map>().map((e)=>e['id']).whereType<num>().map((e)=>e.toInt()).toList(),
+          'original_language':details['original_language']??'',
+          'poster_path':details['poster_path']??'',
+          'vote_average':details['vote_average']??0,
+          'popularity':details['popularity']??0,
+          '_cachedAt':DateTime.now().millisecondsSinceEpoch,
+        };
+        _filterIndex[key]=compact;
+        _filterIndexDirty=true;
+        return compact;
+      } catch (_) {return null;}
+      finally {_filterDetails.remove(key);}
     });
   }
   static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
@@ -197,9 +250,8 @@ class LocalCatalogMetadata {
           try {
             final details=await _filterMetadataFor(entry);
             if(details==null)return null;
-            final rawGenres=(details['genres'] as List? ?? const [])
-              .whereType<Map>().map((g)=>g['id']).whereType<num>()
-              .map((id)=>id.toInt()).toSet();
+            final rawGenres=(details['genre_ids'] as List? ?? const [])
+              .whereType<num>().map((id)=>id.toInt()).toSet();
             if(!rawGenres.containsAll(genreSet))return null;
             if(language.isNotEmpty && details['original_language']!=language)return null;
             final data=Map<String,dynamic>.from(details);
@@ -212,6 +264,7 @@ class LocalCatalogMetadata {
         }));
         results.addAll(group.whereType<Movie>());
       }
+      await _flushFilterIndex();
       return results;
     }
     // TMDB supplies ranking only; crawler catalog remains the allow-list.
