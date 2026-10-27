@@ -31,6 +31,27 @@ class SourceDomainConfig {
     }
   }
 
+  static String _titleFromSlug(Uri uri) {
+    final last=uri.pathSegments.where((s)=>s.isNotEmpty).lastOrNull ?? '';
+    return Uri.decodeComponent(last).replaceAll(RegExp(r'-(19|20)[0-9]{2} Maps only known legacy series pages.
+  static Future<Uri> seriesPage(Uri original) async {
+    if (original.scheme != 'https') return original;
+    if (original.host != 'tv9.nontondrama.my' &&
+        original.host != 'tv.nontondrama.vip' &&
+        original.host != 'tv.lk21online.de') return original;
+    final host = await (_hostFuture ??= _readHost());
+    if (original.host == host) return original;
+    // A changed host does not guarantee that an old permalink exists there.
+    // Preserve only search routes; callers must search/resolve other pages.
+    if (original.path != '/search' && original.path != '/search/') {
+      return Uri.https(host, '/search', {'s': _titleFromSlug(original)});
+    }
+    return original.replace(host: host);
+  }
+}
+), '').replaceAll('-', ' ');
+  }
+
   /// Never modifies the catalog identity. Maps only known legacy series pages.
   static Future<Uri> seriesPage(Uri original) async {
     if (original.scheme != 'https') return original;
@@ -38,6 +59,11 @@ class SourceDomainConfig {
         original.host != 'tv.nontondrama.vip' &&
         original.host != 'tv.lk21online.de') return original;
     final host = await (_hostFuture ??= _readHost());
-    return original.replace(host: host, port: 443);
+    // A changed host does not guarantee that an old permalink exists there.
+    // Preserve only search routes; callers must search/resolve other pages.
+    if (original.path != '/search' && original.path != '/search/') {
+      return Uri.https(host, '/search', {'s': _titleFromSlug(original)});
+    }
+    return original.replace(host: host, port: 0);
   }
 }

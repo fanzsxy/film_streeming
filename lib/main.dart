@@ -86,7 +86,7 @@ class LocalCatalogMetadata {
     final raw = movie.sourceUrl.isNotEmpty ? movie.sourceUrl : _sourceByTmdb[_key(movie.type, movie.id)];
     final uri = raw == null ? null : Uri.tryParse(raw);
     if (uri == null || uri.scheme != 'https') return null;
-    if (movie.type == 'tv' && uri.host != 'tv9.nontondrama.my' && uri.host != 'tv.nontondrama.vip') return null;
+    if (movie.type == 'tv' && uri.host != 'tv9.nontondrama.my' && uri.host != 'tv.nontondrama.vip' && uri.host != 'tv.lk21online.de') return null;
     if (movie.type == 'movie' && uri.host != 'tv12.lk21official.cc') return null;
     return uri;
   }
