@@ -158,12 +158,11 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
     }catch(_){if(mounted && version==_scanVersion)setState((){loading=false;changingSeason=false;error='Pilihan episode belum dapat dibaca.';});}
   }
   Future<void> _changeSeason(int season, {bool force=false}) async {
-    if((selected==season && !force) || changingSeason)return;
-    if(!force && episodes[season]?.isNotEmpty==true){
-      setState(()=>selected=season);
-      return;
-    }
-    final version=++_scanVersion;
+    if(selected==season && !force && !changingSeason)return;
+    // Do not use cached episodes as a substitute for changing the source
+    // dropdown. The website must follow the season selected in Flutter.
+    if(changingSeason) _scanVersion++;
+    ++_scanVersion;
     _pendingSeason=season;
     setState((){selected=season;changingSeason=true;error=null;});
     try {
@@ -197,7 +196,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
           _pendingSeason=null;
           error=(episodes[season]?.length??0)==0
             ? 'Daftar episode season ini belum dapat dibaca dari situs.'
-            : 'Hanya sebagian episode yang terdeteksi; coba periksa halaman sumber.';
+            : null;
         });
       }
     }catch(_){
