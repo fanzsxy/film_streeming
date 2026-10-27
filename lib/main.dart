@@ -513,7 +513,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     var scanned=0;
     var ended=false;
     final hasFilter=genre1>0||genre2>0||country.isNotEmpty;
-    while(incoming.length<16 && scanned<(hasFilter?3:2) && page<500) {
+    while(incoming.length<24 && scanned<(hasFilter?8:2) && page<500) {
       final nextPage=page+1;
       final kinds=type=='all'?const ['movie','tv']:[type];
       final batches=await Future.wait(kinds.map((k)=>
@@ -573,9 +573,9 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   if(!_optionsLoaded) const Padding(padding:EdgeInsets.all(8),child:LinearProgressIndicator()),
   Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:6),child:Align(alignment:Alignment.centerLeft,child:Text('Katalog ${type=='all'?'Film & Series':type=='tv'?'Series':'Film'}',style:const TextStyle(fontSize:19,fontWeight:FontWeight.w800)))),
   ])),
-  if(results.isEmpty) SliverFillRemaining(hasScrollBody:false,child:Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:Text(error)):busy?const CircularProgressIndicator():more?TextButton(onPressed:_fetch,child:const Text('Belum ada kecocokan — cari halaman berikutnya')):const Text('Tidak ada hasil sesuai filter'))),
+  if(results.isEmpty) SliverFillRemaining(hasScrollBody:false,child:Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:Text(error)):busy?const Column(mainAxisSize:MainAxisSize.min,children:[CircularProgressIndicator(),SizedBox(height:12),Text('Mencari kecocokan genre di katalog TMDB...')]):more?TextButton(onPressed:_fetch,child:const Text('Cari judul lainnya')):const Text('Tidak ada hasil sesuai filter'))),
   if(results.isNotEmpty) SliverPadding(padding:const EdgeInsets.all(12),sliver:SliverGrid(delegate:SliverChildBuilderDelegate((context,i){
-   if(i==results.length)return Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:const Text('Coba lagi')):busy?const CircularProgressIndicator():TextButton(onPressed:_fetch,child:const Text('Muat lagi')));
+   if(i==results.length)return Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:const Text('Coba lagi')):busy?const CircularProgressIndicator():TextButton(onPressed:_fetch,child:const Text('Cari judul lainnya')));
    return MovieTile(key:ValueKey('${results[i].type}:${results[i].id}'),movie:results[i],onTap:widget.onTap);
   },childCount:results.length+(more||busy||error.isNotEmpty?1:0)),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:.58,mainAxisSpacing:14,crossAxisSpacing:12))),
  ]);
