@@ -108,8 +108,11 @@ class LocalCatalogMetadata {
   }
   static Movie _withCollectedMetadata(CatalogEntry entry, Map<String,dynamic> base) {
     final data=Map<String,dynamic>.from(base);
-    if(entry.tmdbPosterPath.startsWith('/')) data['poster_path']=entry.tmdbPosterPath;
-    else if(entry.posterUrl.startsWith('https://')) data['poster_path']=entry.posterUrl;
+    final tmdbPoster=(data['poster_path']??'').toString();
+    if(tmdbPoster.isEmpty) {
+      if(entry.tmdbPosterPath.startsWith('/')) data['poster_path']=entry.tmdbPosterPath;
+      else if(entry.posterUrl.startsWith('https://')) data['poster_path']=entry.posterUrl;
+    }
     if(entry.synopsis.isNotEmpty) data['overview']=entry.synopsis;
     if(entry.rating!=null) data['vote_average']=entry.rating;
     // Prefer a real TMDB poster from metadata; fall back to catalog artwork.
