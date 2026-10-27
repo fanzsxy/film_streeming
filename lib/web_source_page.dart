@@ -46,6 +46,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
   bool _readyNotified = false;
   bool _playIntentNotified = false;
   List<String> _serverNames = const [];
+  List<String> _sourceGenres = const [];
+  String _sourceSynopsis = '';
+  List<Map<String,dynamic>> _sourceEpisodes = const [];
   String _selectedServer = '';
   bool _changingServer = false;
   final List<String> _titleAliases = [];
@@ -497,6 +500,73 @@ class _WebSourcePageState extends State<WebSourcePage> {
     );
   }
 
+  // Read only metadata and real episode links present in the source document.
+  // Never generate episode addresses or replace the site-owned player.
+  Future<void> _readSourceDetails() async {
+    if (!widget.embedded || !_focused) return;
+    try {
+      final raw=await _controller.runJavaScriptReturningResult(r'''(() => {
+        const txt = e => (e?.textContent || '').trim().replace(/\\s+/g,' ');
+        const synopsis = document.querySelector('.synopsis,.description,.entry-content .desc,.film-synopsis,[itemprop="description"],.summary');
+        const genreNodes = document.querySelectorAll('.genres a,.genre a,[rel="tag"],a[href*="/genre/"]');
+        const genres = [...new Set([...genreNodes].map(txt).filter(x=>x && x.length<35))].slice(0,12);
+        const episodes = [];
+        document.querySelectorAll('.episode-list a[href],.episodes a[href],.ep-list a[href],.series-episode a[href]').forEach(a => {
+          try {
+            const uri = new URL(a.getAttribute('href'),location.href);
+            if(uri.protocol !== 'https:' || uri.host !== location.host)return;
+            const text=txt(a);
+            const season = Number((uri.pathname.match(/(?:season|musim)[-_ ]*(\\d+)/i)||[])[1]||0);
+            const number = Number((text.match(/(?:episode|eps?|ep)\\s*0*(\\d+)/i)||uri.pathname.match(/(?:episode|eps?|ep)[-_ ]*0*(\\d+)/i)||[])[1]||0);
+            if(number>0)episodes.push({season,episode:number,url:uri.href});
+          }catch(_){}
+        });
+        return JSON.stringify({genres,synopsis:txt(synopsis).slice(0,1600),episodes:episodes.slice(0,150)});
+      })()''');
+      dynamic parsed=raw;
+      if(parsed is String){try{parsed=jsonDecode(parsed);}catch(_){}}
+      if(parsed is String){try{parsed=jsonDecode(parsed);}catch(_){}}
+      if(parsed is! Map || !mounted)return;
+      final genres=(parsed['genres'] as List? ?? const []).whereType<String>().toList();
+      final synopsis=(parsed['synopsis']??'').toString();
+      final episodes=(parsed['episodes'] as List? ?? const []).whereType<Map>()
+        .map((e)=>Map<String,dynamic>.from(e)).toList();
+      setState((){_sourceGenres=genres;_sourceSynopsis=synopsis;_sourceEpisodes=episodes;});
+    }catch(_){/* Site metadata is optional. */}
+  }
+  Widget _flutterSourceDetails() {
+    if(!_revealed || !_focused || (_sourceGenres.isEmpty && _sourceSynopsis.isEmpty && _sourceEpisodes.isEmpty))return const SizedBox.shrink();
+    return Container(width:double.infinity,color:const Color(0xff17171c),padding:const EdgeInsets.fromLTRB(14,10,14,12),
+      child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
+        if(_sourceGenres.isNotEmpty)...[
+          const Text('Genre dari sumber',style:TextStyle(fontWeight:FontWeight.bold)),
+          const SizedBox(height:6),
+          Wrap(spacing:6,runSpacing:3,children:_sourceGenres.map((g)=>Chip(label:Text(g),visualDensity:VisualDensity.compact)).toList()),
+        ],
+        if(_sourceSynopsis.isNotEmpty)...[
+          const SizedBox(height:8),
+          const Text('Sinopsis dari sumber',style:TextStyle(fontWeight:FontWeight.bold)),
+          const SizedBox(height:5),
+          Text(_sourceSynopsis,maxLines:5,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white70,fontSize:13)),
+        ],
+        if(_isTv && _sourceEpisodes.isNotEmpty)...[
+          const SizedBox(height:10),
+          const Text('Episode tersedia di sumber',style:TextStyle(fontWeight:FontWeight.bold)),
+          const SizedBox(height:6),
+          SizedBox(height:42,child:ListView.separated(scrollDirection:Axis.horizontal,
+            itemCount:_sourceEpisodes.length,separatorBuilder:(_,__)=>const SizedBox(width:6),
+            itemBuilder:(context,i){
+              final e=_sourceEpisodes[i];
+              return OutlinedButton(
+                onPressed:(){
+                  final uri=Uri.tryParse((e['url']??'').toString());
+                  if(uri!=null && uri.scheme=='https' && uri.host==widget.url.host)_controller.loadRequest(uri);
+                },
+                child:Text('${(e['season'] as num?)?.toInt()==0?'':'S${e['season']} · '}E${e['episode']}'));
+            })),
+        ],
+      ]));
+  }
   Future<void> _installProgressObserver() async {
     if (widget.onVideoProgress == null) return;
     try {
@@ -555,7 +625,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
         onPageStarted: (_) {
           _navigationGeneration++;
           _episodeAttempts = 0; // Each new document gets its own resolution attempts.
-          if (mounted) setState(() { _loading = true; _revealed = false; _error = null; _progress = 0; _serverNames = const []; _selectedServer = ''; });
+          if (mounted) setState(() { _loading = true; _revealed = false; _error = null; _progress = 0; _serverNames = const []; _selectedServer = ''; _sourceGenres = const []; _sourceSynopsis = ''; _sourceEpisodes = const []; });
         },
         onProgress: (p) { if (mounted) setState(() => _progress = p); },
         onPageFinished: (url) async {
@@ -607,6 +677,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           if (!mounted || generation != _navigationGeneration) return;
           if (found) {
             await _readServers();
+            await _readSourceDetails();
             await _rememberDetail();
             if (!_readyNotified && widget.onPlayerReady != null) {
               _readyNotified = true;
@@ -853,7 +924,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [AspectRatio(aspectRatio: 16 / 9, child: _playerBody()), _flutterServers()]));
+    if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [AspectRatio(aspectRatio: 16 / 9, child: _playerBody()), _flutterServers(), _flutterSourceDetails()]));
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) { if (!didPop) _back(); },
