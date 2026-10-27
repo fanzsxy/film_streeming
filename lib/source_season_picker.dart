@@ -20,6 +20,8 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
   int? selected;
   bool loading=true;
   bool triedSearch=false;
+  bool showSourcePage=false;
+  Uri? resolvedPage;
   String? error;
   @override void initState(){
     super.initState();
@@ -52,11 +54,14 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
           .replaceAll('YEAR',jsonEncode(widget.year));
         final raw=await controller.runJavaScriptReturningResult(js);
         final target=Uri.tryParse(raw.toString().replaceAll('"',''));
-        if(target!=null && target.scheme=='https' && target.host==widget.source.host){
+        final current=Uri.tryParse(await controller.currentUrl()??'');
+        if(target!=null && target.scheme=='https' && current!=null && target.host==current.host){
           await controller.loadRequest(target);
           return;
         }
       }
+      final currentPage=Uri.tryParse(await controller.currentUrl()??'');
+      if(currentPage!=null && currentPage.scheme=='https')resolvedPage=currentPage;
       final result=await controller.runJavaScriptReturningResult(r'''(() => {
         // Do not start playback while only selecting episodes.
         document.querySelectorAll('video').forEach(v => {try { v.pause(); } catch (_) {}});
@@ -69,10 +74,10 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
         });
         const fallback=location.pathname.match(/(?:season|musim)[-_ ]*(\d+)/i);
         const current=(document.querySelector('select option:checked')?.textContent||'').match(/(?:season|musim)\s*(\d+)/i);
-        const active=Number(current?.[1]||fallback?.[1]||0);
+        const active=Number(current?.[1]||fallback?.[1]||opts.find(o=>o.value===document.querySelector('select')?.value)?.number||0);
         const episodes=[];
         document.querySelectorAll('a[href]').forEach(a=>{
-          const parent=a.closest('.episode,.episodes,.episode-list,.episode-grid,.ep-list,.series-episode,.server-episode');
+          const parent=a.closest('.episode,.episodes,.episode-list,.episode-grid,.ep-list,.series-episode,.server-episode,.episode-items,.episodelist,.episode-container');
           let uri;try{uri=new URL(a.getAttribute('href'),location.href);}catch(_){return;}
           if(uri.protocol!=='https:' || uri.host!==location.host)return;
           const explicit=uri.pathname.match(/(?:season|musim)[-_ ]*(\d+).*?(?:episode|eps?|ep)[-_ ]*0*(\d+)/i);
@@ -96,7 +101,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
         if(raw is! Map)continue;
         final sn=(raw['season'] as num?)?.toInt()??0,ep=(raw['episode'] as num?)?.toInt()??0;
         final uri=Uri.tryParse((raw['url']??'').toString());
-        if(sn<1||ep<1||uri==null||uri.scheme!='https' || uri.host!=widget.source.host)continue;
+        if(sn<1||ep<1||uri==null||uri.scheme!='https' || (resolvedPage!=null && uri.host!=resolvedPage!.host))continue;
         seasonNums.add(sn);
         final list=found.putIfAbsent(sn,()=>[]);
         if(!list.any((e)=>e.episode==ep))list.add((episode:ep,uri:uri));
@@ -104,7 +109,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
       for(final list in found.values)list.sort((a,b)=>a.episode.compareTo(b.episode));
       final ordered=seasonNums.toList()..sort();
       setState((){
-        seasons=ordered;episodes.addAll(found);selected=ordered.contains(selected)?selected:(ordered.isEmpty?null:ordered.first);
+        seasons=ordered;episodes..clear()..addAll(found);selected=ordered.contains(selected)?selected:(ordered.isEmpty?null:ordered.first);
         loading=false;error=null;
       });
     }catch(_){if(mounted)setState((){loading=false;error='Pilihan episode belum dapat dibaca.';});}
@@ -130,7 +135,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
     return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       // Keep the source document mounted to read its real selectors, but do
       // not display its player until an episode is picked.
-      SizedBox(height:1,width:1,child:Opacity(opacity:0.01,child:WebViewWidget(controller:controller))),
+      SizedBox(height:showSourcePage?420:1,width:double.infinity,child:Opacity(opacity:showSourcePage?1:0.01,child:WebViewWidget(controller:controller))),
       const Text('Pilih Season',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
       if(loading)const LinearProgressIndicator(),
       if(error!=null)Text(error!,style:const TextStyle(color:Colors.orangeAccent)),
@@ -148,9 +153,11 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
           onPressed:()=>widget.onEpisodeSelected(active,e.episode,e.uri),
           child:Text('Episode ${e.episode}'))).toList()),
       ],
-      if(seasons.isEmpty && !loading)TextButton.icon(
-        onPressed:(){setState(()=>loading=true);controller.reload();},
-        icon:const Icon(Icons.refresh),label:const Text('Coba baca ulang episode')),
+      if(seasons.isEmpty && !loading)...[
+        const Padding(padding:EdgeInsets.symmetric(vertical:8),child:Text('Daftar season belum dapat dibaca otomatis dari halaman sumber.',style:TextStyle(color:Colors.white70))),
+        TextButton.icon(onPressed:(){setState(()=>loading=true);controller.reload();},icon:const Icon(Icons.refresh),label:const Text('Coba baca ulang episode')),
+        TextButton.icon(onPressed:()=>setState(()=>showSourcePage=!showSourcePage),icon:const Icon(Icons.language),label:Text(showSourcePage?'Sembunyikan halaman sumber':'Tampilkan halaman sumber di aplikasi')),
+      ],
     ]);
   }
 }
