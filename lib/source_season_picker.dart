@@ -140,9 +140,9 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
         loading=false;
         // A single early episode link may be the only DOM node rendered yet.
         // Keep polling until additional episodes arrive or polling times out.
-        final waitingForEpisodes=expectedSeason!=null &&
-          (episodes[expectedSeason]?.length??0)<=1;
-        if(!waitingForEpisodes){changingSeason=false;_pendingSeason=null;}
+        // Do not let an old scan finish a newer season transition.
+        // Keep a pending selection until its async polling completes.
+        if(expectedSeason==null){changingSeason=false;_pendingSeason=null;}
         error=null;
       });
       // Only on the first page read, switch the website's real dropdown to
@@ -159,10 +159,6 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
   }
   Future<void> _changeSeason(int season, {bool force=false}) async {
     if((selected==season && !force) || changingSeason)return;
-    if(!force && episodes[season]?.isNotEmpty==true){
-      setState(()=>selected=season);
-      return;
-    }
     final version=++_scanVersion;
     _pendingSeason=season;
     setState((){selected=season;changingSeason=true;error=null;});
@@ -189,7 +185,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
         await Future<void>.delayed(const Duration(milliseconds:450));
         if(!mounted || _pendingSeason!=season)return;
         await _scan(expectedSeason:season);
-        if(!changingSeason)return;
+        if((episodes[season]?.length??0)>1)break;
       }
       if(mounted && _pendingSeason==season){
         setState((){
@@ -197,7 +193,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
           _pendingSeason=null;
           error=(episodes[season]?.length??0)==0
             ? 'Daftar episode season ini belum dapat dibaca dari situs.'
-            : 'Hanya sebagian episode yang terdeteksi; coba periksa halaman sumber.';
+            : null;
         });
       }
     }catch(_){
