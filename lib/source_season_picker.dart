@@ -76,15 +76,26 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
         const current=(document.querySelector('select option:checked')?.textContent||'').match(/(?:season|musim)\s*(\d+)/i);
         const active=Number(current?.[1]||fallback?.[1]||opts.find(o=>o.value===document.querySelector('select')?.value)?.number||0);
         const episodes=[];
-        document.querySelectorAll('a[href]').forEach(a=>{
-          const parent=a.closest('.episode,.episodes,.episode-list,.episode-grid,.ep-list,.series-episode,.server-episode,.episode-items,.episodelist,.episode-container');
-          let uri;try{uri=new URL(a.getAttribute('href'),location.href);}catch(_){return;}
-          if(uri.protocol!=='https:' || uri.host!==location.host)return;
+        // Some source pages render numbered episodes as bare anchors in a
+        // season panel, rather than using an "episode" CSS class.
+        const selector='a[href],a[data-href],a[data-url]';
+        const root=[...document.querySelectorAll('select')].find(s=>
+          [...s.options].some(o=>/(?:season|musim)\s*\d+/i.test(o.textContent||'')));
+        const seasonPanel=root?.closest('section,.row,.box,.content,.entry-content')||null;
+        document.querySelectorAll(selector).forEach(a=>{
+          const raw=a.getAttribute('href')||a.dataset.href||a.dataset.url;
+          if(!raw||raw==='#'||raw.startsWith('javascript:'))return;
+          let uri;try{uri=new URL(raw,location.href);}catch(_){return;}
+          if(uri.protocol!=='https:'||uri.host!==location.host)return;
           const explicit=uri.pathname.match(/(?:season|musim)[-_ ]*(\d+).*?(?:episode|eps?|ep)[-_ ]*0*(\d+)/i);
           const numberText=(a.textContent||'').trim().match(/^(?:episode|eps?|ep)?\s*0*(\d+)$/i);
+          const panel=a.closest('.episode,.episodes,.episode-list,.episode-grid,.ep-list,.series-episode,.server-episode,.episode-items,.episodelist,.episode-container,[class*="episode"],[id*="episode"]');
+          const insidePanel=seasonPanel&&seasonPanel.contains(a);
           const sn=explicit?Number(explicit[1]):active;
-          const ep=explicit?Number(explicit[2]):parent&&numberText?Number(numberText[1]):0;
-          if(sn>0&&ep>0&&ep<1000&&(explicit||parent))episodes.push({season:sn,episode:ep,url:uri.href});
+          const ep=explicit?Number(explicit[2]):numberText&&(panel||insidePanel)?Number(numberText[1]):0;
+          if(sn>0&&ep>0&&ep<1000&&(explicit||panel||insidePanel)){
+            episodes.push({season:sn,episode:ep,url:uri.href});
+          }
         });
         return JSON.stringify({opts,episodes});
       })()''');
@@ -120,14 +131,22 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
       final js=r'''(() => {
         const n=SEASON;
         for(const s of document.querySelectorAll('select')){
-          const option=[...s.options].find(o=>new RegExp('(?:season|musim)\s*'+n+'(?!\d)','i').test((o.textContent||'')+' '+o.value));
-          if(option){s.value=option.value;s.dispatchEvent(new Event('change',{bubbles:true}));return true;}
+          const option=[...s.options].find(o =>
+            new RegExp('(?:season|musim)\\s*'+n+'(?!\\d)','i')
+              .test((o.textContent||'')+' '+o.value));
+          if(!option)continue;
+          s.value=option.value;
+          s.dispatchEvent(new Event('input',{bubbles:true}));
+          s.dispatchEvent(new Event('change',{bubbles:true}));
+          // Some sources use a native onchange handler for navigation.
+          // Let the site's own handler run rather than constructing episode URLs.
+          return true;
         }
         return false;
       })()'''.replaceAll('SEASON','$season');
       await controller.runJavaScript(js);
-      await Future<void>.delayed(const Duration(milliseconds:450));
-      await _scan();
+      await Future<void>.delayed(const Duration(milliseconds:900));
+      if(mounted) await _scan();
     }catch(_){if(mounted)setState(()=>loading=false);}
   }
   @override Widget build(BuildContext context){
