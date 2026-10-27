@@ -875,6 +875,21 @@ class _ExternalSourcePageState extends State<ExternalSourcePage> {
 Future<Uri> resolveSourcePage(Movie movie) async {
   final saved=LocalCatalogMetadata.sourceFor(movie);
   if(saved!=null)return movie.type == 'tv' ? SourceDomainConfig.seriesPage(saved) : saved;
+  // Prefer exact series detail permalink from the bundled catalog, even when
+  // the selected TMDB movie object did not preserve its sourceUrl.
+  if(movie.type=='tv'){
+    final candidates=await FilmStreamCatalog.find(movie.title,type:'tv',limit:100);
+    final matches=candidates.where((entry)=>
+      entry.title.trim().toLowerCase()==movie.title.trim().toLowerCase() &&
+      (entry.year.toString()==movie.year || entry.year==0)).toList();
+    if(matches.length==1){
+      final uri=Uri.tryParse(matches.single.url);
+      if(uri!=null && uri.scheme=='https' &&
+         const {'tv9.nontondrama.my','tv.nontondrama.vip','tv.lk21online.de'}.contains(uri.host)){
+        return SourceDomainConfig.seriesPage(uri);
+      }
+    }
+  }
   Uri? page;
   // A previously inspected, exact title match. No guessed embed URLs.
   if (movie.type == 'movie' && movie.id == 762509) {
