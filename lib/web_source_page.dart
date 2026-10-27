@@ -535,20 +535,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
     }catch(_){/* Site metadata is optional. */}
   }
   Widget _flutterSourceDetails() {
-    if(!_revealed || !_focused || (_sourceGenres.isEmpty && _sourceSynopsis.isEmpty && _sourceEpisodes.isEmpty))return const SizedBox.shrink();
+    if(!_revealed || !_focused || _sourceEpisodes.isEmpty)return const SizedBox.shrink();
     return Container(width:double.infinity,color:const Color(0xff17171c),padding:const EdgeInsets.fromLTRB(14,10,14,12),
       child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
-        if(_sourceGenres.isNotEmpty)...[
-          const Text('Genre dari sumber',style:TextStyle(fontWeight:FontWeight.bold)),
-          const SizedBox(height:6),
-          Wrap(spacing:6,runSpacing:3,children:_sourceGenres.map((g)=>Chip(label:Text(g),visualDensity:VisualDensity.compact)).toList()),
-        ],
-        if(_sourceSynopsis.isNotEmpty)...[
-          const SizedBox(height:8),
-          const Text('Sinopsis dari sumber',style:TextStyle(fontWeight:FontWeight.bold)),
-          const SizedBox(height:5),
-          Text(_sourceSynopsis,maxLines:5,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white70,fontSize:13)),
-        ],
         if(_isTv && _sourceEpisodes.isNotEmpty)...[
           const SizedBox(height:10),
           const Text('Episode tersedia di sumber',style:TextStyle(fontWeight:FontWeight.bold)),
