@@ -1,7 +1,15 @@
 {
-  "version": 1,
+  "version": 2,
   "series": {
-    "legacy_hosts": ["tv9.nontondrama.my"],
-    "active_base_url": "https://tv.nontondrama.vip"
+    "legacy_hosts": [
+      "tv9.nontondrama.my",
+      "tv.nontondrama.vip"
+    ],
+    "active_base_url": "https://tv.lk21online.de",
+    "allowed_hosts": [
+      "tv.lk21online.de",
+      "tv.nontondrama.vip",
+      "tv9.nontondrama.my"
+    ]
   }
 }
