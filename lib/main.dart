@@ -1075,13 +1075,12 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
          inlineSource(m, resolved: sourceFuture, onFullscreenExit: () {
            if (detailScroll.hasClients) detailScroll.jumpTo(0);
          })
-       else if (m.type == 'tv' && playingSeason != null && playingEpisode != null)
-         inlineSource(m, season: playingSeason!, episode: playingEpisode!,
-           resolved: episodeSourceFuture, onFullscreenExit: () {
+       else if (m.type == 'tv')
+         inlineSource(m, season: 0, episode: 0,
+           resolved: widget.initialPage != null ? Future.value(widget.initialPage!) : sourceFuture,
+           onFullscreenExit: () {
              if (detailScroll.hasClients) detailScroll.jumpTo(0);
-           })
-       else if (m.type == 'tv' && m.backdrop.isNotEmpty)
-         Stack(children:[Image.network(filmstreamImageUrl(m.backdrop),height:205,width:double.infinity,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink()),const Positioned.fill(child:DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Colors.transparent,Color(0xff101218)]))))]),
+           }),
        Expanded(child: ListView(controller: detailScroll, children: [
          Padding(padding: const EdgeInsets.all(16), child: Column(
            crossAxisAlignment: CrossAxisAlignment.start, children: [
