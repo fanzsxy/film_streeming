@@ -219,21 +219,87 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
       const Text('Pilih Season',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
       if(loading && seasons.isEmpty)const LinearProgressIndicator(),
       if(error!=null)Text(error!,style:const TextStyle(color:Colors.orangeAccent)),
-      if(seasons.isNotEmpty)SizedBox(height:58,child:ListView.separated(
-        scrollDirection:Axis.horizontal,itemCount:seasons.length,
-        separatorBuilder:(_,__)=>const SizedBox(width:8),
-        itemBuilder:(context,i)=>ChoiceChip(label:Text('Season ${seasons[i]}'),
-          selected:selected==seasons[i],onSelected:(_)=>_changeSeason(seasons[i])))),
+      if(seasons.isNotEmpty)SizedBox(
+        height:112,
+        child:ListView.separated(
+          scrollDirection:Axis.horizontal,
+          itemCount:seasons.length,
+          separatorBuilder:(_,__)=>const SizedBox(width:12),
+          itemBuilder:(context,i){
+            final season=seasons[i];
+            final isActive=selected==season;
+            final count=episodes[season]?.length;
+            return InkWell(
+              borderRadius:BorderRadius.circular(18),
+              onTap:()=>_changeSeason(season),
+              child:Container(
+                width:172,
+                padding:const EdgeInsets.symmetric(horizontal:16,vertical:15),
+                decoration:BoxDecoration(
+                  color:isActive?const Color(0xFF51333A):const Color(0xFF222329),
+                  borderRadius:BorderRadius.circular(18),
+                  border:Border.all(
+                    color:isActive?const Color(0xFFFFA5AC):Colors.white24,
+                    width:isActive?2:1,
+                  ),
+                ),
+                child:Column(
+                  crossAxisAlignment:CrossAxisAlignment.start,
+                  mainAxisAlignment:MainAxisAlignment.center,
+                  children:[
+                    Row(children:[
+                      Expanded(child:Text('Season $season',
+                        maxLines:1,overflow:TextOverflow.ellipsis,
+                        style:const TextStyle(color:Colors.white,fontSize:18,fontWeight:FontWeight.bold))),
+                      Icon(Icons.chevron_right,
+                        color:isActive?const Color(0xFFFFB5BA):Colors.white70),
+                    ]),
+                    const SizedBox(height:9),
+                    Text(count==null?'Episode belum dibaca':'$count episode terdeteksi',
+                      maxLines:1,overflow:TextOverflow.ellipsis,
+                      style:const TextStyle(color:Colors.white70,fontSize:12)),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
       if(active!=null)...[
+        const SizedBox(height:24),
+        Text('Episode • Season $active',
+          style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
         const SizedBox(height:12),
-        Text('Episode • Season $active',style:const TextStyle(fontSize:17,fontWeight:FontWeight.bold)),
-        if(changingSeason)const Padding(padding:EdgeInsets.symmetric(vertical:12),
-          child:Text('Memperbarui daftar episode…',style:TextStyle(color:Colors.white70)))
-        else if(visible.isEmpty)const Padding(padding:EdgeInsets.symmetric(vertical:12),
+        if(changingSeason)const Padding(
+          padding:EdgeInsets.symmetric(vertical:12),
+          child:Text('Memperbarui daftar episode…',
+            style:TextStyle(color:Colors.white70)))
+        else if(visible.isEmpty)const Padding(
+          padding:EdgeInsets.symmetric(vertical:12),
           child:Text('Episode belum ditemukan di halaman sumber.')),
-        Wrap(spacing:8,runSpacing:8,children:visible.map((e)=>OutlinedButton(
-          onPressed:()=>widget.onEpisodeSelected(active,e.episode,e.uri),
-          child:Text('Episode ${e.episode}'))).toList()),
+        if(!changingSeason)...visible.map((e)=>Padding(
+          padding:const EdgeInsets.only(bottom:12),
+          child:Material(
+            color:const Color(0xFF23242A),
+            borderRadius:BorderRadius.circular(16),
+            child:InkWell(
+              borderRadius:BorderRadius.circular(16),
+              onTap:()=>widget.onEpisodeSelected(active,e.episode,e.uri),
+              child:Padding(
+                padding:const EdgeInsets.symmetric(horizontal:16,vertical:16),
+                child:Row(children:[
+                  SizedBox(width:42,child:Text('${e.episode}',
+                    style:const TextStyle(fontSize:27,fontWeight:FontWeight.bold,color:Colors.white))),
+                  const SizedBox(width:12),
+                  Expanded(child:Text('Episode ${e.episode}',
+                    style:const TextStyle(fontSize:17,fontWeight:FontWeight.w600,color:Colors.white))),
+                  const SizedBox(width:8),
+                  const Icon(Icons.play_circle_outline,color:Colors.white70,size:30),
+                ]),
+              ),
+            ),
+          ),
+        )),
       ],
       if(seasons.isEmpty && !loading)...[
         const Padding(padding:EdgeInsets.symmetric(vertical:8),child:Text('Daftar season belum dapat dibaca otomatis dari halaman sumber.',style:TextStyle(color:Colors.white70))),
