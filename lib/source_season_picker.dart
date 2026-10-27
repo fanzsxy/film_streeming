@@ -38,20 +38,20 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
         const opts=[];
         document.querySelectorAll('select').forEach((s,index)=>{
           [...s.options].forEach(o=>{
-            const m=((o.textContent||'')+' '+o.value).match(/(?:season|musim)\\s*([0-9]+)/i);
+            const m=((o.textContent||'')+' '+o.value).match(/(?:season|musim)\s*([0-9]+)/i);
             if(m)opts.push({number:Number(m[1]),select:index,value:o.value});
           });
         });
-        const fallback=location.pathname.match(/(?:season|musim)[-_ ]*(\\d+)/i);
-        const current=(document.querySelector('select option:checked')?.textContent||'').match(/(?:season|musim)\\s*(\\d+)/i);
+        const fallback=location.pathname.match(/(?:season|musim)[-_ ]*(\d+)/i);
+        const current=(document.querySelector('select option:checked')?.textContent||'').match(/(?:season|musim)\s*(\d+)/i);
         const active=Number(current?.[1]||fallback?.[1]||0);
         const episodes=[];
         document.querySelectorAll('a[href]').forEach(a=>{
           const parent=a.closest('.episode,.episodes,.episode-list,.episode-grid,.ep-list,.series-episode,.server-episode');
           let uri;try{uri=new URL(a.getAttribute('href'),location.href);}catch(_){return;}
           if(uri.protocol!=='https:' || uri.host!==location.host)return;
-          const explicit=uri.pathname.match(/(?:season|musim)[-_ ]*(\\d+).*?(?:episode|eps?|ep)[-_ ]*0*(\\d+)/i);
-          const numberText=(a.textContent||'').trim().match(/^(?:episode|eps?|ep)?\\s*0*(\\d+)$/i);
+          const explicit=uri.pathname.match(/(?:season|musim)[-_ ]*(\d+).*?(?:episode|eps?|ep)[-_ ]*0*(\d+)/i);
+          const numberText=(a.textContent||'').trim().match(/^(?:episode|eps?|ep)?\s*0*(\d+)$/i);
           const sn=explicit?Number(explicit[1]):active;
           const ep=explicit?Number(explicit[2]):parent&&numberText?Number(numberText[1]):0;
           if(sn>0&&ep>0&&ep<1000&&(explicit||parent))episodes.push({season:sn,episode:ep,url:uri.href});
@@ -90,7 +90,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
       final js=r'''(() => {
         const n=SEASON;
         for(const s of document.querySelectorAll('select')){
-          const option=[...s.options].find(o=>new RegExp('(?:season|musim)\\s*'+n+'(?!\\d)','i').test((o.textContent||'')+' '+o.value));
+          const option=[...s.options].find(o=>new RegExp('(?:season|musim)\s*'+n+'(?!\d)','i').test((o.textContent||'')+' '+o.value));
           if(option){s.value=option.value;s.dispatchEvent(new Event('change',{bubbles:true}));return true;}
         }
         return false;
