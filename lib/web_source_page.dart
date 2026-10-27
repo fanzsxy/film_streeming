@@ -663,6 +663,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
             }
           }
           if (!mounted || generation != _navigationGeneration) return;
+          if (!_focused && widget.onSynopsisFound != null) await _readSourceDetails();
+          if (!mounted || generation != _navigationGeneration) return;
           bool found = false;
           if (_focused) found = await _applyFocus();
           if (!mounted || generation != _navigationGeneration) return;
