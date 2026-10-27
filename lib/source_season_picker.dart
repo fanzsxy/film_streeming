@@ -76,15 +76,26 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
         const current=(document.querySelector('select option:checked')?.textContent||'').match(/(?:season|musim)\s*(\d+)/i);
         const active=Number(current?.[1]||fallback?.[1]||opts.find(o=>o.value===document.querySelector('select')?.value)?.number||0);
         const episodes=[];
-        document.querySelectorAll('a[href]').forEach(a=>{
-          const parent=a.closest('.episode,.episodes,.episode-list,.episode-grid,.ep-list,.series-episode,.server-episode,.episode-items,.episodelist,.episode-container');
-          let uri;try{uri=new URL(a.getAttribute('href'),location.href);}catch(_){return;}
-          if(uri.protocol!=='https:' || uri.host!==location.host)return;
+        // Some source pages render numbered episodes as bare anchors in a
+        // season panel, rather than using an "episode" CSS class.
+        const selector='a[href],a[data-href],a[data-url]';
+        const root=[...document.querySelectorAll('select')].find(s=>
+          [...s.options].some(o=>/(?:season|musim)\s*\d+/i.test(o.textContent||'')));
+        const seasonPanel=root?.closest('section,.row,.box,.content,.entry-content')||null;
+        document.querySelectorAll(selector).forEach(a=>{
+          const raw=a.getAttribute('href')||a.dataset.href||a.dataset.url;
+          if(!raw||raw==='#'||raw.startsWith('javascript:'))return;
+          let uri;try{uri=new URL(raw,location.href);}catch(_){return;}
+          if(uri.protocol!=='https:'||uri.host!==location.host)return;
           const explicit=uri.pathname.match(/(?:season|musim)[-_ ]*(\d+).*?(?:episode|eps?|ep)[-_ ]*0*(\d+)/i);
           const numberText=(a.textContent||'').trim().match(/^(?:episode|eps?|ep)?\s*0*(\d+)$/i);
+          const panel=a.closest('.episode,.episodes,.episode-list,.episode-grid,.ep-list,.series-episode,.server-episode,.episode-items,.episodelist,.episode-container,[class*="episode"],[id*="episode"]');
+          const insidePanel=seasonPanel&&seasonPanel.contains(a);
           const sn=explicit?Number(explicit[1]):active;
-          const ep=explicit?Number(explicit[2]):parent&&numberText?Number(numberText[1]):0;
-          if(sn>0&&ep>0&&ep<1000&&(explicit||parent))episodes.push({season:sn,episode:ep,url:uri.href});
+          const ep=explicit?Number(explicit[2]):numberText&&(panel||insidePanel)?Number(numberText[1]):0;
+          if(sn>0&&ep>0&&ep<1000&&(explicit||panel||insidePanel)){
+            episodes.push({season:sn,episode:ep,url:uri.href});
+          }
         });
         return JSON.stringify({opts,episodes});
       })()''');
