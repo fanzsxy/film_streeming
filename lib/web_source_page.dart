@@ -20,8 +20,9 @@ class WebSourcePage extends StatefulWidget {
   final ValueChanged<Uri>? onPlayIntent;
   final void Function(int positionMs, int durationMs, bool ended)? onVideoProgress;
   final VoidCallback? onFullscreenExit;
+  final ValueChanged<String>? onSynopsisFound;
   const WebSourcePage({super.key, required this.title, required this.url, this.focused = false,
-    this.embedded = false, this.tmdbId = 0, this.mediaType = 'movie', this.year = '', this.season = 0, this.episode = 0, this.onPlayerReady, this.onPlayIntent, this.onVideoProgress, this.onFullscreenExit});
+    this.embedded = false, this.tmdbId = 0, this.mediaType = 'movie', this.year = '', this.season = 0, this.episode = 0, this.onPlayerReady, this.onPlayIntent, this.onVideoProgress, this.onFullscreenExit, this.onSynopsisFound});
   @override
   State<WebSourcePage> createState() => _WebSourcePageState();
 }
@@ -503,11 +504,11 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // Read only metadata and real episode links present in the source document.
   // Never generate episode addresses or replace the site-owned player.
   Future<void> _readSourceDetails() async {
-    if (!widget.embedded || !_focused) return;
+    if (widget.onSynopsisFound == null && !widget.embedded) return;
     try {
       final raw=await _controller.runJavaScriptReturningResult(r'''(() => {
         const txt = e => (e?.textContent || '').trim().replace(/\\s+/g,' ');
-        const synopsis = document.querySelector('.synopsis,.description,.entry-content .desc,.film-synopsis,[itemprop="description"],.summary');
+        const synopsis = document.querySelector('[itemprop="description"],.sinopsis,.synopsis,.entry-content .desc,.film-synopsis,.summary,.description');
         const genreNodes = document.querySelectorAll('.genres a,.genre a,[rel="tag"],a[href*="/genre/"]');
         const genres = [...new Set([...genreNodes].map(txt).filter(x=>x && x.length<35))].slice(0,12);
         const episodes = [];
@@ -531,6 +532,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
       final synopsis=(parsed['synopsis']??'').toString();
       final episodes=(parsed['episodes'] as List? ?? const []).whereType<Map>()
         .map((e)=>Map<String,dynamic>.from(e)).toList();
+      if(synopsis.isNotEmpty && widget.onSynopsisFound != null) widget.onSynopsisFound!(synopsis);
       setState((){_sourceGenres=genres;_sourceSynopsis=synopsis;_sourceEpisodes=episodes;});
     }catch(_){/* Site metadata is optional. */}
   }
