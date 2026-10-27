@@ -899,7 +899,9 @@ Future<Uri> resolveSourcePage(Movie movie) async {
       page = Uri.parse('https://tv9.nontondrama.my/the-mentalist-2008');
     }
   }
-  page ??= Uri.https('tv12.lk21official.cc', '/search', {'s': movie.title});
+  page ??= Uri.https(
+    movie.type == 'tv' ? 'tv.nontondrama.vip' : 'tv12.lk21official.cc',
+    '/search', {'s': movie.title});
   return movie.type == 'tv' ? SourceDomainConfig.seriesPage(page) : page;
 }
 
@@ -939,7 +941,7 @@ Future<void> recordWebProgress(Movie movie, Uri page, int positionMs, int durati
     updatedAt:DateTime.now().millisecondsSinceEpoch,completed:completed));
 }
 
-Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? resolved, VoidCallback? onFullscreenExit}) =>
+Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? resolved, VoidCallback? onFullscreenExit, ValueChanged<String>? onSynopsisFound}) =>
   FutureBuilder<Uri>(
     future: resolved ?? resolveSourcePage(movie),
     builder: (context, snapshot) {
@@ -955,7 +957,7 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
         onPlayerReady: null,
         onPlayIntent: (page) => recordPlayerTap(movie, page, season:season, episode:episode),
         onVideoProgress: (pos, dur, ended) => recordWebProgress(movie, snapshot.data!, pos, dur, ended, season:season, episode:episode),
-        onFullscreenExit: onFullscreenExit);
+        onFullscreenExit: onFullscreenExit, onSynopsisFound: onSynopsisFound);
     },
   );
 
@@ -968,7 +970,9 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0,
 }
 
 class DetailPage extends StatefulWidget {final Movie movie;final bool isFavorite;final VoidCallback onFavorite; final int? initialSeason,initialEpisode; final Uri? initialPage; const DetailPage({super.key,required this.movie,required this.isFavorite,required this.onFavorite,this.initialSeason,this.initialEpisode,this.initialPage});@override State<DetailPage> createState()=>_DetailPageState();}
-class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingController(),subtitleUrl=TextEditingController(),sourcePage=TextEditingController();late bool favorite;late Future<Map<String,dynamic>> details; late Future<Uri> sourceFuture;
+class _DetailPageState extends State<DetailPage> {String sourceSynopsis='';
+ void _receiveSynopsis(String text){final clean=text.trim();if(clean.isNotEmpty && mounted && clean!=sourceSynopsis)setState(()=>sourceSynopsis=clean);}
+ final videoUrl=TextEditingController(),subtitleUrl=TextEditingController(),sourcePage=TextEditingController();late bool favorite;late Future<Map<String,dynamic>> details; late Future<Uri> sourceFuture;
  @override void initState(){super.initState();favorite=widget.isFavorite;details=widget.movie.id>0?Tmdb.bilingualDetail('${widget.movie.type}/${widget.movie.id}'):Future.value(<String,dynamic>{}); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}}
  @override void dispose(){videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();detailScroll.dispose();super.dispose();}
  bool https(String input){final u=Uri.tryParse(input.trim());return u!=null&&u.scheme=='https'&&u.host.isNotEmpty;}
@@ -1072,15 +1076,22 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
      // platform view stays mounted while the user scrolls or selects a season.
      body: Column(children: [
        if (m.type == 'movie')
-         inlineSource(m, resolved: sourceFuture, onFullscreenExit: () {
+         inlineSource(m, resolved: sourceFuture, onSynopsisFound:_receiveSynopsis, onFullscreenExit: () {
            if (detailScroll.hasClients) detailScroll.jumpTo(0);
          })
-       else if (m.type == 'tv')
-         inlineSource(m, season: 0, episode: 0,
-           resolved: widget.initialPage != null ? Future.value(widget.initialPage!) : sourceFuture,
-           onFullscreenExit: () {
-             if (detailScroll.hasClients) detailScroll.jumpTo(0);
-           }),
+       else if (m.type == 'tv') ...[
+         Padding(padding:const EdgeInsets.fromLTRB(16,12,16,8),
+           child:FilledButton.icon(
+             icon:const Icon(Icons.open_in_browser),
+             label:const Text('Buka halaman series dan pilih season / episode'),
+             onPressed:() async {
+               final url=widget.initialPage ?? await sourceFuture;
+               if(!mounted)return;
+               Navigator.push(context,MaterialPageRoute(builder:(_)=>WebSourcePage(
+                 title:m.title,url:url,focused:false,tmdbId:m.id,
+                 mediaType:'tv',year:m.year,onSynopsisFound:_receiveSynopsis)));
+             })),
+       ],
        Expanded(child: ListView(controller: detailScroll, children: [
          Padding(padding: const EdgeInsets.all(16), child: Column(
            crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1108,10 +1119,11 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
              FutureBuilder<Map<String,dynamic>>(
                future: details,
                builder: (context, localized) {
+                 // The source-page synopsis is authoritative for this view.
+                 // Do not use TMDB text as a substitute for LK21 metadata.
                  final fromCrawler = m.overview.trim();
-                 final fromTmdb = (localized.data?['overview'] ?? '').toString().trim();
-                 final description = fromCrawler.isNotEmpty ? fromCrawler : fromTmdb;
-                 return Text(description.isEmpty ? 'Sinopsis belum tersedia.' : description);
+                 final description = sourceSynopsis.isNotEmpty ? sourceSynopsis : fromCrawler;
+                 return Text(description.isEmpty ? 'Sinopsis LK21 belum tersedia.' : description);
                },
              ),
              // Season and episodes are sourced exclusively from the website WebView.

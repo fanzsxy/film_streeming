@@ -18,11 +18,13 @@ class SourceDomainConfig {
       final series = data['series'];
       if (series is! Map) return _fallbackHost;
       final active = Uri.tryParse((series['active_base_url'] ?? '').toString());
-      // Only destinations in the known Nontondrama domain family are accepted.
-      if (active?.scheme != 'https' || active?.userInfo.isNotEmpty == true ||
-          active?.host == null ||
-          !(active!.host == 'nontondrama.vip' ||
-            active.host.endsWith('.nontondrama.vip'))) return _fallbackHost;
+      // Domain changes are approved explicitly in the repository config.
+      // Reject unknown destinations and URLs containing credentials or ports.
+      final allowed = (series['allowed_hosts'] as List? ?? const [])
+          .whereType<String>().toSet();
+      if (active == null || active.scheme != 'https' ||
+          active.userInfo.isNotEmpty || active.hasPort ||
+          !allowed.contains(active.host)) return _fallbackHost;
       return active.host;
     } catch (_) {
       return _fallbackHost;
@@ -33,7 +35,8 @@ class SourceDomainConfig {
   static Future<Uri> seriesPage(Uri original) async {
     if (original.scheme != 'https') return original;
     if (original.host != 'tv9.nontondrama.my' &&
-        original.host != 'tv.nontondrama.vip') return original;
+        original.host != 'tv.nontondrama.vip' &&
+        original.host != 'tv.lk21online.de') return original;
     final host = await (_hostFuture ??= _readHost());
     return original.replace(host: host, port: 443);
   }

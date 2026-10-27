@@ -20,8 +20,9 @@ class WebSourcePage extends StatefulWidget {
   final ValueChanged<Uri>? onPlayIntent;
   final void Function(int positionMs, int durationMs, bool ended)? onVideoProgress;
   final VoidCallback? onFullscreenExit;
+  final ValueChanged<String>? onSynopsisFound;
   const WebSourcePage({super.key, required this.title, required this.url, this.focused = false,
-    this.embedded = false, this.tmdbId = 0, this.mediaType = 'movie', this.year = '', this.season = 0, this.episode = 0, this.onPlayerReady, this.onPlayIntent, this.onVideoProgress, this.onFullscreenExit});
+    this.embedded = false, this.tmdbId = 0, this.mediaType = 'movie', this.year = '', this.season = 0, this.episode = 0, this.onPlayerReady, this.onPlayIntent, this.onVideoProgress, this.onFullscreenExit, this.onSynopsisFound});
   @override
   State<WebSourcePage> createState() => _WebSourcePageState();
 }
@@ -503,11 +504,11 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // Read only metadata and real episode links present in the source document.
   // Never generate episode addresses or replace the site-owned player.
   Future<void> _readSourceDetails() async {
-    if (!widget.embedded || !_focused) return;
+    if (widget.onSynopsisFound == null && !widget.embedded) return;
     try {
       final raw=await _controller.runJavaScriptReturningResult(r'''(() => {
         const txt = e => (e?.textContent || '').trim().replace(/\\s+/g,' ');
-        const synopsis = document.querySelector('.synopsis,.description,.entry-content .desc,.film-synopsis,[itemprop="description"],.summary');
+        const synopsis = document.querySelector('[itemprop="description"],.sinopsis,.synopsis,.entry-content .desc,.film-synopsis,.summary,.description');
         const genreNodes = document.querySelectorAll('.genres a,.genre a,[rel="tag"],a[href*="/genre/"]');
         const genres = [...new Set([...genreNodes].map(txt).filter(x=>x && x.length<35))].slice(0,12);
         const episodes = [];
@@ -531,24 +532,14 @@ class _WebSourcePageState extends State<WebSourcePage> {
       final synopsis=(parsed['synopsis']??'').toString();
       final episodes=(parsed['episodes'] as List? ?? const []).whereType<Map>()
         .map((e)=>Map<String,dynamic>.from(e)).toList();
+      if(synopsis.isNotEmpty && widget.onSynopsisFound != null) widget.onSynopsisFound!(synopsis);
       setState((){_sourceGenres=genres;_sourceSynopsis=synopsis;_sourceEpisodes=episodes;});
     }catch(_){/* Site metadata is optional. */}
   }
   Widget _flutterSourceDetails() {
-    if(!_revealed || !_focused || (_sourceGenres.isEmpty && _sourceSynopsis.isEmpty && _sourceEpisodes.isEmpty))return const SizedBox.shrink();
+    if(!_revealed || !_focused || _sourceEpisodes.isEmpty)return const SizedBox.shrink();
     return Container(width:double.infinity,color:const Color(0xff17171c),padding:const EdgeInsets.fromLTRB(14,10,14,12),
       child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
-        if(_sourceGenres.isNotEmpty)...[
-          const Text('Genre dari sumber',style:TextStyle(fontWeight:FontWeight.bold)),
-          const SizedBox(height:6),
-          Wrap(spacing:6,runSpacing:3,children:_sourceGenres.map((g)=>Chip(label:Text(g),visualDensity:VisualDensity.compact)).toList()),
-        ],
-        if(_sourceSynopsis.isNotEmpty)...[
-          const SizedBox(height:8),
-          const Text('Sinopsis dari sumber',style:TextStyle(fontWeight:FontWeight.bold)),
-          const SizedBox(height:5),
-          Text(_sourceSynopsis,maxLines:5,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white70,fontSize:13)),
-        ],
         if(_isTv && _sourceEpisodes.isNotEmpty)...[
           const SizedBox(height:10),
           const Text('Episode tersedia di sumber',style:TextStyle(fontWeight:FontWeight.bold)),
@@ -671,6 +662,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
               }
             }
           }
+          if (!mounted || generation != _navigationGeneration) return;
+          if (!_focused && widget.onSynopsisFound != null) await _readSourceDetails();
           if (!mounted || generation != _navigationGeneration) return;
           bool found = false;
           if (_focused) found = await _applyFocus();
