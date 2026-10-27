@@ -391,19 +391,15 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
      }
     }
    }
-   final allLanguages=await Tmdb.languages();
-   final languageEntries=allLanguages.where((e)=>e['iso_639_1'] is String &&
-     (e['iso_639_1'] as String).isNotEmpty).toList()
-     ..sort((a,b)=>((a['english_name']??'') as String).compareTo((b['english_name']??'') as String));
    if(!mounted)return;
    setState((){
     _genreOptions=[const DropdownMenuItem<int>(value:0,child:Text('Semua genre')),
       ...genresById.entries.map((e)=>DropdownMenuItem<int>(value:e.key,child:Text(e.value)))];
-    _languageOptions=[const DropdownMenuItem<String>(value:'',child:Text('Semua bahasa')),
-      ...languageEntries.map((e)=>DropdownMenuItem<String>(
-       value:e['iso_639_1'] as String,
-       child:Text(((e['english_name'] as String?)?.isNotEmpty??false)
-        ? e['english_name'] as String : e['iso_639_1'] as String)))];
+    _languageOptions=const [DropdownMenuItem<String>(value:'',child:Text('Semua bahasa')),
+    DropdownMenuItem<String>(value:'ja',child:Text('Jepang')),
+    DropdownMenuItem<String>(value:'ko',child:Text('Korea')),
+    DropdownMenuItem<String>(value:'zh',child:Text('China (Mandarin)')),
+    DropdownMenuItem<String>(value:'hi',child:Text('India (Hindi)'))];
     // Keep genre selection usable if TMDB no longer exposes a legacy ID.
     if(genre1>0 && !genresById.containsKey(genre1)){
      _genreOptions.add(DropdownMenuItem(value:genre1,child:Text('Genre $genre1')));
@@ -416,12 +412,11 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     _genreOptions=[const DropdownMenuItem<int>(value:0,child:Text('Semua genre')),
       ...genres.entries.where((e)=>e.key!=0).map((e)=>
         DropdownMenuItem<int>(value:e.key,child:Text(e.value)))];
-    _languageOptions=const [DropdownMenuItem(value:'',child:Text('Semua bahasa')),
-      DropdownMenuItem(value:'en',child:Text('English')),
-      DropdownMenuItem(value:'id',child:Text('Indonesia')),
-      DropdownMenuItem(value:'ja',child:Text('Japanese')),
-      DropdownMenuItem(value:'ko',child:Text('Korean')),
-      DropdownMenuItem(value:'zh',child:Text('Chinese'))];
+    _languageOptions=const [DropdownMenuItem<String>(value:'',child:Text('Semua bahasa')),
+    DropdownMenuItem<String>(value:'ja',child:Text('Jepang')),
+    DropdownMenuItem<String>(value:'ko',child:Text('Korea')),
+    DropdownMenuItem<String>(value:'zh',child:Text('China (Mandarin)')),
+    DropdownMenuItem<String>(value:'hi',child:Text('India (Hindi)'))];
     _optionsLoaded=true;
    });
   }
@@ -441,15 +436,17 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     // A single page can contain zero matches without meaning end of catalog.
     var scanned=0;
     var ended=false;
-    while(incoming.length<16 && scanned<5 && page<50) {
+    final hasFilter=genre1>0||genre2>0||country.isNotEmpty;
+    while(incoming.length<16 && scanned<(hasFilter?12:2) && page<100) {
       final nextPage=page+1;
       final kinds=type=='all'?const ['movie','tv']:[type];
       final batches=await Future.wait(kinds.map((k)=>
-        Tmdb.list('discover/$k',page:nextPage,type:k,params:_params(k))));
+        Tmdb.list(hasFilter?'discover/$k':'catalog/$k',page:nextPage,type:k,params:hasFilter?_params(k):const {})));
       if(!mounted||token!=epoch)return;
       page=nextPage;
       scanned++;
-      if(batches.every((x)=>x.isEmpty)){ended=true;break;}
+      // Discover pages can contain no catalog matches even when later pages do.
+      if(batches.every((x)=>x.isEmpty) && !hasFilter){ended=true;break;}
       for(final m in batches.expand((x)=>x)) {
         if(genre1>0&&!m.genres.contains(genre1))continue;
         if(genre2>0&&!m.genres.contains(genre2))continue;
@@ -467,7 +464,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
       for(final m in incoming){
         if(seenResults.add(m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}'))results.add(m);
       }
-      more=!ended&&page<50;
+      more=!ended&&page<100;
       error='';
     });
   } catch(e) {
@@ -492,7 +489,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
    Row(children:[
     Expanded(child:_pick<int>('Genre 1',genre1,_genreOptions,(v){genre1=v??0;})),
     const SizedBox(width:9),
-    Expanded(child:_pick<int>('Genre 2',genre2,genres.entries.map((g)=>DropdownMenuItem(value:g.key,child:Text(g.value))).toList(),(v){genre2=v??0;})),
+    Expanded(child:_pick<int>('Genre 2',genre2,_genreOptions,(v){genre2=v??0;})),
    ]),
    const SizedBox(height:9),
    _pick<String>('Bahasa asli',country,_languageOptions,(v){country=v??'';}),
@@ -500,11 +497,11 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   if(!_optionsLoaded) const Padding(padding:EdgeInsets.all(8),child:LinearProgressIndicator()),
   Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:6),child:Align(alignment:Alignment.centerLeft,child:Text('Katalog ${type=='all'?'Film & Series':type=='tv'?'Series':'Film'}',style:const TextStyle(fontSize:19,fontWeight:FontWeight.w800)))),
   ])),
-  if(results.isEmpty) SliverFillRemaining(hasScrollBody:false,child:Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:Text(error)):busy?const CircularProgressIndicator():const Text('Tidak ada hasil sesuai filter'))),
+  if(results.isEmpty) SliverFillRemaining(hasScrollBody:false,child:Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:Text(error)):busy?const CircularProgressIndicator():more?TextButton(onPressed:_fetch,child:const Text('Belum ada kecocokan — cari halaman berikutnya')):const Text('Tidak ada hasil sesuai filter'))),
   if(results.isNotEmpty) SliverPadding(padding:const EdgeInsets.all(12),sliver:SliverGrid(delegate:SliverChildBuilderDelegate((context,i){
-   if(i==results.length)return Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:const Text('Coba lagi')):const CircularProgressIndicator());
+   if(i==results.length)return Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:const Text('Coba lagi')):busy?const CircularProgressIndicator():TextButton(onPressed:_fetch,child:const Text('Muat lagi')));
    return MovieTile(key:ValueKey('${results[i].type}:${results[i].id}'),movie:results[i],onTap:widget.onTap);
-  },childCount:results.length+(busy||error.isNotEmpty?1:0)),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:.58,mainAxisSpacing:14,crossAxisSpacing:12))),
+  },childCount:results.length+(more||busy||error.isNotEmpty?1:0)),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:.58,mainAxisSpacing:14,crossAxisSpacing:12))),
  ]);
 }
 class CinemaHero extends StatefulWidget {
@@ -543,6 +540,32 @@ class CinemaGenres extends StatefulWidget {
  @override State<CinemaGenres> createState()=>_CinemaGenresState();
 }
 class _CinemaGenresState extends State<CinemaGenres> {
+ static IconData iconFor(int id) {
+  switch(id) {
+   case 28: return Icons.bolt_outlined;
+   case 12: case 10759: return Icons.explore_outlined;
+   case 16: return Icons.animation_outlined;
+   case 35: return Icons.sentiment_satisfied_alt_outlined;
+   case 80: case 9648: return Icons.search_outlined;
+   case 99: return Icons.video_library_outlined;
+   case 18: return Icons.theater_comedy_outlined;
+   case 10751: return Icons.family_restroom_outlined;
+   case 14: case 10765: return Icons.auto_awesome_outlined;
+   case 36: case 10768: return Icons.history_edu_outlined;
+   case 27: return Icons.nights_stay_outlined;
+   case 10402: return Icons.music_note_outlined;
+   case 10749: return Icons.favorite_border_outlined;
+   case 878: return Icons.rocket_launch_outlined;
+   case 53: return Icons.visibility_outlined;
+   case 10752: return Icons.shield_outlined;
+   case 37: return Icons.landscape_outlined;
+   case 10762: return Icons.child_care_outlined;
+   case 10763: return Icons.chat_bubble_outline;
+   case 10764: return Icons.star_outline;
+   default: return Icons.movie_filter_outlined;
+  }
+ }
+
  static Future<List<MapEntry<int,String>>>? _cachedGenres;
  late final Future<List<MapEntry<int,String>>> genres = _cachedGenres ??= _loadGenres();
  static Future<List<MapEntry<int,String>>> _loadGenres() async {
@@ -576,7 +599,7 @@ class _CinemaGenresState extends State<CinemaGenres> {
        final g=data[i];
        return InkWell(onTap:()=>widget.onSelect(g.key),borderRadius:BorderRadius.circular(12),
         child:SizedBox(width:88,child:Column(children:[
-         const Icon(Icons.local_movies_outlined,size:27,color:Color(0xffe5aa55)),
+         Icon(iconFor(g.key),size:27,color:const Color(0xffe5aa55)),
          const SizedBox(height:8),
          Text(g.value,maxLines:2,textAlign:TextAlign.center,overflow:TextOverflow.ellipsis,
           style:const TextStyle(fontSize:11,color:Colors.white70)),
