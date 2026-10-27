@@ -40,6 +40,7 @@ class SourceDomainConfig {
         original.host != 'tv.nontondrama.vip' &&
         original.host != 'tv.lk21online.de') return original;
     final host = await (_hostFuture ??= _readHost());
+    if (original.host == host) return original;
     // A changed host does not guarantee that an old permalink exists there.
     // Preserve only search routes; callers must search/resolve other pages.
     if (original.path != '/search' && original.path != '/search/') {
