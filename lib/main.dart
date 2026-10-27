@@ -899,7 +899,9 @@ Future<Uri> resolveSourcePage(Movie movie) async {
       page = Uri.parse('https://tv9.nontondrama.my/the-mentalist-2008');
     }
   }
-  page ??= Uri.https('tv12.lk21official.cc', '/search', {'s': movie.title});
+  page ??= Uri.https(
+    movie.type == 'tv' ? 'tv.nontondrama.vip' : 'tv12.lk21official.cc',
+    '/search', {'s': movie.title});
   return movie.type == 'tv' ? SourceDomainConfig.seriesPage(page) : page;
 }
 
