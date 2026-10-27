@@ -73,20 +73,8 @@ class SourceDomainConfig {
     return null;
   }
 
-  /// Open working legacy URLs unchanged or use their verified HTTPS redirect.
-  /// Search on the active host only if the original URL is unavailable.
-  static Future<Uri> seriesPage(Uri original) async {
-    if (original.scheme != 'https') return original;
-    final allowed = <String>{
-      'tv9.nontondrama.my', 'tv.nontondrama.vip', 'tv.lk21online.de'
-    };
-    if (!allowed.contains(original.host)) return original;
-    final host = await (_hostFuture ??= _readHost());
-    final resolved = await _followTrustedRedirects(original, allowed);
-    if (resolved != null) return resolved;
-    final title = original.queryParameters['s'] ?? _titleFromSlug(original);
-    return title.trim().isEmpty
-        ? Uri.https(host, '/')
-        : Uri.https(host, '/search', {'s': title});
-  }
+  /// WebView must receive the original catalog detail URL so the website can
+  /// redirect it using cookies, JavaScript or HTTP just like a normal browser.
+  /// Do not preflight with an HTTP client or replace a valid detail URL with search.
+  static Future<Uri> seriesPage(Uri original) async => original;
 }
