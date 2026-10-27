@@ -131,14 +131,22 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
       final js=r'''(() => {
         const n=SEASON;
         for(const s of document.querySelectorAll('select')){
-          const option=[...s.options].find(o=>new RegExp('(?:season|musim)\s*'+n+'(?!\d)','i').test((o.textContent||'')+' '+o.value));
-          if(option){s.value=option.value;s.dispatchEvent(new Event('change',{bubbles:true}));return true;}
+          const option=[...s.options].find(o =>
+            new RegExp('(?:season|musim)\\s*'+n+'(?!\\d)','i')
+              .test((o.textContent||'')+' '+o.value));
+          if(!option)continue;
+          s.value=option.value;
+          s.dispatchEvent(new Event('input',{bubbles:true}));
+          s.dispatchEvent(new Event('change',{bubbles:true}));
+          // Some sources use a native onchange handler for navigation.
+          // Let the site's own handler run rather than constructing episode URLs.
+          return true;
         }
         return false;
       })()'''.replaceAll('SEASON','$season');
       await controller.runJavaScript(js);
-      await Future<void>.delayed(const Duration(milliseconds:450));
-      await _scan();
+      await Future<void>.delayed(const Duration(milliseconds:900));
+      if(mounted) await _scan();
     }catch(_){if(mounted)setState(()=>loading=false);}
   }
   @override Widget build(BuildContext context){
