@@ -557,26 +557,68 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   }
  }
  Widget _pick<T>(String caption,T value,List<DropdownMenuItem<T>> options,ValueChanged<T?> update)=>DropdownButtonFormField<T>(
-  value:value,isExpanded:true,decoration:InputDecoration(labelText:caption,isDense:true,filled:true,fillColor:const Color(0xff20252e),border:OutlineInputBorder(borderRadius:BorderRadius.circular(12))),items:options,onChanged:(v){update(v);_reset();});
+  value:value,
+  isExpanded:true,
+  dropdownColor:const Color(0xff252931),
+  icon:const Icon(Icons.keyboard_arrow_down_rounded,size:20,color:Colors.white70),
+  style:const TextStyle(fontSize:14,color:Colors.white,fontWeight:FontWeight.w600),
+  decoration:InputDecoration(
+    labelText:caption,
+    labelStyle:const TextStyle(fontSize:13,color:Colors.white60),
+    floatingLabelStyle:const TextStyle(fontSize:13,color:Color(0xffE5B677)),
+    isDense:true,
+    contentPadding:const EdgeInsets.symmetric(horizontal:12,vertical:12),
+    filled:true,
+    fillColor:const Color(0xff252931),
+    enabledBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(12),borderSide:const BorderSide(color:Color(0xff454B56))),
+    focusedBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(12),borderSide:const BorderSide(color:Color(0xffD8A260),width:1.5)),
+    border:OutlineInputBorder(borderRadius:BorderRadius.circular(12)),
+  ),
+  items:options,
+  onChanged:(v){update(v);_reset();});
  @override Widget build(BuildContext context)=>CustomScrollView(controller:scroll,slivers:[
   SliverToBoxAdapter(child:Column(children:[
-  Padding(padding:const EdgeInsets.fromLTRB(12,5,12,9),child:Column(children:[
-   Row(children:[
-    Expanded(child:_pick<String>('Urut berdasarkan',sort,const [
-     DropdownMenuItem(value:'title',child:Text('Abjad A–Z')),DropdownMenuItem(value:'popular',child:Text('Popular')),DropdownMenuItem(value:'latest',child:Text('Terbaru'))],(v){if(v!=null)sort=v;})),
-    const SizedBox(width:9),
-    Expanded(child:_pick<String>('Tipe',type,const [
-     DropdownMenuItem(value:'all',child:Text('Film & Series')),DropdownMenuItem(value:'movie',child:Text('Film')),DropdownMenuItem(value:'tv',child:Text('Series'))],(v){if(v!=null)type=v;})),
-   ]),
-   const SizedBox(height:9),
-   Row(children:[
-    Expanded(child:_pick<int>('Genre 1',genre1,_genreOptions,(v){genre1=v??0;})),
-    const SizedBox(width:9),
-    Expanded(child:_pick<int>('Genre 2',genre2,_genreOptions,(v){genre2=v??0;})),
-   ]),
-   const SizedBox(height:9),
-   _pick<String>('Bahasa asli',country,_languageOptions,(v){country=v??'';}),
-  ])),
+  Padding(
+    padding:const EdgeInsets.fromLTRB(12,8,12,8),
+    child:Container(
+      padding:const EdgeInsets.fromLTRB(14,14,14,16),
+      decoration:BoxDecoration(
+        color:const Color(0xff1B1E25),
+        borderRadius:BorderRadius.circular(18),
+        border:Border.all(color:const Color(0xff343944)),
+      ),
+      child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        const Row(children:[
+          Icon(Icons.tune_rounded,size:20,color:Color(0xffD8A260)),
+          SizedBox(width:9),
+          Text('Sesuaikan Katalog',style:TextStyle(fontSize:17,fontWeight:FontWeight.w700)),
+        ]),
+        const SizedBox(height:4),
+        const Text('Temukan film dan series sesuai pilihanmu',
+          style:TextStyle(fontSize:12,color:Colors.white60)),
+        const SizedBox(height:16),
+        Row(children:[
+          Expanded(child:_pick<String>('Urutkan',sort,const [
+            DropdownMenuItem(value:'title',child:Text('Abjad A–Z')),
+            DropdownMenuItem(value:'popular',child:Text('Populer')),
+            DropdownMenuItem(value:'latest',child:Text('Terbaru'))],(v){if(v!=null)sort=v;})),
+          const SizedBox(width:10),
+          Expanded(child:_pick<String>('Tipe',type,const [
+            DropdownMenuItem(value:'all',child:Text('Film & Series')),
+            DropdownMenuItem(value:'movie',child:Text('Film')),
+            DropdownMenuItem(value:'tv',child:Text('Series'))],(v){if(v!=null)type=v;})),
+        ]),
+        const SizedBox(height:12),
+        Row(children:[
+          Expanded(child:_pick<int>('Genre utama',genre1,_genreOptions,(v){genre1=v??0;})),
+          const SizedBox(width:10),
+          Expanded(child:_pick<int>('Genre tambahan',genre2,_genreOptions,(v){genre2=v??0;})),
+        ]),
+        const SizedBox(height:12),
+        _pick<String>('Bahasa asli',country,_languageOptions,(v){country=v??'';}),
+      ]),
+    ),
+  ),
   if(!_optionsLoaded) const Padding(padding:EdgeInsets.all(8),child:LinearProgressIndicator()),
   Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:6),child:Align(alignment:Alignment.centerLeft,child:Text('Katalog ${type=='all'?'Film & Series':type=='tv'?'Series':'Film'}',style:const TextStyle(fontSize:19,fontWeight:FontWeight.w800)))),
   ])),
