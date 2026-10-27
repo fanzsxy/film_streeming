@@ -1079,19 +1079,13 @@ class _DetailPageState extends State<DetailPage> {String sourceSynopsis='';
          inlineSource(m, resolved: sourceFuture, onSynopsisFound:_receiveSynopsis, onFullscreenExit: () {
            if (detailScroll.hasClients) detailScroll.jumpTo(0);
          })
-       else if (m.type == 'tv') ...[
-         Padding(padding:const EdgeInsets.fromLTRB(16,12,16,8),
-           child:FilledButton.icon(
-             icon:const Icon(Icons.open_in_browser),
-             label:const Text('Buka halaman series dan pilih season / episode'),
-             onPressed:() async {
-               final url=widget.initialPage ?? await sourceFuture;
-               if(!mounted)return;
-               Navigator.push(context,MaterialPageRoute(builder:(_)=>WebSourcePage(
-                 title:m.title,url:url,focused:false,tmdbId:m.id,
-                 mediaType:'tv',year:m.year,onSynopsisFound:_receiveSynopsis)));
-             })),
-       ],
+       else if (m.type == 'tv')
+         inlineSource(m, resolved: widget.initialPage != null
+           ? Future.value(widget.initialPage!) : sourceFuture,
+           onSynopsisFound:_receiveSynopsis,
+           onFullscreenExit: () {
+             if (detailScroll.hasClients) detailScroll.jumpTo(0);
+           }),
        Expanded(child: ListView(controller: detailScroll, children: [
          Padding(padding: const EdgeInsets.all(16), child: Column(
            crossAxisAlignment: CrossAxisAlignment.start, children: [
