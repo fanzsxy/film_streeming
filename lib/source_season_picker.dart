@@ -240,23 +240,23 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
       if(loading && seasons.isEmpty)const LinearProgressIndicator(),
       if(error!=null)Text(error!,style:const TextStyle(color:Colors.orangeAccent)),
       if(seasons.isNotEmpty)SizedBox(
-        height:112,
+        height:72,
         child:ListView.separated(
           scrollDirection:Axis.horizontal,
           itemCount:seasons.length,
-          separatorBuilder:(_,__)=>const SizedBox(width:12),
+          separatorBuilder:(_,__)=>const SizedBox(width:8),
           itemBuilder:(context,i){
             final season=seasons[i];
             final isActive=selected==season;
             return InkWell(
-              borderRadius:BorderRadius.circular(18),
+              borderRadius:BorderRadius.circular(12),
               onTap:()=>_changeSeason(season),
               child:Container(
-                width:172,
-                padding:const EdgeInsets.symmetric(horizontal:16,vertical:15),
+                width:128,
+                padding:const EdgeInsets.symmetric(horizontal:12,vertical:10),
                 decoration:BoxDecoration(
                   color:isActive?const Color(0xFF51333A):const Color(0xFF222329),
-                  borderRadius:BorderRadius.circular(18),
+                  borderRadius:BorderRadius.circular(12),
                   border:Border.all(
                     color:isActive?const Color(0xFFFFA5AC):Colors.white24,
                     width:isActive?2:1,
@@ -269,7 +269,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
                     Row(children:[
                       Expanded(child:Text('Season $season',
                         maxLines:1,overflow:TextOverflow.ellipsis,
-                        style:const TextStyle(color:Colors.white,fontSize:18,fontWeight:FontWeight.bold))),
+                        style:const TextStyle(color:Colors.white,fontSize:15,fontWeight:FontWeight.w600))),
                       Icon(Icons.chevron_right,
                         color:isActive?const Color(0xFFFFB5BA):Colors.white70),
                     ]),
@@ -281,10 +281,10 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
         ),
       ),
       if(active!=null)...[
-        const SizedBox(height:24),
+        const SizedBox(height:16),
         Text('Episode • Season $active',
-          style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
-        const SizedBox(height:12),
+          style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
+        const SizedBox(height:10),
         if(changingSeason)const Padding(
           padding:EdgeInsets.symmetric(vertical:12),
           child:Text('Memperbarui daftar episode…',
@@ -293,27 +293,27 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
           padding:EdgeInsets.symmetric(vertical:12),
           child:Text('Episode belum ditemukan di halaman sumber.')),
         if(!changingSeason)...visible.map((e)=>Padding(
-          padding:const EdgeInsets.only(bottom:12),
+          padding:const EdgeInsets.only(bottom:8),
           child:Material(
             color:_openedEpisodes.contains(_episodeKey(active,e.episode))
               ? const Color(0xFF344B45) : const Color(0xFF23242A),
-            borderRadius:BorderRadius.circular(16),
+            borderRadius:BorderRadius.circular(12),
             child:InkWell(
-              borderRadius:BorderRadius.circular(16),
+              borderRadius:BorderRadius.circular(12),
               onTap:()=>_openEpisode(active,e.episode,e.uri),
               child:Padding(
-                padding:const EdgeInsets.symmetric(horizontal:16,vertical:16),
+                padding:const EdgeInsets.symmetric(horizontal:14,vertical:11),
                 child:Row(children:[
-                  SizedBox(width:42,child:Text('${e.episode}',
-                    style:const TextStyle(fontSize:27,fontWeight:FontWeight.bold,color:Colors.white))),
-                  const SizedBox(width:12),
+                  SizedBox(width:32,child:Text('${e.episode}',
+                    style:const TextStyle(fontSize:21,fontWeight:FontWeight.bold,color:Colors.white))),
+                  const SizedBox(width:9),
                   Expanded(child:Text('Episode ${e.episode}',
-                    style:const TextStyle(fontSize:17,fontWeight:FontWeight.w600,color:Colors.white))),
+                    style:const TextStyle(fontSize:15,fontWeight:FontWeight.w600,color:Colors.white))),
                   const SizedBox(width:8),
                   if(_openedEpisodes.contains(_episodeKey(active,e.episode)))
                     const Padding(padding:EdgeInsets.only(right:8),
-                      child:Icon(Icons.check_circle,color:Color(0xFF9DD5BB),size:22)),
-                  const Icon(Icons.play_circle_outline,color:Colors.white70,size:30),
+                      child:Icon(Icons.check_circle,color:Color(0xFF9DD5BB),size:18)),
+                  const Icon(Icons.play_circle_outline,color:Colors.white70,size:26),
                 ]),
               ),
             ),
