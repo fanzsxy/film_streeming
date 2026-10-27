@@ -112,12 +112,14 @@ class _CatalogPosterTileState extends State<CatalogPosterTile> {
           width: double.infinity,
           child: FutureBuilder<Movie?>(future: metadata, builder: (context, snap) {
             final movie = snap.data;
-            if (movie == null || movie.poster.isEmpty) {
+            final poster = movie != null && movie.poster.isNotEmpty ? movie.poster :
+                widget.entry.tmdbPosterPath.isNotEmpty ? widget.entry.tmdbPosterPath : widget.entry.posterUrl;
+            if (poster.isEmpty) {
               return Center(child: Icon(
                 widget.entry.type == 'tv' ? Icons.tv : Icons.movie_outlined,
                 size: 52, color: Colors.white54));
             }
-            return Image.network('$imageRoot${movie.poster}',
+            return Image.network(poster.startsWith('https://') ? poster : '$imageRoot$poster',
               fit: BoxFit.cover, width: double.infinity,
               errorBuilder: (_, __, ___) => const Icon(Icons.movie_outlined, size: 52));
           }),
@@ -154,9 +156,11 @@ class _CatalogDetailState extends State<CatalogDetail> {
     appBar: AppBar(title: Text(widget.entry.title)),
     body: FutureBuilder<Movie?>(future: metadata, builder: (context, snap) {
       final m = snap.data;
+      final poster = m != null && m.poster.isNotEmpty ? m.poster :
+          widget.entry.tmdbPosterPath.isNotEmpty ? widget.entry.tmdbPosterPath : widget.entry.posterUrl;
       return ListView(padding: const EdgeInsets.all(18), children: [
-        if (m != null && m.poster.isNotEmpty)
-          Center(child: Image.network('$imageRoot${m.poster}', height: 240,
+        if (poster.isNotEmpty)
+          Center(child: Image.network(poster.startsWith('https://') ? poster : '$imageRoot$poster', height: 240,
             errorBuilder: (_,__,___) => const Icon(Icons.movie, size: 90)))
         else const SizedBox(height: 190, child: Icon(Icons.movie_outlined, size: 90)),
         const SizedBox(height: 12),
