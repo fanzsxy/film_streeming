@@ -37,19 +37,56 @@ class SourceDomainConfig {
         .replaceAll('-', ' ');
   }
 
-  /// Preserve valid current URLs; search by title when a legacy domain changes.
+  static bool _trusted(Uri uri, Set<String> hosts) =>
+      uri.scheme == 'https' && uri.userInfo.isEmpty &&
+      !uri.hasPort && hosts.contains(uri.host);
+
+  /// Inspect HTTP redirects without replacing old permalinks with guessed paths.
+  /// Only follow redirect destinations explicitly approved in source_domains.json.
+  static Future<Uri?> _followTrustedRedirects(
+      Uri original, Set<String> allowed) async {
+    final client = http.Client();
+    try {
+      var current = original;
+      for (var i = 0; i < 5; i++) {
+        if (!_trusted(current, allowed)) return null;
+        final request = http.Request('GET', current)..followRedirects = false;
+        final response = await client.send(request)
+            .timeout(const Duration(seconds: 6));
+        final status = response.statusCode;
+        if (status >= 200 && status < 300) {
+          // Stop after headers. The WebView loads the real page.
+          return current;
+        }
+        if (status < 300 || status >= 400) return null;
+        final location = response.headers['location'];
+        if (location == null || location.isEmpty) return null;
+        final next = current.resolve(location);
+        if (!_trusted(next, allowed)) return null;
+        current = next;
+      }
+    } catch (_) {
+      return null;
+    } finally {
+      client.close();
+    }
+    return null;
+  }
+
+  /// Open working legacy URLs unchanged or use their verified HTTPS redirect.
+  /// Search on the active host only if the original URL is unavailable.
   static Future<Uri> seriesPage(Uri original) async {
     if (original.scheme != 'https') return original;
-    if (original.host != 'tv9.nontondrama.my' &&
-        original.host != 'tv.nontondrama.vip' &&
-        original.host != 'tv.lk21online.de') return original;
+    final allowed = <String>{
+      'tv9.nontondrama.my', 'tv.nontondrama.vip', 'tv.lk21online.de'
+    };
+    if (!allowed.contains(original.host)) return original;
     final host = await (_hostFuture ??= _readHost());
-    if (original.host == host) return original;
-    if (original.path != '/search' && original.path != '/search/') {
-      final title = _titleFromSlug(original);
-      if (title.isEmpty) return Uri.https(host, '/');
-      return Uri.https(host, '/search', {'s': title});
-    }
-    return original.replace(host: host);
+    final resolved = await _followTrustedRedirects(original, allowed);
+    if (resolved != null) return resolved;
+    final title = original.queryParameters['s'] ?? _titleFromSlug(original);
+    return title.trim().isEmpty
+        ? Uri.https(host, '/')
+        : Uri.https(host, '/search', {'s': title});
   }
 }
