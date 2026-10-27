@@ -108,10 +108,11 @@ class LocalCatalogMetadata {
   }
   static Movie _withCollectedMetadata(CatalogEntry entry, Map<String,dynamic> base) {
     final data=Map<String,dynamic>.from(base);
-    if(entry.posterUrl.startsWith('https://')) data['poster_path']=entry.posterUrl;
-    else if(entry.tmdbPosterPath.startsWith('/')) data['poster_path']=entry.tmdbPosterPath;
+    if(entry.tmdbPosterPath.startsWith('/')) data['poster_path']=entry.tmdbPosterPath;
+    else if(entry.posterUrl.startsWith('https://')) data['poster_path']=entry.posterUrl;
     if(entry.synopsis.isNotEmpty) data['overview']=entry.synopsis;
     if(entry.rating!=null) data['vote_average']=entry.rating;
+    // Prefer a real TMDB poster from metadata; fall back to catalog artwork.
     data['title']=entry.title;
     data['name']=entry.title;
     data['release_date']='${entry.year}-01-01';
@@ -164,6 +165,29 @@ class LocalCatalogMetadata {
       });
   static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
     final source=await FilmStreamCatalog.load();
+    // Discover filters run at TMDB, then intersect with the local catalog.
+    if(endpoint.startsWith('discover/')) {
+      final media=endpoint.endsWith('/tv')?'tv':'movie';
+      final response=await Tmdb.get(endpoint,{'page':'$page',...params});
+      final byTmdbId=<int,CatalogEntry>{};
+      for(final entry in source) {
+        if(entry.type==media && entry.tmdbId!=null) {
+          byTmdbId.putIfAbsent(entry.tmdbId!,()=>entry);
+        }
+      }
+      final found=<Movie>[];
+      for(final raw in (response['results'] as List? ?? const [])) {
+        if(raw is! Map || raw['id'] is! num)continue;
+        final entry=byTmdbId[(raw['id'] as num).toInt()];
+        if(entry==null)continue;
+        final data=Map<String,dynamic>.from(raw);
+        data['media_type']=media;
+        final movie=_withCollectedMetadata(entry,data);
+        _sourceByTmdb[_key(media,movie.id)]=movie.sourceUrl;
+        found.add(movie);
+      }
+      return found;
+    }
     // TMDB supplies ranking only; crawler catalog remains the allow-list.
     if (endpoint.startsWith('trending/') || endpoint.endsWith('/popular') || endpoint.endsWith('/top_rated')) {
       final data=await Tmdb.get(endpoint, {'page':'$page'});
@@ -402,7 +426,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  Map<String,String> _params(String media) {
   final both=[genre1,genre2].where((g)=>g>0).toSet().join(',');
   final sortField=sort=='popular'?'popularity.desc':sort=='latest'?(media=='tv'?'first_air_date.desc':'primary_release_date.desc'):(media=='tv'?'original_name.asc':'original_title.asc');
-  return {'sort_by':sortField,'include_adult':'false','include_video':'false','vote_count.gte':'20',if(both.isNotEmpty)'with_genres':both,if(country.isNotEmpty)'with_origin_country':country};
+  return {'sort_by':sortField,'include_adult':'false','include_video':'false','vote_count.gte':'20',if(both.isNotEmpty)'with_genres':both,if(country.isNotEmpty)'with_original_language':country};
  }
  Future<void> _fetch() async {
   if(busy||!more)return;
@@ -418,7 +442,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
       final nextPage=page+1;
       final kinds=type=='all'?const ['movie','tv']:[type];
       final batches=await Future.wait(kinds.map((k)=>
-        Tmdb.list('discover/$k',page:nextPage,type:k)));
+        Tmdb.list('discover/$k',page:nextPage,type:k,params:_params(k))));
       if(!mounted||token!=epoch)return;
       page=nextPage;
       scanned++;
@@ -510,23 +534,53 @@ class _CinemaHeroState extends State<CinemaHero> with AutomaticKeepAliveClientMi
   ]);
  });}
 }
-class CinemaGenres extends StatelessWidget {
+class CinemaGenres extends StatefulWidget {
  final ValueChanged<int> onSelect;
  const CinemaGenres({super.key,required this.onSelect});
- static const genres=<({int id,String title,IconData icon})>[
- (id:16,title:'Animasi',icon:Icons.animation_outlined),
- (id:28,title:'Action',icon:Icons.bolt_outlined),
- (id:18,title:'Drama',icon:Icons.theater_comedy_outlined),
- (id:53,title:'Thriller',icon:Icons.visibility_outlined),
- (id:35,title:'Komedi',icon:Icons.sentiment_satisfied_alt_outlined),
- (id:27,title:'Horor',icon:Icons.nights_stay_outlined),
- (id:878,title:'Sci-Fi',icon:Icons.rocket_launch_outlined)
- ];
- @override Widget build(BuildContext context)=>Padding(padding:const EdgeInsets.only(top:22,bottom:4),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-  const Padding(padding:EdgeInsets.symmetric(horizontal:16),child:Text('JELAJAHI GENRE',style:TextStyle(letterSpacing:1.6,fontSize:11,color:Colors.white70,fontWeight:FontWeight.w700))),
-  const SizedBox(height:12),
-  SizedBox(height:77,child:ListView.separated(scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:16),itemCount:genres.length,separatorBuilder:(_,__)=>const SizedBox(width:22),itemBuilder:(context,i){final g=genres[i];return InkWell(onTap:()=>onSelect(g.id),borderRadius:BorderRadius.circular(12),child:SizedBox(width:55,child:Column(children:[Icon(g.icon,size:27,color:const Color(0xffe5aa55)),const SizedBox(height:8),Text(g.title,maxLines:1,style:const TextStyle(fontSize:11,color:Colors.white70))])));}))
- ]));
+ @override State<CinemaGenres> createState()=>_CinemaGenresState();
+}
+class _CinemaGenresState extends State<CinemaGenres> {
+ static Future<List<MapEntry<int,String>>>? _cachedGenres;
+ late final Future<List<MapEntry<int,String>>> genres = _cachedGenres ??= _loadGenres();
+ static Future<List<MapEntry<int,String>>> _loadGenres() async {
+  final responses=await Future.wait([Tmdb.get('genre/movie/list'),Tmdb.get('genre/tv/list')]);
+  final names=<int,String>{};
+  for(final response in responses) {
+   for(final raw in (response['genres'] as List? ?? const [])) {
+    if(raw is Map && raw['id'] is num && raw['name'] is String) {
+     names[(raw['id'] as num).toInt()]=raw['name'] as String;
+    }
+   }
+  }
+  final entries=names.entries.toList()..sort((a,b)=>a.value.compareTo(b.value));
+  return entries;
+ }
+ @override Widget build(BuildContext context)=>FutureBuilder<List<MapEntry<int,String>>>(
+  future:genres,builder:(context,s) {
+   final data=s.data??const <MapEntry<int,String>>[];
+   return Padding(padding:const EdgeInsets.only(top:22,bottom:4),child:Column(
+    crossAxisAlignment:CrossAxisAlignment.start,children:[
+     const Padding(padding:EdgeInsets.symmetric(horizontal:16),child:Text('JELAJAHI GENRE',
+       style:TextStyle(letterSpacing:1.6,fontSize:11,color:Colors.white70,fontWeight:FontWeight.w700))),
+     const SizedBox(height:12),
+     if(s.hasError) const Padding(padding:EdgeInsets.symmetric(horizontal:16),child:Text('Genre TMDB tidak tersedia. Cek koneksi.'))
+     else if(!s.hasData) const SizedBox(height:77,child:Center(child:CircularProgressIndicator()))
+     else SizedBox(height:77,child:ListView.separated(
+      key:const PageStorageKey('tmdb-genre-list'),scrollDirection:Axis.horizontal,
+      padding:const EdgeInsets.symmetric(horizontal:16),itemCount:data.length,
+      separatorBuilder:(_,__)=>const SizedBox(width:14),
+      itemBuilder:(context,i) {
+       final g=data[i];
+       return InkWell(onTap:()=>widget.onSelect(g.key),borderRadius:BorderRadius.circular(12),
+        child:SizedBox(width:88,child:Column(children:[
+         const Icon(Icons.local_movies_outlined,size:27,color:Color(0xffe5aa55)),
+         const SizedBox(height:8),
+         Text(g.value,maxLines:2,textAlign:TextAlign.center,overflow:TextOverflow.ellipsis,
+          style:const TextStyle(fontSize:11,color:Colors.white70)),
+        ])));
+      }))
+    ]));
+  });
 }
 class MovieTile extends StatelessWidget {
  final Movie movie; final ValueChanged<Movie> onTap;
