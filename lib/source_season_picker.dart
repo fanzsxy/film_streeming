@@ -138,7 +138,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
         scrollDirection:Axis.horizontal,itemCount:seasons.length,
         separatorBuilder:(_,__)=>const SizedBox(width:8),
         itemBuilder:(context,i)=>ChoiceChip(label:Text('Season ${seasons[i]}'),
-          selected:selected==seasons[i],onSelected:(_)=>_changeSeason(seasons[i]))),
+          selected:selected==seasons[i],onSelected:(_)=>_changeSeason(seasons[i])))),
       if(active!=null)...[
         const SizedBox(height:12),
         Text('Episode • Season $active',style:const TextStyle(fontSize:17,fontWeight:FontWeight.bold)),
