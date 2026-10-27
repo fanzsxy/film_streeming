@@ -1115,7 +1115,8 @@ class _DetailPageState extends State<DetailPage> {final videoUrl=TextEditingCont
                  return Text(description.isEmpty ? 'Sinopsis belum tersedia.' : description);
                },
              ),
-             if (m.type == 'tv' && m.id > 0) _seasonSection(m),
+             // Season and episodes are sourced exclusively from the website WebView.
+             // TMDB episode numbering can differ from the streaming source.
            ],
          )),
        ])),
