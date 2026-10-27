@@ -22,6 +22,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
   bool changingSeason=false;
   int _scanVersion=0;
   int? _pendingSeason;
+  bool _initialSeasonSynced=false;
   bool triedSearch=false;
   bool showSourcePage=false;
   Uri? resolvedPage;
@@ -133,9 +134,22 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
           // A delayed or partially rendered DOM must not shrink an indexed season.
           if(entry.value.length>=existing.length && entry.value.isNotEmpty)episodes[entry.key]=entry.value;
         }
-        selected=ordered.contains(selected)?selected:(ordered.isEmpty?null:ordered.first);
+        // The site may initially display its latest season (e.g. S3).
+        // Never label that DOM's episodes as S1 before selecting S1 on-site.
+        selected=ordered.contains(selected)?selected:
+          (ordered.contains(actualSeason)?actualSeason:(ordered.isEmpty?null:ordered.first));
         loading=false;changingSeason=false;_pendingSeason=null;error=null;
       });
+      // Only on the first page read, switch the website's real dropdown to
+      // season one. This must run after the current site's season is captured.
+      if(!_initialSeasonSynced && expectedSeason==null && ordered.isNotEmpty){
+        _initialSeasonSynced=true;
+        if(actualSeason>0 && actualSeason!=ordered.first){
+          // Schedule through the normal selection path; do not reuse last
+          // season's links as if they belonged to season one.
+          await _changeSeason(ordered.first);
+        }
+      }
     }catch(_){if(mounted && version==_scanVersion)setState((){loading=false;changingSeason=false;error='Pilihan episode belum dapat dibaca.';});}
   }
   Future<void> _changeSeason(int season) async {
