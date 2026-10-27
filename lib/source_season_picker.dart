@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 /// Reads season and episode choices from the source website, never from TMDB.
@@ -27,8 +28,27 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
   bool showSourcePage=false;
   Uri? resolvedPage;
   String? error;
+  final Set<String> _openedEpisodes=<String>{};
+  String get _viewedKey => 'opened_source_episodes_v1:${Uri.encodeComponent(widget.title.trim().toLowerCase())}:${widget.year}';
+  String _episodeKey(int season,int episode)=>'$season:$episode';
+  Future<void> _loadOpenedEpisodes() async {
+    try {
+      final prefs=await SharedPreferences.getInstance();
+      if(!mounted)return;
+      setState(()=>_openedEpisodes.addAll(prefs.getStringList(_viewedKey)??const <String>[]));
+    }catch(_){/* Keep the episode picker usable when storage is unavailable. */}
+  }
+  Future<void> _openEpisode(int season,int episode,Uri uri) async {
+    setState(()=>_openedEpisodes.add(_episodeKey(season,episode)));
+    widget.onEpisodeSelected(season,episode,uri);
+    try {
+      final prefs=await SharedPreferences.getInstance();
+      await prefs.setStringList(_viewedKey,_openedEpisodes.toList()..sort());
+    }catch(_){/* Opening playback must not depend on local storage. */}
+  }
   @override void initState(){
     super.initState();
+    _loadOpenedEpisodes();
     controller=WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(NavigationDelegate(
@@ -228,7 +248,6 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
           itemBuilder:(context,i){
             final season=seasons[i];
             final isActive=selected==season;
-            final count=episodes[season]?.length;
             return InkWell(
               borderRadius:BorderRadius.circular(18),
               onTap:()=>_changeSeason(season),
@@ -254,10 +273,6 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
                       Icon(Icons.chevron_right,
                         color:isActive?const Color(0xFFFFB5BA):Colors.white70),
                     ]),
-                    const SizedBox(height:9),
-                    Text(count==null?'Episode belum dibaca':'$count episode terdeteksi',
-                      maxLines:1,overflow:TextOverflow.ellipsis,
-                      style:const TextStyle(color:Colors.white70,fontSize:12)),
                   ],
                 ),
               ),
@@ -280,11 +295,12 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
         if(!changingSeason)...visible.map((e)=>Padding(
           padding:const EdgeInsets.only(bottom:12),
           child:Material(
-            color:const Color(0xFF23242A),
+            color:_openedEpisodes.contains(_episodeKey(active,e.episode))
+              ? const Color(0xFF344B45) : const Color(0xFF23242A),
             borderRadius:BorderRadius.circular(16),
             child:InkWell(
               borderRadius:BorderRadius.circular(16),
-              onTap:()=>widget.onEpisodeSelected(active,e.episode,e.uri),
+              onTap:()=>_openEpisode(active,e.episode,e.uri),
               child:Padding(
                 padding:const EdgeInsets.symmetric(horizontal:16,vertical:16),
                 child:Row(children:[
@@ -294,6 +310,9 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
                   Expanded(child:Text('Episode ${e.episode}',
                     style:const TextStyle(fontSize:17,fontWeight:FontWeight.w600,color:Colors.white))),
                   const SizedBox(width:8),
+                  if(_openedEpisodes.contains(_episodeKey(active,e.episode)))
+                    const Padding(padding:EdgeInsets.only(right:8),
+                      child:Icon(Icons.check_circle,color:Color(0xFF9DD5BB),size:22)),
                   const Icon(Icons.play_circle_outline,color:Colors.white70,size:30),
                 ]),
               ),
