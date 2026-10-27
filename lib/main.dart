@@ -261,7 +261,7 @@ class LocalCatalogMetadata {
             (item['original_title']??item['original_name']??'').toString()
           ]) {
             if(title.trim().isEmpty)continue;
-            candidates.addAll(byTitleYear['$'+'{year}:${_norm(title)}']??const []);
+            candidates.addAll(byTitleYear['${year}:${_norm(title)}']??const []);
           }
           if(candidates.length==1)entry=candidates.single;
         }
