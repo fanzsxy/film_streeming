@@ -137,7 +137,13 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
         // Show Season 1 (or the first available season) immediately.
         // Its episode buttons stay hidden until the website is synchronized.
         selected=selected??(ordered.isEmpty?null:ordered.first);
-        loading=false;changingSeason=false;_pendingSeason=null;error=null;
+        loading=false;
+        // A single early episode link may be the only DOM node rendered yet.
+        // Keep polling until additional episodes arrive or polling times out.
+        final waitingForEpisodes=expectedSeason!=null &&
+          (episodes[expectedSeason]?.length??0)<=1;
+        if(!waitingForEpisodes){changingSeason=false;_pendingSeason=null;}
+        error=null;
       });
       // Only on the first page read, switch the website's real dropdown to
       // season one. This must run after the current site's season is captured.
@@ -153,7 +159,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
   }
   Future<void> _changeSeason(int season, {bool force=false}) async {
     if((selected==season && !force) || changingSeason)return;
-    if(episodes[season]?.isNotEmpty==true){
+    if(!force && episodes[season]?.isNotEmpty==true){
       setState(()=>selected=season);
       return;
     }
@@ -183,13 +189,15 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
         await Future<void>.delayed(const Duration(milliseconds:450));
         if(!mounted || _pendingSeason!=season)return;
         await _scan(expectedSeason:season);
-        if(episodes[season]?.isNotEmpty==true && !changingSeason)return;
+        if(!changingSeason)return;
       }
       if(mounted && _pendingSeason==season){
         setState((){
           changingSeason=false;
           _pendingSeason=null;
-          error='Daftar episode season ini belum dapat dibaca dari situs.';
+          error=(episodes[season]?.length??0)==0
+            ? 'Daftar episode season ini belum dapat dibaca dari situs.'
+            : 'Hanya sebagian episode yang terdeteksi; coba periksa halaman sumber.';
         });
       }
     }catch(_){
