@@ -1049,7 +1049,7 @@ class _DetailPageState extends State<DetailPage> {
  Uri? selectedEpisodeUrl;
  int? sourceSeason,sourceEpisode;
  String sourceSynopsis='';
- void _receiveSynopsis(String text){final clean=text.trim();if(clean.isNotEmpty && mounted && clean!=sourceSynopsis)setState(()=>sourceSynopsis=clean);}
+ void _receiveSynopsis(String text){final clean=text.trim();if(clean.isEmpty||!mounted)return;final old=sourceSynopsis.trim();if(old.isNotEmpty && old.length>=clean.length && !old.endsWith('...') && !old.endsWith('…'))return;if(clean!=old)setState(()=>sourceSynopsis=clean);}
  final videoUrl=TextEditingController(),subtitleUrl=TextEditingController(),sourcePage=TextEditingController();late bool favorite;late Future<Map<String,dynamic>> details; late Future<Uri> sourceFuture;
  @override void initState(){super.initState();favorite=widget.isFavorite;details=widget.movie.id>0?Tmdb.bilingualDetail('${widget.movie.type}/${widget.movie.id}'):Future.value(<String,dynamic>{}); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}}
  @override void dispose(){videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();detailScroll.dispose();super.dispose();}
@@ -1191,19 +1191,19 @@ class _DetailPageState extends State<DetailPage> {
                      Chip(label:Text(g),visualDensity:VisualDensity.compact)).toList()),
                  ]);
                }),
-             const SizedBox(height: 14),
-             const Text('Sinopsis',style:TextStyle(fontSize:17,fontWeight:FontWeight.bold)),
-             const SizedBox(height: 7),
-             FutureBuilder<Map<String,dynamic>>(
-               future: details,
-               builder: (context, localized) {
-                 // The source-page synopsis is authoritative for this view.
-                 // Do not use TMDB text as a substitute for LK21 metadata.
-                 final fromCrawler = m.overview.trim();
-                 final description = sourceSynopsis.isNotEmpty ? sourceSynopsis : fromCrawler;
-                 return Text(description.isEmpty ? 'Sinopsis LK21 belum tersedia.' : description);
-               },
-             ),
+             Builder(builder:(context){
+               // Keep the synopsis section hidden until genuine source/catalog
+               // text is available instead of flashing a placeholder.
+               final fromCrawler=m.overview.trim();
+               final description=sourceSynopsis.isNotEmpty?sourceSynopsis:fromCrawler;
+               if(description.isEmpty)return const SizedBox.shrink();
+               return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                 const SizedBox(height:14),
+                 const Text('Sinopsis',style:TextStyle(fontSize:17,fontWeight:FontWeight.bold)),
+                 const SizedBox(height:7),
+                 Text(description),
+               ]);
+             }),
              if(m.type=='tv')...[
                const SizedBox(height:20),
                FutureBuilder<Uri>(future:sourceFuture,builder:(context,snapshot){
