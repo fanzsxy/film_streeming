@@ -318,7 +318,8 @@ class LocalCatalogMetadata {
       return ranked;
     }
     final query=(params['query']??'').trim().toLowerCase();
-    final category=endpoint.startsWith('search/')||endpoint=='trending/all/week'?null:
+    final category=endpoint=='catalog/sorted'?(type=='all'?null:type):
+      endpoint.startsWith('search/')||endpoint=='trending/all/week'?null:
        endpoint=='catalog/tv'||endpoint.startsWith('tv/')||endpoint.contains('/tv/')?'tv':
        endpoint=='catalog/movie'||endpoint.startsWith('movie/')||endpoint.contains('/movie/')?'movie':
        type=='tv'?'tv':type=='movie'?'movie':null;
@@ -523,9 +524,15 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     final hasFilter=genre1>0||genre2>0||country.isNotEmpty;
     while(incoming.length<16 && scanned<(hasFilter?8:2) && page<500) {
       final nextPage=page+1;
-      final kinds=type=='all'?const ['movie','tv']:[type];
-      final batches=await Future.wait(kinds.map((k)=>
-        Tmdb.list(hasFilter?'discover/$k':'catalog/$k',page:nextPage,type:k,params:hasFilter?_params(k):const {})));
+      // TMDB discovers genre/language candidates; only catalog matches survive.
+      // Without metadata filters, sort the entire local catalog before paging.
+      final batches=(!hasFilter && sort=='latest')
+        ? <List<Movie>>[await Tmdb.list('catalog/sorted',page:nextPage,
+            type:type,params:const {'sort':'latest'})]
+        : await Future.wait((type=='all'?const ['movie','tv']:[type]).map((k)=>
+          Tmdb.list(hasFilter?'discover/$k':'catalog/$k',page:nextPage,
+            type:k,params:hasFilter?_params(k):const {})));
+
       if(!mounted||token!=epoch)return;
       page=nextPage;
       scanned++;
@@ -544,29 +551,14 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
       }
     }
     if(sort=='title')incoming.sort((a,b)=>a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-    else if(sort=='latest')incoming.sort((a,b)=>b.release.compareTo(a.release));
-    else incoming.sort((a,b)=>b.popularity.compareTo(a.popularity));
+    else if(sort=='latest' && hasFilter)incoming.sort((a,b)=>b.release.compareTo(a.release));
+    else if(sort=='popular')incoming.sort((a,b)=>b.popularity.compareTo(a.popularity));
     if(!mounted||token!=epoch)return;
     setState((){
       for(final m in incoming){
         if(seenResults.add(m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}'))results.add(m);
       }
-      // Previously only each downloaded page was sorted. On subsequent
-      // loads, older entries could stay above newly fetched recent titles.
-      // Always sort the complete set of loaded results after appending.
-      if(sort=='latest'){
-        results.sort((a,b){
-          final aDate=DateTime.tryParse(a.release);
-          final bDate=DateTime.tryParse(b.release);
-          final byDate=(bDate?.millisecondsSinceEpoch??0).compareTo(aDate?.millisecondsSinceEpoch??0);
-          if(byDate!=0)return byDate;
-          return a.title.toLowerCase().compareTo(b.title.toLowerCase());
-        });
-      }else if(sort=='title'){
-        results.sort((a,b)=>a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-      }else{
-        results.sort((a,b)=>b.popularity.compareTo(a.popularity));
-      }
+      // Keep previously displayed cards in place; never re-sort on scroll.
       more=!ended&&page<500;
       error='';
     });
