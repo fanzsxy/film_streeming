@@ -1212,6 +1212,7 @@ class _DetailPageState extends State<DetailPage> {
                  return SourceSeasonPicker(
                    key:ValueKey('source-season-${m.id}'),
                    source:snapshot.data!, title:m.title, year:m.year,
+                   onSynopsisFound:_receiveSynopsis,
                    onEpisodeSelected:(season,episode,url){
                      setState((){
                        sourceSeason=season;

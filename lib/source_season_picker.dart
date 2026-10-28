@@ -11,7 +11,8 @@ class SourceSeasonPicker extends StatefulWidget {
   final String title;
   final String year;
   final void Function(int season, int episode, Uri url) onEpisodeSelected;
-  const SourceSeasonPicker({super.key, required this.source, required this.title, required this.year, required this.onEpisodeSelected});
+  final ValueChanged<String>? onSynopsisFound;
+  const SourceSeasonPicker({super.key, required this.source, required this.title, required this.year, required this.onEpisodeSelected, this.onSynopsisFound});
   @override State<SourceSeasonPicker> createState()=>_SourceSeasonPickerState();
 }
 class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
@@ -122,12 +123,18 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
             episodes.push({season:sn,episode:ep,url:uri.href});
           }
         });
-        return JSON.stringify({opts,episodes,active});
+        const synopsisNode=document.querySelector('[itemprop="description"],.sinopsis,.synopsis,.entry-content .desc,.film-synopsis,.summary,.description');
+        const synopsis=(synopsisNode?.textContent||'').trim().replace(/\s+/g,' ').slice(0,1600);
+        return JSON.stringify({opts,episodes,active,synopsis});
       })()''');
       dynamic decoded=result;
       if(decoded is String){try{decoded=jsonDecode(decoded);}catch(_){}}
       if(decoded is String){try{decoded=jsonDecode(decoded);}catch(_){}}
       if(decoded is! Map || !mounted || version!=_scanVersion)return;
+      final synopsis=(decoded['synopsis']??'').toString().trim();
+      if(synopsis.isNotEmpty && widget.onSynopsisFound!=null){
+        widget.onSynopsisFound!(synopsis);
+      }
       final actualSeason=(decoded['active'] as num?)?.toInt()??0;
       if(expectedSeason!=null && actualSeason!=expectedSeason)return;
       final found=<int,List<({int episode,Uri uri})>>{};
