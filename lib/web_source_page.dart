@@ -522,7 +522,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
             if(number>0)episodes.push({season,episode:number,url:uri.href});
           }catch(_){}
         });
-        return JSON.stringify({genres,synopsis:txt(synopsis).slice(0,1600),episodes:episodes.slice(0,150)});
+        return JSON.stringify({genres,synopsis:txt(synopsis),episodes:episodes.slice(0,150)});
       })()''');
       dynamic parsed=raw;
       if(parsed is String){try{parsed=jsonDecode(parsed);}catch(_){}}
