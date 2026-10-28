@@ -124,7 +124,7 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
           }
         });
         const synopsisNode=document.querySelector('[itemprop="description"],.sinopsis,.synopsis,.entry-content .desc,.film-synopsis,.summary,.description');
-        const synopsis=(synopsisNode?.textContent||'').trim().replace(/\s+/g,' ').slice(0,1600);
+        const synopsis=(synopsisNode?.textContent||'').trim().replace(/\s+/g,' ');
         return JSON.stringify({opts,episodes,active,synopsis});
       })()''');
       dynamic decoded=result;
