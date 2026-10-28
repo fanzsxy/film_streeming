@@ -506,6 +506,22 @@ class _WebSourcePageState extends State<WebSourcePage> {
   Future<void> _readSourceDetails() async {
     if (widget.onSynopsisFound == null && !widget.embedded) return;
     try {
+      // Expand the source site's collapsed synopsis before reading its DOM.
+      // Only activate a local expand control; do not follow external links.
+      await _controller.runJavaScript(r'''(() => {
+        const nodes=document.querySelectorAll('button,a,[role="button"],span');
+        const expand=[...nodes].find(el=>{
+          const text=(el.textContent||'').trim().toLowerCase();
+          if(!/^(lihat selengkapnya|baca selengkapnya|read more|show more)$/.test(text))return false;
+          if(el.tagName==='A'){
+            const href=(el.getAttribute('href')||'').trim();
+            if(href && href!=='#' && !href.startsWith('javascript:'))return false;
+          }
+          return true;
+        });
+        if(expand)expand.click();
+      })()''');
+      await Future<void>.delayed(const Duration(milliseconds:300));
       final raw=await _controller.runJavaScriptReturningResult(r'''(() => {
         const txt = e => (e?.textContent || '').trim().replace(/\\s+/g,' ');
         const synopsis = document.querySelector('[itemprop="description"],.sinopsis,.synopsis,.entry-content .desc,.film-synopsis,.summary,.description');
