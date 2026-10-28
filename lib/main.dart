@@ -551,6 +551,22 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
       for(final m in incoming){
         if(seenResults.add(m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}'))results.add(m);
       }
+      // Previously only each downloaded page was sorted. On subsequent
+      // loads, older entries could stay above newly fetched recent titles.
+      // Always sort the complete set of loaded results after appending.
+      if(sort=='latest'){
+        results.sort((a,b){
+          final aDate=DateTime.tryParse(a.release);
+          final bDate=DateTime.tryParse(b.release);
+          final byDate=(bDate?.millisecondsSinceEpoch??0).compareTo(aDate?.millisecondsSinceEpoch??0);
+          if(byDate!=0)return byDate;
+          return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+        });
+      }else if(sort=='title'){
+        results.sort((a,b)=>a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+      }else{
+        results.sort((a,b)=>b.popularity.compareTo(a.popularity));
+      }
       more=!ended&&page<500;
       error='';
     });
