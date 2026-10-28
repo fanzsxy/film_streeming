@@ -323,14 +323,19 @@ class LocalCatalogMetadata {
        endpoint=='catalog/tv'||endpoint.startsWith('tv/')||endpoint.contains('/tv/')?'tv':
        endpoint=='catalog/movie'||endpoint.startsWith('movie/')||endpoint.contains('/movie/')?'movie':
        type=='tv'?'tv':type=='movie'?'movie':null;
+    // Single total ordering before pagination: never run a second sort that
+    // returns 0 for entries of different years (which scrambles their order).
+    final futureLimit=DateTime.now().year+2;
     final filtered=source.where((e)=>(category==null||e.type==category)&&(query.isEmpty||e.title.toLowerCase().contains(query))).toList()
-      ..sort((a,b){final x=b.year.compareTo(a.year);return x==0?a.title.compareTo(b.title):x;});
-    // Unusually distant future years remain searchable but do not bury current titles.
-    filtered.sort((a,b) {
-      final af=a.year>DateTime.now().year+2;
-      final bf=b.year>DateTime.now().year+2;
-      return af==bf?0:(af?1:-1);
-    });
+      ..sort((a,b){
+        final af=a.year>futureLimit;
+        final bf=b.year>futureLimit;
+        if(af!=bf)return af?1:-1;
+        final byYear=b.year.compareTo(a.year);
+        if(byYear!=0)return byYear;
+        final byTitle=a.title.toLowerCase().compareTo(b.title.toLowerCase());
+        return byTitle!=0?byTitle:a.url.compareTo(b.url);
+      });
     final start=(page-1)*20;
     if(start>=filtered.length)return [];
     final selected=filtered.skip(start).take(20).toList();
