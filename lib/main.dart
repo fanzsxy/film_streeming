@@ -319,8 +319,9 @@ class LocalCatalogMetadata {
     }
     final query=(params['query']??'').trim().toLowerCase();
     final category=endpoint.startsWith('search/')||endpoint=='trending/all/week'?null:
-       endpoint.startsWith('tv/')||endpoint.contains('/tv/')?'tv':
-       endpoint.startsWith('movie/')||endpoint.contains('/movie/')?'movie':type=='tv'?'tv':null;
+       endpoint=='catalog/tv'||endpoint.startsWith('tv/')||endpoint.contains('/tv/')?'tv':
+       endpoint=='catalog/movie'||endpoint.startsWith('movie/')||endpoint.contains('/movie/')?'movie':
+       type=='tv'?'tv':type=='movie'?'movie':null;
     final filtered=source.where((e)=>(category==null||e.type==category)&&(query.isEmpty||e.title.toLowerCase().contains(query))).toList()
       ..sort((a,b){final x=b.year.compareTo(a.year);return x==0?a.title.compareTo(b.title):x;});
     // Unusually distant future years remain searchable but do not bury current titles.
@@ -531,6 +532,9 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
       // Discover pages can contain no catalog matches even when later pages do.
       if(batches.every((x)=>x.isEmpty) && !hasFilter){ended=true;break;}
       for(final m in batches.expand((x)=>x)) {
+        // Never show a series in Film mode or a film in Series mode,
+        // even if a catalog item or enrichment metadata is mislabeled.
+        if(type!='all' && m.type!=type)continue;
         if(genre1>0&&!m.genres.contains(genre1))continue;
         if(genre2>0&&!m.genres.contains(genre2))continue;
         // Search-result metadata exposes original_language. This is a language
