@@ -88,6 +88,22 @@ class _SourceSeasonPickerState extends State<SourceSeasonPicker> {
       }
       final currentPage=Uri.tryParse(await controller.currentUrl()??'');
       if(currentPage!=null && currentPage.scheme=='https')resolvedPage=currentPage;
+      // Expand the source site's collapsed synopsis before reading its DOM.
+      // Only activate a local expand control; do not follow external links.
+      await controller.runJavaScript(r'''(() => {
+        const nodes=document.querySelectorAll('button,a,[role="button"],span');
+        const expand=[...nodes].find(el=>{
+          const text=(el.textContent||'').trim().toLowerCase();
+          if(!/^(lihat selengkapnya|baca selengkapnya|read more|show more)$/.test(text))return false;
+          if(el.tagName==='A'){
+            const href=(el.getAttribute('href')||'').trim();
+            if(href && href!=='#' && !href.startsWith('javascript:'))return false;
+          }
+          return true;
+        });
+        if(expand)expand.click();
+      })()''');
+      await Future<void>.delayed(const Duration(milliseconds:300));
       final result=await controller.runJavaScriptReturningResult(r'''(() => {
         // Do not start playback while only selecting episodes.
         document.querySelectorAll('video').forEach(v => {try { v.pause(); } catch (_) {}});
