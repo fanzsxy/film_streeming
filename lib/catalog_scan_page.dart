@@ -19,6 +19,12 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
   late final WebViewController controller;
   String kind = 'movie';
   String status = 'Buka halaman, lalu tekan Scan halaman ini.';
+  String autoStatus = 'Belum ada hasil pemeriksaan otomatis.';
+  Future<void> _readAutoStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final current=prefs.getString('filmstream_auto_sync_status_v1');
+    if(mounted)setState(()=>autoStatus=current ?? 'Belum ada hasil pemeriksaan otomatis.');
+  }
   bool busy = false;
   int added = 0;
   String _normalizeUrl(String url) => url.endsWith('/') ? url.substring(0,url.length-1) : url;
@@ -85,6 +91,7 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
 
   @override void initState() {
     super.initState();
+    _readAutoStatus();
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(NavigationDelegate(
@@ -230,6 +237,9 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
         ),
         const SizedBox(height:8),
         Text(status,textAlign:TextAlign.center),
+        const SizedBox(height:6),
+        Text('Status otomatis: $autoStatus',textAlign:TextAlign.center,style:const TextStyle(fontSize:12)),
+        TextButton.icon(onPressed:_readAutoStatus,icon:const Icon(Icons.sync),label:const Text('Perbarui status otomatis')),
         const SizedBox(height:8),
         Row(mainAxisAlignment:MainAxisAlignment.center,children:[
           OutlinedButton.icon(onPressed:busy?null:_open,icon:const Icon(Icons.refresh),label:const Text('Muat ulang')),
