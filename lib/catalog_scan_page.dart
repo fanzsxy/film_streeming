@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +22,53 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
   bool busy = false;
   int added = 0;
   String _normalizeUrl(String url) => url.endsWith('/') ? url.substring(0,url.length-1) : url;
+
+  Future<void> _sendToGitHub() async {
+    final prefs=await SharedPreferences.getInstance();
+    final raw=prefs.getString(_key)??'[]';
+    dynamic decoded;
+    try {decoded=jsonDecode(raw);} catch (_){decoded=null;}
+    if(decoded is! List || decoded.isEmpty){
+      if(mounted)setState(()=>status='Belum ada data hasil scan untuk dikirim.');
+      return;
+    }
+    final input=TextEditingController();
+    final key=await showDialog<String>(context:context,builder:(dialogContext)=>AlertDialog(
+      title:const Text('Kirim katalog ke GitHub'),
+      content:Column(mainAxisSize:MainAxisSize.min,children:[
+        const Text('Masukkan kunci sinkronisasi milik server FilmStream. Data akan dibuatkan PR untuk ditinjau, bukan langsung digabung.'),
+        TextField(controller:input,obscureText:true,decoration:const InputDecoration(labelText:'Kunci sinkronisasi')),
+      ]),
+      actions:[
+        TextButton(onPressed:()=>Navigator.pop(dialogContext),child:const Text('Batal')),
+        FilledButton(onPressed:()=>Navigator.pop(dialogContext,input.text.trim()),child:const Text('Kirim')),
+      ],
+    ));
+    input.dispose();
+    if(key==null||key.isEmpty)return;
+    if(mounted)setState((){busy=true;status='Mengirim hasil scan ke server…';});
+    try{
+      final response=await http.post(
+        Uri.parse('https://film-streeming-api.vercel.app/catalog/submit'),
+        headers:{'Content-Type':'application/json','X-Filmstream-Sync-Key':key},
+        body:jsonEncode({'items':decoded}),
+      ).timeout(const Duration(seconds:40));
+      if(response.statusCode!=200){
+        throw StateError('Server mengembalikan HTTP ${response.statusCode}. Pastikan endpoint telah dideploy dan kunci disetel.');
+      }
+      final result=jsonDecode(response.body) as Map<String,dynamic>;
+      final link=Uri.tryParse((result['pull_request_url']??'').toString());
+      if(link==null||link.scheme!='https'||link.host!='github.com')throw StateError('Respons PR tidak valid');
+      if(mounted){
+        setState(()=>status='Berhasil mengajukan ${result['submitted']} judul. Periksa PR di GitHub sebelum merge.');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:const Text('Pull Request katalog dibuat.'),action:SnackBarAction(label:'Buka PR',onPressed:()=>launchUrl(link,mode:LaunchMode.externalApplication))));
+      }
+    }catch(e){
+      if(mounted)setState(()=>status='Pengiriman gagal: $e. Data tetap aman di HP.');
+    }finally{
+      if(mounted)setState(()=>busy=false);
+    }
+  }
 
   Future<void> _export() async {
     final prefs=await SharedPreferences.getInstance();
@@ -188,6 +237,7 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
           FilledButton.icon(onPressed:busy?null:_scan,icon:const Icon(Icons.search),label:const Text('Scan halaman ini')),
         ]),
         TextButton.icon(onPressed:busy?null:_export,icon:const Icon(Icons.copy),label:const Text('Salin JSON hasil scan ke GitHub')),
+        FilledButton.tonalIcon(onPressed:busy?null:_sendToGitHub,icon:const Icon(Icons.cloud_upload_outlined),label:const Text('Kirim otomatis ke GitHub')),
         if (added>0) Text('Total baru sesi ini: $added',style:const TextStyle(fontWeight:FontWeight.bold)),
       ])),
       Expanded(child:WebViewWidget(controller:controller)),
