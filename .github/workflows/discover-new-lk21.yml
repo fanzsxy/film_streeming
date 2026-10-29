@@ -1,0 +1,54 @@
+name: Discover new LK21 catalog titles
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '31 2 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: lk21-auto-discovery
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout current catalog
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install metadata-only crawler dependencies
+        run: pip install -r crawler/requirements.txt
+      - name: Inspect newest public LK21 movie and series listings
+        run: python tools/auto_discover_lk21.py --pages 2 --delay 3
+      - name: Upload discovery report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lk21-discovery-report
+          path: crawler/data/auto_discovery_report.json
+          if-no-files-found: ignore
+      - name: Open review PR for newly discovered titles
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          add-paths: assets/catalog/filmstream_catalog.json
+          branch: automation/new-lk21-titles
+          delete-branch: true
+          commit-message: 'catalog: propose newly discovered LK21 titles'
+          title: 'Catalog: review newly detected LK21 movies and series'
+          body: |
+            Automatically detected public title metadata from LK21's newest listings.
+
+            **Review every addition** (title, year, type and URL) before merging.
+            The workflow only appends catalog entries. It does not download
+            video, bypass site restrictions, replace ratings or alter existing items.
+            Entries are available in the app after merging and building an updated APK.
+          labels: catalog
