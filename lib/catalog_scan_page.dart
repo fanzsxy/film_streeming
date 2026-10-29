@@ -60,13 +60,13 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
         for (const a of document.querySelectorAll('a[href]')) {
           const u = new URL(a.getAttribute('href'), location.href);
           if (u.protocol !== 'https:' || u.host !== location.host || u.search || u.hash) continue;
-          const m = u.pathname.replace(/\\/$/, '').match(/-(19\\d{2}|20\\d{2})$/);
+          const m = u.pathname.replace(/\/$/, '').match(/-(19\d{2}|20\d{2})$/);
           if (!m) continue;
           const card = a.closest('article,li,.item,.poster,.movie,.series,.film');
           if (!card || !card.querySelector('img,h2,h3,h4,.title,.poster-title')) continue;
           const heading=card.querySelector('h2,h3,h4,.title,.poster-title');
           const img=card.querySelector('img');
-          const title=(heading?.textContent || a.title || img?.alt || '').trim().replace(/\\s+/g,' ');
+          const title=(heading?.textContent || a.title || img?.alt || '').trim().replace(/\s+/g,' ');
           if (!title || title.length > 180) continue;
           rows.push({title,year:Number(m[1]),url:u.origin+u.pathname,type:'__KIND__'});
         }
