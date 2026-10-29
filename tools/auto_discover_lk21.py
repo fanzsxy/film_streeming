@@ -114,16 +114,19 @@ def main():
                     str(x.get("year"))) for x in items if isinstance(x, dict)}
     new = []
     observations = {}
+    failures = {}
     for base, path, kind in sources:
         observed = 0
         for index in range(1, args.pages + 1):
             suffix = path if index == 1 else f"{path}/page/{index}"
             html = read_listing(session, base, suffix)
             if html is None:
+                failures[kind] = f"Listing inaccessible or restricted: {base}{suffix}"
                 break
             matches = candidates(html, base, kind)
             if not matches:
                 print("No recognized cards:", suffix, "- stopping this source")
+                failures[kind] = f"No recognizable title cards: {base}{suffix}"
                 break
             observed += len(matches)
             for entry in matches.values():
@@ -137,17 +140,18 @@ def main():
             if index < args.pages:
                 time.sleep(args.delay)
         observations[kind] = observed
-    # Require actual observed source cards. An empty response must not wipe data.
+    # Always write a report, even when source access is denied.
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    REPORT.write_text(json.dumps({"checked_at": datetime.now(timezone.utc).isoformat(),
+        "observed": observations, "failures": failures, "new_count": len(new),
+        "new": new[:100]}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # Inaccessible listings must never appear as a successful sync.
     if not any(observations.values()):
-        print("No accessible listing data; catalog unchanged")
-        return
+        raise SystemExit("No accessible LK21 listing data; catalog unchanged (see uploaded report)")
     new.sort(key=lambda x: (x["type"], -x["year"], x["title"].casefold()))
     document["items"] = items + new
     if new:
         CATALOG.write_text(json.dumps(document, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
-    REPORT.parent.mkdir(parents=True, exist_ok=True)
-    REPORT.write_text(json.dumps({"checked_at": datetime.now(timezone.utc).isoformat(),
-        "observed": observations, "new_count": len(new), "new": new[:100]}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Observed {observations}, added {len(new)} new candidate(s). Review before merging.")
 
 
