@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'filmstream_catalog.dart';
@@ -18,6 +19,20 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
   String status = 'Buka halaman, lalu tekan Scan halaman ini.';
   bool busy = false;
   int added = 0;
+  String _normalizeUrl(String url) => url.endsWith('/') ? url.substring(0,url.length-1) : url;
+
+  Future<void> _export() async {
+    final prefs=await SharedPreferences.getInstance();
+    final raw=prefs.getString(_key)??'[]';
+    final decoded=jsonDecode(raw);
+    if(decoded is! List || decoded.isEmpty){
+      if(mounted)setState(()=>status='Belum ada hasil scan lokal yang bisa diekspor.');
+      return;
+    }
+    final document={'version':1,'source':'FilmStream Android WebView','items':decoded};
+    await Clipboard.setData(ClipboardData(text:const JsonEncoder.withIndent('  ').convert(document)));
+    if(mounted)setState(()=>status='${decoded.length} judul disalin sebagai JSON. Tempel ke crawler/imports/phone_catalog.json di GitHub.');
+  }
 
   @override void initState() {
     super.initState();
@@ -118,7 +133,30 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
         final ratingValue=row['rating'];
         final rating=ratingValue is num && ratingValue>0 && ratingValue<=10
             ? ratingValue.toDouble() : null;
-        final urlKey='$media:${url.replaceAll(RegExp(r'/+
+        final urlKey='$media:${_normalizeUrl(url)}';
+        final titleKey='$media:$year:${title.toLowerCase()}';
+        final existingIndex=saved.indexWhere((item) =>
+          item['type']==kind && (
+            _normalizeUrl((item['url']??'').toString())==_normalizeUrl(url) ||
+            ((item['title']??'').toString().toLowerCase().trim()==title.toLowerCase() &&
+              item['year']==year)));
+        if(existingIndex>=0){
+          final item=saved[existingIndex];
+          var changed=false;
+          if(safePoster.isNotEmpty && (item['poster_url']??'').toString().isEmpty){
+            item['poster_url']=safePoster;changed=true;
+          }
+          if(rating!=null && item['rating']==null){item['rating']=rating;changed=true;}
+          if(changed)updated++;
+          continue;
+        }
+        if(seenUrls.contains(urlKey)||seenTitles.contains(titleKey))continue;
+        seenUrls.add(urlKey);
+        seenTitles.add(titleKey);
+        saved.add({'title':title,'year':year,'type':kind,'url':url,
+          if(safePoster.isNotEmpty)'poster_url':safePoster,
+          if(rating!=null)'rating':rating});
+        count++;
       }
       if (count > 0 || updated > 0) {
         final ok=await storage.setString(_key,jsonEncode(saved));
@@ -149,147 +187,11 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
           const SizedBox(width:8),
           FilledButton.icon(onPressed:busy?null:_scan,icon:const Icon(Icons.search),label:const Text('Scan halaman ini')),
         ]),
+        TextButton.icon(onPressed:busy?null:_export,icon:const Icon(Icons.copy),label:const Text('Salin JSON hasil scan ke GitHub')),
         if (added>0) Text('Total baru sesi ini: $added',style:const TextStyle(fontWeight:FontWeight.bold)),
       ])),
       Expanded(child:WebViewWidget(controller:controller)),
     ]),
   );
 }
-),'')}';
-        final titleKey='$media:$year:${title.toLowerCase()}';
-        // A second scan can enrich locally saved items without duplicating them.
-        final index=saved.indexWhere((item) =>
-            (item['type']=='series'?'tv':'movie')==media &&
-            ((item['url']??'').toString().replaceAll(RegExp(r'/+
-      }
-      if (count > 0) {
-        final ok=await storage.setString(_key,jsonEncode(saved));
-        if (!ok) throw StateError('Gagal menyimpan katalog lokal.');
-        FilmStreamCatalog.refresh();
-      }
-      if (mounted) setState(() { added+=count;status='Ditemukan ${parsed.length} kandidat. Ditambahkan $count judul baru ke katalog lokal.'; });
-    } catch (e) {
-      if (mounted) setState(()=>status='Scan gagal: $e. Katalog tidak diubah.');
-    } finally {
-      if (mounted) setState(()=>busy=false);
-    }
-  }
 
-  @override Widget build(BuildContext context) => Scaffold(
-    appBar:AppBar(title:const Text('Periksa Katalog Baru')),
-    body:Column(children:[
-      Padding(padding:const EdgeInsets.all(12),child:Column(children:[
-        SegmentedButton<String>(
-          segments:const [ButtonSegment(value:'movie',label:Text('Film')),ButtonSegment(value:'series',label:Text('Series'))],
-          selected:{kind},onSelectionChanged:(values) { if(busy)return;setState(()=>kind=values.first);_open(); },
-        ),
-        const SizedBox(height:8),
-        Text(status,textAlign:TextAlign.center),
-        const SizedBox(height:8),
-        Row(mainAxisAlignment:MainAxisAlignment.center,children:[
-          OutlinedButton.icon(onPressed:busy?null:_open,icon:const Icon(Icons.refresh),label:const Text('Muat ulang')),
-          const SizedBox(width:8),
-          FilledButton.icon(onPressed:busy?null:_scan,icon:const Icon(Icons.search),label:const Text('Scan halaman ini')),
-        ]),
-        if (added>0) Text('Total baru sesi ini: $added',style:const TextStyle(fontWeight:FontWeight.bold)),
-      ])),
-      Expanded(child:WebViewWidget(controller:controller)),
-    ]),
-  );
-}
-),'')==
-                url.replaceAll(RegExp(r'/+
-      }
-      if (count > 0) {
-        final ok=await storage.setString(_key,jsonEncode(saved));
-        if (!ok) throw StateError('Gagal menyimpan katalog lokal.');
-        FilmStreamCatalog.refresh();
-      }
-      if (mounted) setState(() { added+=count;status='Ditemukan ${parsed.length} kandidat. Ditambahkan $count judul baru ke katalog lokal.'; });
-    } catch (e) {
-      if (mounted) setState(()=>status='Scan gagal: $e. Katalog tidak diubah.');
-    } finally {
-      if (mounted) setState(()=>busy=false);
-    }
-  }
-
-  @override Widget build(BuildContext context) => Scaffold(
-    appBar:AppBar(title:const Text('Periksa Katalog Baru')),
-    body:Column(children:[
-      Padding(padding:const EdgeInsets.all(12),child:Column(children:[
-        SegmentedButton<String>(
-          segments:const [ButtonSegment(value:'movie',label:Text('Film')),ButtonSegment(value:'series',label:Text('Series'))],
-          selected:{kind},onSelectionChanged:(values) { if(busy)return;setState(()=>kind=values.first);_open(); },
-        ),
-        const SizedBox(height:8),
-        Text(status,textAlign:TextAlign.center),
-        const SizedBox(height:8),
-        Row(mainAxisAlignment:MainAxisAlignment.center,children:[
-          OutlinedButton.icon(onPressed:busy?null:_open,icon:const Icon(Icons.refresh),label:const Text('Muat ulang')),
-          const SizedBox(width:8),
-          FilledButton.icon(onPressed:busy?null:_scan,icon:const Icon(Icons.search),label:const Text('Scan halaman ini')),
-        ]),
-        if (added>0) Text('Total baru sesi ini: $added',style:const TextStyle(fontWeight:FontWeight.bold)),
-      ])),
-      Expanded(child:WebViewWidget(controller:controller)),
-    ]),
-  );
-}
-),'') ||
-             ((item['title']??'').toString().toLowerCase().trim()==title.toLowerCase() &&
-              item['year']==year)));
-        if (index>=0) {
-          final item=saved[index];
-          var changed=false;
-          if (safePoster.isNotEmpty && (item['poster_url']??'').toString().isEmpty) {
-            item['poster_url']=safePoster; changed=true;
-          }
-          if (rating!=null && item['rating']==null) {
-            item['rating']=rating; changed=true;
-          }
-          if (changed) updated++;
-          continue;
-        }
-        if (seenUrls.contains(urlKey) || seenTitles.contains(titleKey)) continue;
-        seenUrls.add(urlKey);
-        seenTitles.add(titleKey);
-        saved.add({'title':title,'year':year,'type':kind,'url':url,
-          if(safePoster.isNotEmpty)'poster_url':safePoster,
-          if(rating!=null)'rating':rating});
-        count++;
-      }
-      if (count > 0) {
-        final ok=await storage.setString(_key,jsonEncode(saved));
-        if (!ok) throw StateError('Gagal menyimpan katalog lokal.');
-        FilmStreamCatalog.refresh();
-      }
-      if (mounted) setState(() { added+=count;status='Ditemukan ${parsed.length} kandidat. Ditambahkan $count judul baru ke katalog lokal.'; });
-    } catch (e) {
-      if (mounted) setState(()=>status='Scan gagal: $e. Katalog tidak diubah.');
-    } finally {
-      if (mounted) setState(()=>busy=false);
-    }
-  }
-
-  @override Widget build(BuildContext context) => Scaffold(
-    appBar:AppBar(title:const Text('Periksa Katalog Baru')),
-    body:Column(children:[
-      Padding(padding:const EdgeInsets.all(12),child:Column(children:[
-        SegmentedButton<String>(
-          segments:const [ButtonSegment(value:'movie',label:Text('Film')),ButtonSegment(value:'series',label:Text('Series'))],
-          selected:{kind},onSelectionChanged:(values) { if(busy)return;setState(()=>kind=values.first);_open(); },
-        ),
-        const SizedBox(height:8),
-        Text(status,textAlign:TextAlign.center),
-        const SizedBox(height:8),
-        Row(mainAxisAlignment:MainAxisAlignment.center,children:[
-          OutlinedButton.icon(onPressed:busy?null:_open,icon:const Icon(Icons.refresh),label:const Text('Muat ulang')),
-          const SizedBox(width:8),
-          FilledButton.icon(onPressed:busy?null:_scan,icon:const Icon(Icons.search),label:const Text('Scan halaman ini')),
-        ]),
-        if (added>0) Text('Total baru sesi ini: $added',style:const TextStyle(fontWeight:FontWeight.bold)),
-      ])),
-      Expanded(child:WebViewWidget(controller:controller)),
-    ]),
-  );
-}
