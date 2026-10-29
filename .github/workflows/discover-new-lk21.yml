@@ -51,4 +51,3 @@ jobs:
             The workflow only appends catalog entries. It does not download
             video, bypass site restrictions, replace ratings or alter existing items.
             Entries are available in the app after merging and building an updated APK.
-          labels: catalog
