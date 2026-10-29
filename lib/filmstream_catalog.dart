@@ -60,79 +60,43 @@ class FilmStreamCatalog {
   static Future<List<CatalogEntry>> load() => _cached ??= _loadFromAssets();
   static void refresh() { _cached = null; }
 
+  static String _normalUrl(String url) =>
+      url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+
   static Future<List<CatalogEntry>> _loadFromAssets() async {
     final raw = await rootBundle.loadString('assets/catalog/filmstream_catalog.json');
-    // Decode the large bundled catalog on a background isolate to avoid
-    // blocking the UI thread during startup or the first catalog search.
     final bundled = await compute(_parseCatalog, raw);
     final storage = await prefs.SharedPreferences.getInstance();
     final extraRaw = storage.getString('filmstream_local_catalog_v1') ?? '[]';
     List<dynamic> extra;
-    try { extra = jsonDecode(extraRaw) as List<dynamic>; } catch (_) { extra = []; }
-    final seenUrls = bundled.map((e) => '${e.type}:${e.url.replaceAll(RegExp(r'/+
-  }
-
-  static Future<List<CatalogEntry>> find(String query, {String? type, int limit = 100}) async {
-    final entries = await load();
-    final term = query.toLowerCase().trim();
-    if (term.isEmpty) return const [];
-    return entries.where((entry) =>
-      (type == null || entry.type == type) &&
-      entry.title.toLowerCase().contains(term)).take(limit).toList(growable: false);
-  }
-}
-
-// Top-level function required by compute(). It runs outside the UI isolate.
-List<CatalogEntry> _parseCatalog(String raw) {
-  final decoded = jsonDecode(raw) as Map<String, dynamic>;
-  final items = decoded['items'] as List<dynamic>? ?? const [];
-  return List<CatalogEntry>.unmodifiable(
-    items.whereType<Map<String, dynamic>>().map(CatalogEntry.fromJson).where(
-      (entry) => entry.title.trim().isNotEmpty &&
-          entry.url.startsWith('https://') &&
-          (entry.type == 'movie' || entry.type == 'tv'),
-    ),
-  );
-}
-), '')}').toSet();
-    final seenTitles = bundled.map((e) => '${e.type}:${e.year}:${e.title.toLowerCase().trim()}').toSet();
+    try {
+      extra = jsonDecode(extraRaw) as List<dynamic>;
+    } catch (_) {
+      extra = [];
+    }
+    final seenUrls = bundled.map((e) => '${e.type}:${_normalUrl(e.url)}').toSet();
+    final seenTitles = bundled.map((e) =>
+        '${e.type}:${e.year}:${e.title.toLowerCase().trim()}').toSet();
     final merged = List<CatalogEntry>.of(bundled);
     for (final item in extra.whereType<Map>()) {
       try {
-        final entry = CatalogEntry.fromJson(Map<String,dynamic>.from(item));
-        if (entry.title.isEmpty || entry.year < 1900 || entry.year > DateTime.now().year + 2) continue;
+        final entry = CatalogEntry.fromJson(Map<String, dynamic>.from(item));
+        if (entry.title.trim().isEmpty || entry.year < 1900 ||
+            entry.year > DateTime.now().year + 2) continue;
         final uri = Uri.tryParse(entry.url);
-        if (uri == null || uri.scheme != 'https' || uri.userInfo.isNotEmpty || uri.hasPort ||
-            !{'tv12.lk21official.cc','tv.lk21online.de'}.contains(uri.host)) continue;
-        if (!seenUrls.add('${entry.type}:${entry.url.replaceAll(RegExp(r'/+
-  }
-
-  static Future<List<CatalogEntry>> find(String query, {String? type, int limit = 100}) async {
-    final entries = await load();
-    final term = query.toLowerCase().trim();
-    if (term.isEmpty) return const [];
-    return entries.where((entry) =>
-      (type == null || entry.type == type) &&
-      entry.title.toLowerCase().contains(term)).take(limit).toList(growable: false);
-  }
-}
-
-// Top-level function required by compute(). It runs outside the UI isolate.
-List<CatalogEntry> _parseCatalog(String raw) {
-  final decoded = jsonDecode(raw) as Map<String, dynamic>;
-  final items = decoded['items'] as List<dynamic>? ?? const [];
-  return List<CatalogEntry>.unmodifiable(
-    items.whereType<Map<String, dynamic>>().map(CatalogEntry.fromJson).where(
-      (entry) => entry.title.trim().isNotEmpty &&
-          entry.url.startsWith('https://') &&
-          (entry.type == 'movie' || entry.type == 'tv'),
-    ),
-  );
-}
-), '')}')) continue;
-        if (!seenTitles.add('${entry.type}:${entry.year}:${entry.title.toLowerCase().trim()}')) continue;
+        if (uri == null || uri.scheme != 'https' || uri.userInfo.isNotEmpty ||
+            uri.hasPort || !{'tv12.lk21official.cc', 'tv.lk21online.de'}.contains(uri.host)) {
+          continue;
+        }
+        final urlKey = '${entry.type}:${_normalUrl(entry.url)}';
+        final titleKey = '${entry.type}:${entry.year}:${entry.title.toLowerCase().trim()}';
+        if (seenUrls.contains(urlKey) || seenTitles.contains(titleKey)) continue;
+        seenUrls.add(urlKey);
+        seenTitles.add(titleKey);
         merged.add(entry);
-      } catch (_) { /* Ignore malformed local entries. */ }
+      } catch (_) {
+        // Invalid local entries must not affect the bundled catalog.
+      }
     }
     return List<CatalogEntry>.unmodifiable(merged);
   }
