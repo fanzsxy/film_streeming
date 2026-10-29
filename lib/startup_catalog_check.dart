@@ -32,6 +32,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   final completed = <String>{};
   bool active = false;
   bool saving = false;
+  bool anyScanSucceeded = false;
 
   @override void initState() {
     super.initState();
@@ -45,7 +46,6 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     await _sendPending();
     if (DateTime.now().millisecondsSinceEpoch - last <
         const Duration(hours: 24).inMilliseconds) {
-      await _log('Belum scan ulang: pemeriksaan terakhir kurang dari 24 jam.');
       return;
     }
     await _log('Pemeriksaan otomatis LK21 sedang berjalan.');
@@ -198,6 +198,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
         if(mounted)widget.onCatalogUpdated();
       }
       success=true;
+      anyScanSucceeded = true;
       if(newRecords.isEmpty){
         await _log('Scan otomatis $kind: ${data.length} kandidat, tidak ada judul baru.');
       } else {
@@ -254,7 +255,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   Future<void> _finish(String kind,bool success) async {
     if(!mounted||!completed.add(kind))return;
     if(completed.length==hosts.length){
-      if(success){
+      if(anyScanSucceeded){
         final prefs=await SharedPreferences.getInstance();
         await prefs.setInt(timestampKey,DateTime.now().millisecondsSinceEpoch);
       }
