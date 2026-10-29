@@ -68,7 +68,18 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
           const img=card.querySelector('img');
           const title=(heading?.textContent || a.title || img?.alt || '').trim().replace(/\s+/g,' ');
           if (!title || title.length > 180) continue;
-          rows.push({title,year:Number(m[1]),url:u.origin+u.pathname,type:'__KIND__'});
+          const imageValue=img?.getAttribute('data-src') || img?.getAttribute('data-original') ||
+            img?.getAttribute('data-lazy-src') || img?.currentSrc || img?.src || '';
+          let poster='';
+          try {
+            const imageUri=new URL(imageValue,location.href);
+            if(imageUri.protocol==='https:')poster=imageUri.href;
+          } catch (_) {}
+          const ratingNode=card.querySelector('.rating,.ratings,.imdb,.vote,.score,[class*="rating"]');
+          const ratingText=(ratingNode?.textContent||'').trim();
+          const ratingMatch=ratingText.match(/(?:^|\\s)(10(?:\\.0)?|[0-9](?:\\.[0-9])?)(?:\\s|$)/);
+          const rating=ratingMatch?Number(ratingMatch[1]):null;
+          rows.push({title,year:Number(m[1]),url:u.origin+u.pathname,type:'__KIND__',poster_url:poster,rating});
         }
         return JSON.stringify(rows.slice(0,200));
       })()'''.replaceAll('__KIND__', kind));
@@ -90,6 +101,7 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
         }
       } catch (_) {}
       var count=0;
+      var updated=0;
       for (final row in parsed.whereType<Map>()) {
         final title=(row['title']??'').toString().trim();
         final year=row['year'];
@@ -99,9 +111,151 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
             year > DateTime.now().year+2 || target == null || target.scheme != 'https' ||
             target.host != _hosts[kind] || target.userInfo.isNotEmpty || target.hasPort) continue;
         final media=kind=='series'?'tv':'movie';
-        if (!seenUrls.add('$media:${url.replaceAll(RegExp(r'/+$'),'')}')) continue;
-        if (!seenTitles.add('$media:$year:${title.toLowerCase()}')) continue;
-        saved.add({'title':title,'year':year,'type':kind,'url':url});
+        final poster=(row['poster_url']??'').toString();
+        final posterUri=Uri.tryParse(poster);
+        final safePoster=posterUri!=null && posterUri.scheme=='https' && posterUri.userInfo.isEmpty
+            && !posterUri.hasPort ? poster : '';
+        final ratingValue=row['rating'];
+        final rating=ratingValue is num && ratingValue>0 && ratingValue<=10
+            ? ratingValue.toDouble() : null;
+        final urlKey='$media:${url.replaceAll(RegExp(r'/+
+      }
+      if (count > 0 || updated > 0) {
+        final ok=await storage.setString(_key,jsonEncode(saved));
+        if (!ok) throw StateError('Gagal menyimpan katalog lokal.');
+        FilmStreamCatalog.refresh();
+      }
+      if (mounted) setState(() { added+=count;status='Ditemukan ${parsed.length} kandidat. Baru: $count, metadata diperbarui: $updated.'; });
+    } catch (e) {
+      if (mounted) setState(()=>status='Scan gagal: $e. Katalog tidak diubah.');
+    } finally {
+      if (mounted) setState(()=>busy=false);
+    }
+  }
+
+  @override Widget build(BuildContext context) => Scaffold(
+    appBar:AppBar(title:const Text('Periksa Katalog Baru')),
+    body:Column(children:[
+      Padding(padding:const EdgeInsets.all(12),child:Column(children:[
+        SegmentedButton<String>(
+          segments:const [ButtonSegment(value:'movie',label:Text('Film')),ButtonSegment(value:'series',label:Text('Series'))],
+          selected:{kind},onSelectionChanged:(values) { if(busy)return;setState(()=>kind=values.first);_open(); },
+        ),
+        const SizedBox(height:8),
+        Text(status,textAlign:TextAlign.center),
+        const SizedBox(height:8),
+        Row(mainAxisAlignment:MainAxisAlignment.center,children:[
+          OutlinedButton.icon(onPressed:busy?null:_open,icon:const Icon(Icons.refresh),label:const Text('Muat ulang')),
+          const SizedBox(width:8),
+          FilledButton.icon(onPressed:busy?null:_scan,icon:const Icon(Icons.search),label:const Text('Scan halaman ini')),
+        ]),
+        if (added>0) Text('Total baru sesi ini: $added',style:const TextStyle(fontWeight:FontWeight.bold)),
+      ])),
+      Expanded(child:WebViewWidget(controller:controller)),
+    ]),
+  );
+}
+),'')}';
+        final titleKey='$media:$year:${title.toLowerCase()}';
+        // A second scan can enrich locally saved items without duplicating them.
+        final index=saved.indexWhere((item) =>
+            (item['type']=='series'?'tv':'movie')==media &&
+            ((item['url']??'').toString().replaceAll(RegExp(r'/+
+      }
+      if (count > 0) {
+        final ok=await storage.setString(_key,jsonEncode(saved));
+        if (!ok) throw StateError('Gagal menyimpan katalog lokal.');
+        FilmStreamCatalog.refresh();
+      }
+      if (mounted) setState(() { added+=count;status='Ditemukan ${parsed.length} kandidat. Ditambahkan $count judul baru ke katalog lokal.'; });
+    } catch (e) {
+      if (mounted) setState(()=>status='Scan gagal: $e. Katalog tidak diubah.');
+    } finally {
+      if (mounted) setState(()=>busy=false);
+    }
+  }
+
+  @override Widget build(BuildContext context) => Scaffold(
+    appBar:AppBar(title:const Text('Periksa Katalog Baru')),
+    body:Column(children:[
+      Padding(padding:const EdgeInsets.all(12),child:Column(children:[
+        SegmentedButton<String>(
+          segments:const [ButtonSegment(value:'movie',label:Text('Film')),ButtonSegment(value:'series',label:Text('Series'))],
+          selected:{kind},onSelectionChanged:(values) { if(busy)return;setState(()=>kind=values.first);_open(); },
+        ),
+        const SizedBox(height:8),
+        Text(status,textAlign:TextAlign.center),
+        const SizedBox(height:8),
+        Row(mainAxisAlignment:MainAxisAlignment.center,children:[
+          OutlinedButton.icon(onPressed:busy?null:_open,icon:const Icon(Icons.refresh),label:const Text('Muat ulang')),
+          const SizedBox(width:8),
+          FilledButton.icon(onPressed:busy?null:_scan,icon:const Icon(Icons.search),label:const Text('Scan halaman ini')),
+        ]),
+        if (added>0) Text('Total baru sesi ini: $added',style:const TextStyle(fontWeight:FontWeight.bold)),
+      ])),
+      Expanded(child:WebViewWidget(controller:controller)),
+    ]),
+  );
+}
+),'')==
+                url.replaceAll(RegExp(r'/+
+      }
+      if (count > 0) {
+        final ok=await storage.setString(_key,jsonEncode(saved));
+        if (!ok) throw StateError('Gagal menyimpan katalog lokal.');
+        FilmStreamCatalog.refresh();
+      }
+      if (mounted) setState(() { added+=count;status='Ditemukan ${parsed.length} kandidat. Ditambahkan $count judul baru ke katalog lokal.'; });
+    } catch (e) {
+      if (mounted) setState(()=>status='Scan gagal: $e. Katalog tidak diubah.');
+    } finally {
+      if (mounted) setState(()=>busy=false);
+    }
+  }
+
+  @override Widget build(BuildContext context) => Scaffold(
+    appBar:AppBar(title:const Text('Periksa Katalog Baru')),
+    body:Column(children:[
+      Padding(padding:const EdgeInsets.all(12),child:Column(children:[
+        SegmentedButton<String>(
+          segments:const [ButtonSegment(value:'movie',label:Text('Film')),ButtonSegment(value:'series',label:Text('Series'))],
+          selected:{kind},onSelectionChanged:(values) { if(busy)return;setState(()=>kind=values.first);_open(); },
+        ),
+        const SizedBox(height:8),
+        Text(status,textAlign:TextAlign.center),
+        const SizedBox(height:8),
+        Row(mainAxisAlignment:MainAxisAlignment.center,children:[
+          OutlinedButton.icon(onPressed:busy?null:_open,icon:const Icon(Icons.refresh),label:const Text('Muat ulang')),
+          const SizedBox(width:8),
+          FilledButton.icon(onPressed:busy?null:_scan,icon:const Icon(Icons.search),label:const Text('Scan halaman ini')),
+        ]),
+        if (added>0) Text('Total baru sesi ini: $added',style:const TextStyle(fontWeight:FontWeight.bold)),
+      ])),
+      Expanded(child:WebViewWidget(controller:controller)),
+    ]),
+  );
+}
+),'') ||
+             ((item['title']??'').toString().toLowerCase().trim()==title.toLowerCase() &&
+              item['year']==year)));
+        if (index>=0) {
+          final item=saved[index];
+          var changed=false;
+          if (safePoster.isNotEmpty && (item['poster_url']??'').toString().isEmpty) {
+            item['poster_url']=safePoster; changed=true;
+          }
+          if (rating!=null && item['rating']==null) {
+            item['rating']=rating; changed=true;
+          }
+          if (changed) updated++;
+          continue;
+        }
+        if (seenUrls.contains(urlKey) || seenTitles.contains(titleKey)) continue;
+        seenUrls.add(urlKey);
+        seenTitles.add(titleKey);
+        saved.add({'title':title,'year':year,'type':kind,'url':url,
+          if(safePoster.isNotEmpty)'poster_url':safePoster,
+          if(rating!=null)'rating':rating});
         count++;
       }
       if (count > 0) {
