@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -15,6 +16,9 @@ class StartupCatalogCheck extends StatefulWidget {
 class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   static const storageKey = 'filmstream_local_catalog_v1';
   static const timestampKey = 'filmstream_last_auto_scan_v1';
+  static const pendingKey = 'filmstream_auto_sync_pending_v1';
+  // Set at build time via GitHub Actions secret, never commit a literal key.
+  static const syncKey = String.fromEnvironment('FILMSTREAM_SYNC_KEY');
   static const hosts = {
     'movie': 'tv12.lk21official.cc',
     'series': 'tv.lk21online.de',
@@ -32,6 +36,8 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   Future<void> _startIfDue() async {
     final prefs = await SharedPreferences.getInstance();
     final last = prefs.getInt(timestampKey) ?? 0;
+    // Retry unsent records from earlier sessions, even if scan is not due.
+    await _sendPending();
     if (DateTime.now().millisecondsSinceEpoch - last <
         const Duration(hours: 24).inMilliseconds) return;
     if (!mounted) return;
@@ -120,6 +126,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       final seenTitles=catalog.map((e)=>identity(e.type,e.year,e.title)).toSet();
       final type=kind=='series'?'tv':'movie';
       var changes=0;
+      final newRecords=<Map<String,dynamic>>[];
       for(final row in data.whereType<Map>()){
         final title=(row['title']??'').toString().trim();
         final year=row['year'];
@@ -153,23 +160,68 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
             seenTitles.contains(identity(type,year,title)))continue;
         seenUrls.add('$type:${cleanUrl(url)}');
         seenTitles.add(identity(type,year,title));
-        saved.add({'type':kind,'title':title,'year':year,'url':url,
+        final newItem=<String,dynamic>{'type':kind,'title':title,'year':year,'url':url,
           if(safePoster.isNotEmpty)'poster_url':safePoster,
-          if(safeRating!=null)'rating':safeRating});
+          if(safeRating!=null)'rating':safeRating};
+        saved.add(newItem);
+        newRecords.add(newItem);
         changes++;
       }
       if(changes>0){
         final written=await storage.setString(storageKey,jsonEncode(saved));
         if(!written)return;
+        if(newRecords.isNotEmpty){
+          final pending=<dynamic>[];
+          try {
+            final old=jsonDecode(storage.getString(pendingKey)??'[]');
+            if(old is List)pending.addAll(old);
+          }catch(_){}
+          final known=pending.whereType<Map>().map((e)=>'${e['type']}:${e['url']}').toSet();
+          for(final entry in newRecords){
+            if(known.add('${entry['type']}:${entry['url']}'))pending.add(entry);
+          }
+          await storage.setString(pendingKey,jsonEncode(pending));
+        }
         FilmStreamCatalog.refresh();
         if(mounted)widget.onCatalogUpdated();
       }
       success=true;
+      // Never block the catalog UI on a network request. Failed submissions
+      // remain queued for the next app launch.
+      await _sendPending();
     }catch(_){
       // Page may be denied, temporarily unavailable, or have changed markup.
     }finally{
       saving=false;
       _finish(kind,success);
+    }
+  }
+
+  bool sending=false;
+  Future<void> _sendPending() async {
+    if(sending||syncKey.isEmpty)return;
+    sending=true;
+    try {
+      final prefs=await SharedPreferences.getInstance();
+      final raw=prefs.getString(pendingKey)??'[]';
+      final decoded=jsonDecode(raw);
+      if(decoded is! List||decoded.isEmpty)return;
+      final batch=decoded.whereType<Map>().take(100).map(
+        (entry)=>Map<String,dynamic>.from(entry)).toList();
+      if(batch.isEmpty)return;
+      final response=await http.post(
+        Uri.parse('https://film-streeming-api.vercel.app/catalog/submit'),
+        headers:{'Content-Type':'application/json','X-Filmstream-Sync-Key':syncKey},
+        body:jsonEncode({'items':batch}),
+      ).timeout(const Duration(seconds:30));
+      if(response.statusCode==200){
+        final remaining=decoded.skip(batch.length).toList();
+        await prefs.setString(pendingKey,jsonEncode(remaining));
+      }
+    }catch(_){
+      // Keep pending submissions for a later launch.
+    }finally{
+      sending=false;
     }
   }
 
