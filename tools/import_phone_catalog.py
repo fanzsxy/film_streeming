@@ -8,21 +8,25 @@ from unify_crawler_catalog import CATALOG, canonical, norm_title
 INPUT = Path("crawler/imports/phone_catalog.json")
 
 def main():
-    if not INPUT.exists():
-        print("No phone import present.")
+    sources = sorted(INPUT.parent.glob("phone_*.json")) + ([INPUT] if INPUT.exists() else [])
+    if not sources:
+        print("No phone imports present.")
         return
-    incoming = json.loads(INPUT.read_text(encoding="utf-8-sig"))
-    if not isinstance(incoming, dict) or not isinstance(incoming.get("items"), list):
-        raise ValueError("Expected JSON object with items array")
-    if len(incoming["items"]) > 5000:
-        raise ValueError("Phone export too large")
+    rows = []
+    for source in sources:
+        incoming = json.loads(source.read_text(encoding="utf-8-sig"))
+        if not isinstance(incoming, dict) or not isinstance(incoming.get("items"), list):
+            raise ValueError(f"Invalid phone import: {source}")
+        if len(incoming["items"]) > 5000:
+            raise ValueError(f"Phone export too large: {source}")
+        rows.extend(incoming["items"])
     doc = json.loads(CATALOG.read_text(encoding="utf-8-sig"))
     original = doc["items"]
     urls = {(r.get("type"), str(r.get("url","")).rstrip("/")) for r in original}
     identities = {(r.get("type"), str(r.get("year")), norm_title(str(r.get("title","")))) for r in original}
     added = 0
     skipped = 0
-    for row in incoming["items"]:
+    for row in rows:
         if not isinstance(row, dict):
             skipped += 1
             continue

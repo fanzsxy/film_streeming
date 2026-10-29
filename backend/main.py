@@ -285,3 +285,7 @@ def ai_match(payload: AiMatchRequest):
         return {"status": "matched", "matched": True, "url": selected["url"]}
     except (ValueError, KeyError, IndexError, TypeError):
         return {"status": "gemini_response_invalid", "matched": False}
+
+# Authenticated catalog import (creates a review PR only).
+from phone_catalog_sync import router as catalog_sync_router
+app.include_router(catalog_sync_router)
