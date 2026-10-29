@@ -22,6 +22,8 @@ jobs:
           python-version: '3.12'
       - name: Merge existing Film and Series crawler files
         run: python tools/unify_crawler_catalog.py --report crawler-unify-report.json
+      - name: Import reviewed phone catalog export
+        run: python tools/import_phone_catalog.py
       - name: Upload merge report
         uses: actions/upload-artifact@v4
         with:
