@@ -62,7 +62,11 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   }
 
   Future<void> _scanOne(String kind) async {
-    if (!mounted || completed.contains(kind) || saving) return;
+    if (!mounted || completed.contains(kind)) return;
+    while (saving && mounted) {
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+    }
+    if (!mounted || completed.contains(kind)) return;
     saving = true;
     var success = false;
     try {
@@ -186,8 +190,8 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       width:1,height:1,
       child:Stack(children:[
         for(final controller in controllers.values)
-          Offstage(offstage:true,child:SizedBox(
-            width:1,height:1,child:WebViewWidget(controller:controller))),
+          IgnorePointer(child:Opacity(opacity:0,child:SizedBox(
+            width:1,height:1,child:WebViewWidget(controller:controller)))),
       ]),
     );
   }
