@@ -237,6 +237,9 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
         ),
         const SizedBox(height:8),
         Text(status,textAlign:TextAlign.center),
+        const SizedBox(height:6),
+        Text('Status otomatis: $autoStatus',textAlign:TextAlign.center,style:const TextStyle(fontSize:12)),
+        TextButton.icon(onPressed:_readAutoStatus,icon:const Icon(Icons.sync),label:const Text('Perbarui status otomatis')),
         const SizedBox(height:8),
         Row(mainAxisAlignment:MainAxisAlignment.center,children:[
           OutlinedButton.icon(onPressed:busy?null:_open,icon:const Icon(Icons.refresh),label:const Text('Muat ulang')),
