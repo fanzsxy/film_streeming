@@ -17,6 +17,11 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   static const storageKey = 'filmstream_local_catalog_v1';
   static const timestampKey = 'filmstream_last_auto_scan_v1';
   static const pendingKey = 'filmstream_auto_sync_pending_v1';
+  static const diagnosticKey = 'filmstream_auto_sync_status_v1';
+  Future<void> _log(String msg) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(diagnosticKey, msg);
+  }
   // Set at build time via GitHub Actions secret, never commit a literal key.
   static const syncKey = String.fromEnvironment('FILMSTREAM_SYNC_KEY');
   static const hosts = {
@@ -39,7 +44,11 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     // Retry unsent records from earlier sessions, even if scan is not due.
     await _sendPending();
     if (DateTime.now().millisecondsSinceEpoch - last <
-        const Duration(hours: 24).inMilliseconds) return;
+        const Duration(hours: 24).inMilliseconds) {
+      await _log('Belum scan ulang: pemeriksaan terakhir kurang dari 24 jam.');
+      return;
+    }
+    await _log('Pemeriksaan otomatis LK21 sedang berjalan.');
     if (!mounted) return;
     for (final kind in hosts.keys) {
       final expectedHost = hosts[kind]!;
@@ -107,7 +116,10 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       dynamic data=raw;
       if(data is String)data=jsonDecode(data);
       if(data is String)data=jsonDecode(data);
-      if(data is! List || data.isEmpty)return;
+      if(data is! List || data.isEmpty){
+        await _log('Scan otomatis $kind: tidak menemukan kartu judul pada halaman.');
+        return;
+      }
       final storage=await SharedPreferences.getInstance();
       final catalog=await FilmStreamCatalog.load();
       final saved=<Map<String,dynamic>>[];
@@ -186,10 +198,16 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
         if(mounted)widget.onCatalogUpdated();
       }
       success=true;
+      if(newRecords.isEmpty){
+        await _log('Scan otomatis $kind: ${data.length} kandidat, tidak ada judul baru.');
+      } else {
+        await _log('Scan otomatis $kind: ${newRecords.length} judul baru tersimpan. Mengirim ke backend.');
+      }
       // Never block the catalog UI on a network request. Failed submissions
       // remain queued for the next app launch.
       await _sendPending();
-    }catch(_){
+    }catch(e){
+      await _log('Scan otomatis $kind gagal: ${e.runtimeType}. Coba scan manual.');
       // Page may be denied, temporarily unavailable, or have changed markup.
     }finally{
       saving=false;
@@ -199,7 +217,11 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
 
   bool sending=false;
   Future<void> _sendPending() async {
-    if(sending||syncKey.isEmpty)return;
+    if(sending)return;
+    if(syncKey.isEmpty){
+      await _log('Sinkronisasi tidak aktif: FILMSTREAM_SYNC_KEY kosong saat build.');
+      return;
+    }
     sending=true;
     try {
       final prefs=await SharedPreferences.getInstance();
@@ -215,10 +237,14 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
         body:jsonEncode({'items':batch}),
       ).timeout(const Duration(seconds:30));
       if(response.statusCode==200){
+        await _log('Berhasil mengirim ${batch.length} judul ke backend; PR dibuat.');
         final remaining=decoded.skip(batch.length).toList();
         await prefs.setString(pendingKey,jsonEncode(remaining));
+      } else {
+        await _log('Pengiriman ke backend gagal: HTTP ${response.statusCode}. Data tetap tersimpan di HP.');
       }
-    }catch(_){
+    }catch(e){
+      await _log('Pengiriman ke backend gagal: ${e.runtimeType}. Data tetap tersimpan.');
       // Keep pending submissions for a later launch.
     }finally{
       sending=false;
