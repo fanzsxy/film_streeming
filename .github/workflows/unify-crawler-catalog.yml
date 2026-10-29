@@ -1,0 +1,41 @@
+name: Unify FilmStream crawler catalog
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: filmstream-catalog-unification
+  cancel-in-progress: false
+
+jobs:
+  unify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Merge existing Film and Series crawler files
+        run: python tools/unify_crawler_catalog.py --report crawler-unify-report.json
+      - name: Upload merge report
+        uses: actions/upload-artifact@v4
+        with:
+          name: filmstream-unify-report
+          path: crawler-unify-report.json
+      - name: Propose consolidated catalog
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          add-paths: assets/catalog/filmstream_catalog.json
+          branch: automation/unify-crawler-catalog
+          commit-message: 'catalog: merge existing crawler datasets'
+          title: 'Catalog: consolidate all crawler metadata into FilmStream'
+          body: |
+            This automated PR merges crawler Film and Series data into the
+            canonical assets/catalog/filmstream_catalog.json, keeping existing
+            catalog metadata authoritative. Review additions before merging.
