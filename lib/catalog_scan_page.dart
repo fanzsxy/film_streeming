@@ -19,6 +19,12 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
   late final WebViewController controller;
   String kind = 'movie';
   String status = 'Buka halaman, lalu tekan Scan halaman ini.';
+  String autoStatus = 'Belum ada hasil pemeriksaan otomatis.';
+  Future<void> _readAutoStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final current=prefs.getString('filmstream_auto_sync_status_v1');
+    if(mounted)setState(()=>autoStatus=current ?? 'Belum ada hasil pemeriksaan otomatis.');
+  }
   bool busy = false;
   int added = 0;
   String _normalizeUrl(String url) => url.endsWith('/') ? url.substring(0,url.length-1) : url;
@@ -85,6 +91,7 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
 
   @override void initState() {
     super.initState();
+    _readAutoStatus();
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(NavigationDelegate(
