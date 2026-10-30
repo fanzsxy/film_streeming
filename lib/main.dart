@@ -285,7 +285,7 @@ class LocalCatalogMetadata {
         if(typeFilter!=null && e.type!=typeFilter)continue;
         byIdentity.putIfAbsent('${e.type}:${e.year}:${_norm(e.title)}',()=>[]).add(e);
       }
-      final ranked=<Movie>[];
+      final chosen=<CatalogEntry>[];
       for(final raw in (data['results'] as List? ?? const [])){
         if(raw is! Map)continue;
         final item=Map<String,dynamic>.from(raw);
@@ -315,8 +315,12 @@ class LocalCatalogMetadata {
         // Use the same catalog-keyed metadata resolver as search results.
         // Popular and search must not select different TMDB posters for
         // the same LK21 entry merely because they came from different APIs.
-        final movie=await enrich(entry);
-        if(movie!=null)ranked.add(movie);
+        chosen.add(entry);
+      }
+      final ranked=<Movie>[];
+      for(var i=0;i<chosen.length;i+=4){
+        ranked.addAll((await Future.wait(chosen.skip(i).take(4).map(enrich)))
+          .whereType<Movie>());
       }
       return ranked;
     }
