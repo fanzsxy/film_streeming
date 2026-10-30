@@ -312,9 +312,11 @@ class LocalCatalogMetadata {
         item['name']=entry.title;
         item['media_type']=entry.type;
         item['source_url']=entry.url;
-        final movie=_withCollectedMetadata(entry,item);
-        _sourceByTmdb[_key(movie.type,movie.id)]=movie.sourceUrl;
-        ranked.add(movie);
+        // Use the same catalog-keyed metadata resolver as search results.
+        // Popular and search must not select different TMDB posters for
+        // the same LK21 entry merely because they came from different APIs.
+        final movie=await enrich(entry);
+        if(movie!=null)ranked.add(movie);
       }
       return ranked;
     }
