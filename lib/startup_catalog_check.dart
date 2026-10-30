@@ -17,6 +17,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   static const storageKey = 'filmstream_local_catalog_v1';
   static const timestampKey = 'filmstream_last_auto_scan_v1';
   static const pendingKey = 'filmstream_auto_sync_pending_v1';
+  static const sentKey = 'filmstream_auto_sync_sent_v1';
   static const diagnosticKey = 'filmstream_auto_sync_status_v1';
   Future<void> _log(String msg) async {
     final prefs = await SharedPreferences.getInstance();
@@ -42,6 +43,9 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   Future<void> _startIfDue() async {
     final prefs = await SharedPreferences.getInstance();
     final last = prefs.getInt(timestampKey) ?? 0;
+    // Titles found in earlier manual scans must also be sent once. A previous
+    // app version saved these locally but never placed them in the sync queue.
+    await _queueUnsyncedLocal();
     // Retry unsent records from earlier sessions, even if scan is not due.
     await _sendPending();
     if (DateTime.now().millisecondsSinceEpoch - last <
@@ -213,6 +217,183 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     }finally{
       saving=false;
       _finish(kind,success);
+    }
+  }
+
+  String _recordId(Map item) {
+    final kind=(item['type']??'').toString();
+    final title=(item['title']??'').toString().toLowerCase().trim();
+    final year=(item['year']??'').toString();
+    return '$kind:$year:$title';
+  }
+
+  Future<void> _queueUnsyncedLocal() async {
+    try {
+      final prefs=await SharedPreferences.getInstance();
+      final local=jsonDecode(prefs.getString(storageKey)??'[]');
+      if(local is! List||local.isEmpty)return;
+      final bundled=await FilmStreamCatalog.bundledOnly();
+      final existingUrls=bundled.map((x)=>'${x.type}:${x.url.replaceFirst(RegExp(r'/+
+    if(sending)return;
+    if(syncKey.isEmpty){
+      await _log('Sinkronisasi tidak aktif: FILMSTREAM_SYNC_KEY kosong saat build.');
+      return;
+    }
+    sending=true;
+    try {
+      final prefs=await SharedPreferences.getInstance();
+      final raw=prefs.getString(pendingKey)??'[]';
+      final decoded=jsonDecode(raw);
+      if(decoded is! List||decoded.isEmpty)return;
+      final batch=decoded.whereType<Map>().take(100).map(
+        (entry)=>Map<String,dynamic>.from(entry)).toList();
+      if(batch.isEmpty)return;
+      final response=await http.post(
+        Uri.parse('https://film-streeming-api.vercel.app/catalog/submit'),
+        headers:{'Content-Type':'application/json','X-Filmstream-Sync-Key':syncKey},
+        body:jsonEncode({'items':batch}),
+      ).timeout(const Duration(seconds:30));
+      if(response.statusCode==200){
+        final result=jsonDecode(response.body);
+        if(result is! Map||result['status']!='review_required'){
+          await _log('Server tidak mengonfirmasi pembuatan PR. Data tetap tersimpan.');
+          return;
+        }
+        final oldSent=jsonDecode(prefs.getString(sentKey)??'[]');
+        final sent=oldSent is List?oldSent.whereType<String>().toSet():<String>{};
+        sent.addAll(batch.map(_recordId));
+        await prefs.setString(sentKey,jsonEncode(sent.toList()));
+        final remaining=decoded.skip(batch.length).toList();
+        await prefs.setString(pendingKey,jsonEncode(remaining));
+        await _log('Berhasil mengirim ${batch.length} judul ke backend; PR dibuat: ${result['pull_request_url']}.');
+      } else {
+        await _log('Pengiriman ke backend gagal: HTTP ${response.statusCode}. Data tetap tersimpan di HP.');
+      }
+    }catch(e){
+      await _log('Pengiriman ke backend gagal: ${e.runtimeType}. Data tetap tersimpan.');
+      // Keep pending submissions for a later launch.
+    }finally{
+      sending=false;
+    }
+  }
+
+  Future<void> _finish(String kind,bool success) async {
+    if(!mounted||!completed.add(kind))return;
+    if(completed.length==hosts.length){
+      if(anyScanSucceeded){
+        final prefs=await SharedPreferences.getInstance();
+        await prefs.setInt(timestampKey,DateTime.now().millisecondsSinceEpoch);
+      }
+      if(mounted)setState(()=>active=false);
+    }
+  }
+
+  @override Widget build(BuildContext context) {
+    if(!active)return const SizedBox.shrink();
+    return SizedBox(
+      width:1,height:1,
+      child:Stack(children:[
+        for(final controller in controllers.values)
+          IgnorePointer(child:Opacity(opacity:0,child:SizedBox(
+            width:1,height:1,child:WebViewWidget(controller:controller)))),
+      ]),
+    );
+  }
+}
+),'')}').toSet();
+      final existingTitles=bundled.map((x)=>'${x.type}:${x.year}:${x.title.toLowerCase().trim()}').toSet();
+      final rawSent=jsonDecode(prefs.getString(sentKey)??'[]');
+      final sent=rawSent is List?rawSent.whereType<String>().toSet():<String>{};
+      final rawPending=jsonDecode(prefs.getString(pendingKey)??'[]');
+      final pending=rawPending is List
+          ?rawPending.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList()
+          :<Map<String,dynamic>>[];
+      final known=pending.map(_recordId).toSet();
+      var added=0;
+      for(final row in local.whereType<Map>()){
+        final item=Map<String,dynamic>.from(row);
+        final kind=item['type'];
+        final media=kind=='series'?'tv':kind=='movie'?'movie':null;
+        if(media==null)continue;
+        final title=(item['title']??'').toString().trim();
+        final year=int.tryParse((item['year']??'').toString());
+        final url=(item['url']??'').toString();
+        final uri=Uri.tryParse(url);
+        if(title.isEmpty||year==null||year<1900||year>DateTime.now().year+2||
+           uri==null||uri.scheme!='https'||uri.host!=hosts[kind]||
+           uri.userInfo.isNotEmpty||uri.hasPort)continue;
+        final id=_recordId(item);
+        if(sent.contains(id)||known.contains(id)||
+           existingUrls.contains('$media:${url.replaceFirst(RegExp(r'/+
+    if(sending)return;
+    if(syncKey.isEmpty){
+      await _log('Sinkronisasi tidak aktif: FILMSTREAM_SYNC_KEY kosong saat build.');
+      return;
+    }
+    sending=true;
+    try {
+      final prefs=await SharedPreferences.getInstance();
+      final raw=prefs.getString(pendingKey)??'[]';
+      final decoded=jsonDecode(raw);
+      if(decoded is! List||decoded.isEmpty)return;
+      final batch=decoded.whereType<Map>().take(100).map(
+        (entry)=>Map<String,dynamic>.from(entry)).toList();
+      if(batch.isEmpty)return;
+      final response=await http.post(
+        Uri.parse('https://film-streeming-api.vercel.app/catalog/submit'),
+        headers:{'Content-Type':'application/json','X-Filmstream-Sync-Key':syncKey},
+        body:jsonEncode({'items':batch}),
+      ).timeout(const Duration(seconds:30));
+      if(response.statusCode==200){
+        await _log('Berhasil mengirim ${batch.length} judul ke backend; PR dibuat.');
+        final remaining=decoded.skip(batch.length).toList();
+        await prefs.setString(pendingKey,jsonEncode(remaining));
+      } else {
+        await _log('Pengiriman ke backend gagal: HTTP ${response.statusCode}. Data tetap tersimpan di HP.');
+      }
+    }catch(e){
+      await _log('Pengiriman ke backend gagal: ${e.runtimeType}. Data tetap tersimpan.');
+      // Keep pending submissions for a later launch.
+    }finally{
+      sending=false;
+    }
+  }
+
+  Future<void> _finish(String kind,bool success) async {
+    if(!mounted||!completed.add(kind))return;
+    if(completed.length==hosts.length){
+      if(anyScanSucceeded){
+        final prefs=await SharedPreferences.getInstance();
+        await prefs.setInt(timestampKey,DateTime.now().millisecondsSinceEpoch);
+      }
+      if(mounted)setState(()=>active=false);
+    }
+  }
+
+  @override Widget build(BuildContext context) {
+    if(!active)return const SizedBox.shrink();
+    return SizedBox(
+      width:1,height:1,
+      child:Stack(children:[
+        for(final controller in controllers.values)
+          IgnorePointer(child:Opacity(opacity:0,child:SizedBox(
+            width:1,height:1,child:WebViewWidget(controller:controller)))),
+      ]),
+    );
+  }
+}
+),'')}')||
+           existingTitles.contains('$media:$year:${title.toLowerCase()}'))continue;
+        pending.add(item);
+        known.add(id);
+        added++;
+      }
+      if(added>0){
+        await prefs.setString(pendingKey,jsonEncode(pending));
+        await _log('Menyiapkan $added judul lokal yang belum ada di katalog GitHub untuk sinkronisasi.');
+      }
+    }catch(e){
+      await _log('Pemeriksaan hasil scan lokal gagal: ${e.runtimeType}.');
     }
   }
 
