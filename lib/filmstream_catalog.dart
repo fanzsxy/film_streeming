@@ -57,15 +57,21 @@ class CatalogEntry {
 class FilmStreamCatalog {
   FilmStreamCatalog._();
   static Future<List<CatalogEntry>>? _cached;
+  static Future<List<CatalogEntry>>? _bundledCached;
   static Future<List<CatalogEntry>> load() => _cached ??= _loadFromAssets();
+  static Future<List<CatalogEntry>> bundledOnly() =>
+      _bundledCached ??= _loadBundled();
+  static Future<List<CatalogEntry>> _loadBundled() async {
+    final raw = await rootBundle.loadString('assets/catalog/filmstream_catalog.json');
+    return compute(_parseCatalog, raw);
+  }
   static void refresh() { _cached = null; }
 
   static String _normalUrl(String url) =>
       url.endsWith('/') ? url.substring(0, url.length - 1) : url;
 
   static Future<List<CatalogEntry>> _loadFromAssets() async {
-    final raw = await rootBundle.loadString('assets/catalog/filmstream_catalog.json');
-    final bundled = await compute(_parseCatalog, raw);
+    final bundled = await bundledOnly();
     final storage = await prefs.SharedPreferences.getInstance();
     final extraRaw = storage.getString('filmstream_local_catalog_v1') ?? '[]';
     List<dynamic> extra;

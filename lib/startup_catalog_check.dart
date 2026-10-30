@@ -17,6 +17,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   static const storageKey = 'filmstream_local_catalog_v1';
   static const timestampKey = 'filmstream_last_auto_scan_v1';
   static const pendingKey = 'filmstream_auto_sync_pending_v1';
+  static const sentKey = 'filmstream_auto_sync_sent_v1';
   static const diagnosticKey = 'filmstream_auto_sync_status_v1';
   Future<void> _log(String msg) async {
     final prefs = await SharedPreferences.getInstance();
@@ -42,7 +43,8 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   Future<void> _startIfDue() async {
     final prefs = await SharedPreferences.getInstance();
     final last = prefs.getInt(timestampKey) ?? 0;
-    // Retry unsent records from earlier sessions, even if scan is not due.
+    // Backfill records saved in prior app versions by the manual scanner.
+    await _queueUnsyncedLocal();
     await _sendPending();
     if (DateTime.now().millisecondsSinceEpoch - last <
         const Duration(hours: 24).inMilliseconds) {
@@ -216,6 +218,59 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     }
   }
 
+  String _recordId(Map item) {
+    final kind=(item['type']??'').toString();
+    final title=(item['title']??'').toString().toLowerCase().trim();
+    final year=(item['year']??'').toString();
+    return '$kind:$year:$title';
+  }
+
+  Future<void> _queueUnsyncedLocal() async {
+    try {
+      final prefs=await SharedPreferences.getInstance();
+      final local=jsonDecode(prefs.getString(storageKey)??'[]');
+      if(local is! List||local.isEmpty)return;
+      final bundled=await FilmStreamCatalog.bundledOnly();
+      String norm(String url)=>url.endsWith('/')?url.substring(0,url.length-1):url;
+      final existingUrls=bundled.map((x)=>'${x.type}:${norm(x.url)}').toSet();
+      final existingTitles=bundled.map((x)=>'${x.type}:${x.year}:${x.title.toLowerCase().trim()}').toSet();
+      final rawSent=jsonDecode(prefs.getString(sentKey)??'[]');
+      final sent=rawSent is List?rawSent.whereType<String>().toSet():<String>{};
+      final rawPending=jsonDecode(prefs.getString(pendingKey)??'[]');
+      final pending=rawPending is List
+          ?rawPending.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList()
+          :<Map<String,dynamic>>[];
+      final known=pending.map(_recordId).toSet();
+      var added=0;
+      for(final row in local.whereType<Map>()){
+        final item=Map<String,dynamic>.from(row);
+        final kind=item['type'];
+        final media=kind=='series'?'tv':kind=='movie'?'movie':null;
+        if(media==null)continue;
+        final title=(item['title']??'').toString().trim();
+        final year=int.tryParse((item['year']??'').toString());
+        final url=(item['url']??'').toString();
+        final uri=Uri.tryParse(url);
+        if(title.isEmpty||year==null||year<1900||year>DateTime.now().year+2||
+           uri==null||uri.scheme!='https'||uri.host!=hosts[kind]||
+           uri.userInfo.isNotEmpty||uri.hasPort)continue;
+        final id=_recordId(item);
+        if(sent.contains(id)||known.contains(id)||
+           existingUrls.contains('$media:${norm(url)}')||
+           existingTitles.contains('$media:$year:${title.toLowerCase()}'))continue;
+        pending.add(item);
+        known.add(id);
+        added++;
+      }
+      if(added>0){
+        await prefs.setString(pendingKey,jsonEncode(pending));
+        await _log('Menyiapkan $added judul lokal yang belum ada di katalog GitHub untuk sinkronisasi.');
+      }
+    }catch(e){
+      await _log('Pemeriksaan hasil scan lokal gagal: ${e.runtimeType}.');
+    }
+  }
+
   bool sending=false;
   Future<void> _sendPending() async {
     if(sending)return;
@@ -238,9 +293,18 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
         body:jsonEncode({'items':batch}),
       ).timeout(const Duration(seconds:30));
       if(response.statusCode==200){
-        await _log('Berhasil mengirim ${batch.length} judul ke backend; PR dibuat.');
+        final result=jsonDecode(response.body);
+        if(result is! Map||result['status']!='review_required'){
+          await _log('Server tidak mengonfirmasi PR. Data tetap tersimpan.');
+          return;
+        }
+        final oldSent=jsonDecode(prefs.getString(sentKey)??'[]');
+        final sent=oldSent is List?oldSent.whereType<String>().toSet():<String>{};
+        sent.addAll(batch.map(_recordId));
+        await prefs.setString(sentKey,jsonEncode(sent.toList()));
         final remaining=decoded.skip(batch.length).toList();
         await prefs.setString(pendingKey,jsonEncode(remaining));
+        await _log('Berhasil mengirim ${batch.length} judul; PR: ${result['pull_request_url']}.');
       } else {
         await _log('Pengiriman ke backend gagal: HTTP ${response.statusCode}. Data tetap tersimpan di HP.');
       }
