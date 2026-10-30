@@ -110,10 +110,17 @@ class LocalCatalogMetadata {
   }
   static Movie _withCollectedMetadata(CatalogEntry entry, Map<String,dynamic> base) {
     final data=Map<String,dynamic>.from(base);
-    final tmdbPoster=(data['poster_path']??'').toString();
-    if(tmdbPoster.isEmpty) {
-      if(entry.tmdbPosterPath.startsWith('/')) data['poster_path']=entry.tmdbPosterPath;
-      else if(entry.posterUrl.startsWith('https://')) data['poster_path']=entry.posterUrl;
+    // One poster priority for Home, Search, Film/Series Popular and Detail:
+    // TMDB artwork first; if missing, use the bundled catalog poster.
+    final tmdbPoster=(data['poster_path']??'').toString().trim();
+    if(tmdbPoster.isEmpty || tmdbPoster=='null') {
+      if(entry.tmdbPosterPath.startsWith('/')) {
+        data['poster_path']=entry.tmdbPosterPath;
+      } else if(entry.posterUrl.startsWith('https://')) {
+        data['poster_path']=entry.posterUrl;
+      } else {
+        data['poster_path']='';
+      }
     }
     if(entry.synopsis.isNotEmpty) data['overview']=entry.synopsis;
     if(entry.rating!=null) data['vote_average']=entry.rating;
@@ -134,6 +141,19 @@ class LocalCatalogMetadata {
       _results.putIfAbsent(entry.url, () async {
         // Offline verified mapping: avoid search request for every catalog item.
         if (entry.tmdbId != null) {
+          // A catalog TMDB ID alone has no artwork. Fetch its real poster first
+          // instead of displaying the catalog fallback unconditionally.
+          try {
+            final detail = await Tmdb.get(
+              '${entry.type == 'tv' ? 'tv' : 'movie'}/${entry.tmdbId}');
+            if (detail['id'] == entry.tmdbId) {
+              final movie = _withCollectedMetadata(entry, detail);
+              _sourceByTmdb[_key(movie.type, movie.id)] = movie.sourceUrl;
+              return movie;
+            }
+          } catch (_) {
+            // Offline/API failure: retained catalog poster is safe fallback.
+          }
           final movie = _withCollectedMetadata(entry, {'id': entry.tmdbId});
           _sourceByTmdb[_key(movie.type, movie.id)] = movie.sourceUrl;
           return movie;
