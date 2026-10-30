@@ -104,7 +104,9 @@ class LocalCatalogMetadata {
   static bool _matches(CatalogEntry e,Map<String,dynamic> d){
     final date=(d['release_date']??d['first_air_date']??'').toString();
     final year=date.length>=4?int.tryParse(date.substring(0,4)):null;
-    if(year==null||(year-e.year).abs()>1)return false;
+    // Catalog contains a release year, not a verified month/day. Never
+    // invent a precise date or accept a different year for artwork matching.
+    if(year==null||year!=e.year)return false;
     return _similarity(e.title,(d['title']??d['name']??'').toString())>=.86 ||
       _similarity(e.title,(d['original_title']??d['original_name']??'').toString())>=.86;
   }
@@ -146,7 +148,7 @@ class LocalCatalogMetadata {
           try {
             final detail = await Tmdb.get(
               '${entry.type == 'tv' ? 'tv' : 'movie'}/${entry.tmdbId}');
-            if (detail['id'] == entry.tmdbId) {
+            if (detail['id'] == entry.tmdbId && _matches(entry, detail)) {
               final movie = _withCollectedMetadata(entry, detail);
               _sourceByTmdb[_key(movie.type, movie.id)] = movie.sourceUrl;
               return movie;
