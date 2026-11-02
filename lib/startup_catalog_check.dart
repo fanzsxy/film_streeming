@@ -46,6 +46,11 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   Future<void> _startIfDue() async {
     final prefs = await SharedPreferences.getInstance();
     final last = prefs.getInt(timestampKey) ?? 0;
+    final reviewed = await FilmStreamCatalog.syncReviewedCatalog();
+    if (reviewed > 0 && mounted) {
+      widget.onCatalogUpdated();
+      await _log('$reviewed judul baru dari katalog GitHub sudah tersedia dalam pencarian.');
+    }
     // Backfill records saved in prior app versions by the manual scanner.
     await _queueUnsyncedLocal();
     await _sendPending();

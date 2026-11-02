@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart' as prefs;
@@ -66,6 +67,70 @@ class FilmStreamCatalog {
     return compute(_parseCatalog, raw);
   }
   static void refresh() { _cached = null; }
+  // Only import reviewed additions from the repository's main branch.
+  // Remote updates cannot replace or redirect an existing bundled title.
+  static const _remoteCheckKey = 'filmstream_remote_catalog_checked_v1';
+  static const _remoteUrl =
+      'https://raw.githubusercontent.com/fanzsxy/film_streeming/main/assets/catalog/filmstream_catalog.json';
+  static Future<int> syncReviewedCatalog() async {
+    final storage = await prefs.SharedPreferences.getInstance();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final last = storage.getInt(_remoteCheckKey) ?? 0;
+    if (now - last < const Duration(hours: 12).inMilliseconds) return 0;
+    try {
+      final response = await http.get(Uri.parse(_remoteUrl))
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode != 200 || response.bodyBytes.length > 15000000) {
+        return 0;
+      }
+      final remote = await compute(_parseCatalog, utf8.decode(response.bodyBytes));
+      final known = await load();
+      final seenUrls = known.map((e) => '${e.type}:${_normalUrl(e.url)}').toSet();
+      final seenTitles = known.map((e) =>
+          '${e.type}:${e.year}:${e.title.toLowerCase().trim()}').toSet();
+      final localRaw = storage.getString('filmstream_local_catalog_v1') ?? '[]';
+      final decoded = jsonDecode(localRaw);
+      if (decoded is! List) return 0;
+      final additions = <Map<String, dynamic>>[];
+      for (final entry in remote) {
+        final uri = Uri.tryParse(entry.url);
+        if (uri == null || uri.scheme != 'https' || uri.userInfo.isNotEmpty ||
+            uri.hasPort || !{
+              'tv12.lk21official.cc', 'tv.lk21online.de'
+            }.contains(uri.host)) continue;
+        final urlKey = '${entry.type}:${_normalUrl(entry.url)}';
+        final titleKey =
+            '${entry.type}:${entry.year}:${entry.title.toLowerCase().trim()}';
+        if (seenUrls.contains(urlKey) || seenTitles.contains(titleKey)) continue;
+        seenUrls.add(urlKey);
+        seenTitles.add(titleKey);
+        additions.add({
+          'title': entry.title, 'year': entry.year, 'url': entry.url,
+          'type': entry.type == 'tv' ? 'series' : 'movie',
+          'poster_url': entry.posterUrl,
+          'synopsis': entry.synopsis,
+          'active_source_url': entry.activeSourceUrl,
+          'rating': entry.rating,
+          'tmdb_id': entry.tmdbId,
+          'tmdb_poster_path': entry.tmdbPosterPath,
+        });
+      }
+      if (additions.isNotEmpty) {
+        final updated = [...decoded, ...additions];
+        final saved = await storage.setString(
+            'filmstream_local_catalog_v1', jsonEncode(updated));
+        if (!saved) return 0;
+        refresh();
+      }
+      await storage.setInt(_remoteCheckKey, now);
+      return additions.length;
+    } catch (_) {
+      // Offline or invalid remote response: preserve the existing catalog and
+      // retry on a future launch. Never erase on-device scan results.
+      return 0;
+    }
+  }
+
 
   static String _normalUrl(String url) =>
       url.endsWith('/') ? url.substring(0, url.length - 1) : url;
