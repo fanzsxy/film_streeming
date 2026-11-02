@@ -5,6 +5,7 @@ import 'source_manager.dart';
 import 'source_season_picker.dart';
 import 'web_source_page.dart';
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
@@ -1072,6 +1073,22 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
     builder: (context, snapshot) {
       if (!snapshot.hasData) return const SizedBox(height: 340,
         child: ColoredBox(color: Color(0xff101014), child: Center(child: CircularProgressIndicator())));
+      if (Platform.isWindows) {
+        return SizedBox(height: 230, child: Center(child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.open_in_browser_rounded, size: 42, color: Color(0xffe5aa55)),
+            const SizedBox(height: 12),
+            const Text('Pemutar web dibuka di browser pada Windows.', textAlign: TextAlign.center),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: () => launchUrl(snapshot.data!, mode: LaunchMode.externalApplication),
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Buka halaman sumber'),
+            ),
+          ],
+        )));
+      }
       return WebSourcePage(
         key: ValueKey('${movie.type}:${movie.id}:$season:$episode'),
         title: movie.title, url: snapshot.data!, focused: true, embedded: true,
@@ -1089,6 +1106,10 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
 Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0, int episode = 0}) async {
   final page = await resolveSourcePage(movie);
   if (!context.mounted) return;
+  if (Platform.isWindows) {
+    await launchUrl(page, mode: LaunchMode.externalApplication);
+    return;
+  }
   Navigator.push(context, MaterialPageRoute(builder: (_) => WebSourcePage(
     title: movie.title, url: page, focused: true, tmdbId: movie.id,
     mediaType: movie.type, year: movie.year, season: season, episode: episode)));
