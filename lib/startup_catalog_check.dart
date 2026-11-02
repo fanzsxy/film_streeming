@@ -19,7 +19,36 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   static const pendingKey = 'filmstream_auto_sync_pending_v1';
   static const sentKey = 'filmstream_auto_sync_sent_v1';
   static const diagnosticKey = 'filmstream_auto_sync_status_v1';
+  String status = 'Memeriksa status scanner...';
+  String movieStatus = 'Belum diperiksa';
+  String seriesStatus = 'Belum diperiksa';
+  String backendStatus = 'Belum ada pengiriman';
+  bool statusExpanded = false;
+  bool scanFinished = false;
+
+  void _showStatus(String msg) {
+    if (!mounted) return;
+    setState(() {
+      status = msg;
+      if (msg.startsWith('Scan otomatis movie') ||
+          msg.startsWith('Scan movie')) movieStatus = msg;
+      if (msg.startsWith('Scan otomatis series') ||
+          msg.startsWith('Scan series')) seriesStatus = msg;
+      if (msg.contains('backend') || msg.contains('mengirim') ||
+          msg.contains('mengirim') || msg.contains('Berhasil mengirim') ||
+          msg.contains('Sinkronisasi tidak aktif') ||
+          msg.contains('Server tidak mengonfirmasi')) backendStatus = msg;
+    });
+  }
+
+  Future<void> _restoreStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final last = prefs.getString(diagnosticKey);
+    if (last != null && last.isNotEmpty) _showStatus(last);
+  }
+
   Future<void> _log(String msg) async {
+    _showStatus(msg);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(diagnosticKey, msg);
   }
@@ -42,6 +71,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
 
   @override void initState() {
     super.initState();
+    _restoreStatus();
     _startIfDue();
   }
 
@@ -58,6 +88,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     await _sendPending();
     if (DateTime.now().millisecondsSinceEpoch - last <
         const Duration(hours: 24).inMilliseconds) {
+      await _log('Scan terakhir masih berlaku (24 jam). Tidak ada pemeriksaan baru saat ini.');
       return;
     }
     await _log('Pemeriksaan otomatis LK21 sedang berjalan.');
