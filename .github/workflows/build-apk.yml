@@ -25,6 +25,10 @@ jobs:
         run: |
           flutter pub get
           dart format --output=none lib/main.dart lib/source_manager.dart lib/web_source_page.dart
+      - name: Generate Film Streaming Android icon
+        run: |
+          python -m pip install 'Pillow==11.3.0'
+          python tools/generate_android_icons.py
       - name: Build APK
         env:
           TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
