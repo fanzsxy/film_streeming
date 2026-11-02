@@ -404,67 +404,23 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
 
   @override
   Widget build(BuildContext context) {
-    final lower = status.toLowerCase();
-    final failed = lower.contains('gagal') ||
-        lower.contains('tidak menemukan') || lower.contains('timeout') ||
-        lower.contains('tidak berhasil') || lower.contains('tidak aktif');
-    final succeeded = lower.contains('berhasil') && !failed ||
-        lower.contains('selesai') && !failed ||
-        lower.contains('tersimpan');
-    final color = failed ? Colors.orangeAccent :
-        succeeded ? Colors.lightGreenAccent : const Color(0xffe5aa55);
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      Material(
-        color: const Color(0xff20252e),
-        child: InkWell(
-          onTap: () => setState(() => statusExpanded = !statusExpanded),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            child: Row(children: [
-              Icon(failed ? Icons.warning_amber_rounded :
-                succeeded ? Icons.check_circle_outline :
-                Icons.sync_rounded, size: 18, color: color),
-              const SizedBox(width: 9),
-              Expanded(child: Text(status,
-                maxLines: 2, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12))),
-              Icon(statusExpanded ? Icons.expand_less : Icons.expand_more,
-                size: 20, color: Colors.white70),
-            ]),
-          ),
-        ),
+    // Scanner and sync continue running, but the diagnostic banner is hidden.
+    // Keep the WebViews mounted while scanning so page loading still works.
+    if (!active) return const SizedBox.shrink();
+    return SizedBox(width: 1, height: 1, child: ClipRect(
+      child: OverflowBox(
+        alignment: Alignment.topLeft,
+        minWidth: 360, maxWidth: 360,
+        minHeight: 640, maxHeight: 640,
+        child: IgnorePointer(child: Opacity(
+          opacity: 0.01,
+          child: Stack(children: [
+            for (final controller in controllers.values)
+              SizedBox(width: 360, height: 640,
+                child: WebViewWidget(controller: controller)),
+          ]),
+        )),
       ),
-      if (statusExpanded) Container(
-        width: double.infinity,
-        color: const Color(0xff171b22),
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Film: $movieStatus', style: const TextStyle(fontSize: 12)),
-          const SizedBox(height: 6),
-          Text('Series: $seriesStatus', style: const TextStyle(fontSize: 12)),
-          const SizedBox(height: 6),
-          Text('Backend: $backendStatus', style: const TextStyle(fontSize: 12)),
-          const SizedBox(height: 6),
-          const Text('Judul tersimpan di HP belum tentu sudah masuk GitHub. '
-            'PR harus disetujui sebelum tersedia pada katalog pusat.',
-            style: TextStyle(fontSize: 11, color: Colors.white60)),
-        ]),
-      ),
-      if (active) SizedBox(width: 1, height: 1, child: ClipRect(
-        child: OverflowBox(
-          alignment: Alignment.topLeft,
-          minWidth: 360, maxWidth: 360,
-          minHeight: 640, maxHeight: 640,
-          child: IgnorePointer(child: Opacity(
-            opacity: 0.01,
-            child: Stack(children: [
-              for (final controller in controllers.values)
-                SizedBox(width: 360, height: 640,
-                  child: WebViewWidget(controller: controller)),
-            ]),
-          )),
-        ),
-      )),
-    ]);
+    ));
   }
 }
