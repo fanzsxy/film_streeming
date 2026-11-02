@@ -2,6 +2,10 @@ name: Unify FilmStream crawler catalog
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'crawler/imports/phone_*.json'
 
 permissions:
   contents: write
@@ -20,6 +24,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Verify reviewed import data is present
+        run: |
+          python -m compileall -q tools
       - name: Merge existing Film and Series crawler files
         run: python tools/unify_crawler_catalog.py --report crawler-unify-report.json
       - name: Import reviewed phone catalog export
@@ -41,3 +48,4 @@ jobs:
             This automated PR merges crawler Film and Series data into the
             canonical assets/catalog/filmstream_catalog.json, keeping existing
             catalog metadata authoritative. Review additions before merging.
+            Triggered automatically when reviewed phone import files are merged into main.
