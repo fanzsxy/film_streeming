@@ -252,6 +252,29 @@ class LocalCatalogMetadata {
       finally {_filterDetails.remove(key);}
     });
   }
+  // Sorting 29k+ titles for every keystroke is expensive. Keep a sorted
+  // snapshot of the current catalog and invalidate it when the catalog list
+  // instance changes after FilmStreamCatalog.refresh().
+  static List<CatalogEntry>? _sortedCatalog;
+  static List<CatalogEntry>? _sortedSource;
+  static List<CatalogEntry> _catalogByYear(List<CatalogEntry> source) {
+    if (identical(source, _sortedSource) && _sortedCatalog != null) {
+      return _sortedCatalog!;
+    }
+    final futureLimit=DateTime.now().year+2;
+    final sorted=List<CatalogEntry>.of(source)..sort((a,b){
+      final af=a.year>futureLimit;
+      final bf=b.year>futureLimit;
+      if(af!=bf)return af?1:-1;
+      final byYear=b.year.compareTo(a.year);
+      if(byYear!=0)return byYear;
+      final byTitle=a.title.toLowerCase().compareTo(b.title.toLowerCase());
+      return byTitle!=0?byTitle:a.url.compareTo(b.url);
+    });
+    _sortedSource=source;
+    _sortedCatalog=sorted;
+    return sorted;
+  }
   static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
     final source=await FilmStreamCatalog.load();
     // TMDB discovers movies by genre/language first. Only show titles that
@@ -352,19 +375,10 @@ class LocalCatalogMetadata {
        endpoint=='catalog/tv'||endpoint.startsWith('tv/')||endpoint.contains('/tv/')?'tv':
        endpoint=='catalog/movie'||endpoint.startsWith('movie/')||endpoint.contains('/movie/')?'movie':
        type=='tv'?'tv':type=='movie'?'movie':null;
-    // Single total ordering before pagination: never run a second sort that
-    // returns 0 for entries of different years (which scrambles their order).
-    final futureLimit=DateTime.now().year+2;
-    final filtered=source.where((e)=>(category==null||e.type==category)&&(query.isEmpty||e.title.toLowerCase().contains(query))).toList()
-      ..sort((a,b){
-        final af=a.year>futureLimit;
-        final bf=b.year>futureLimit;
-        if(af!=bf)return af?1:-1;
-        final byYear=b.year.compareTo(a.year);
-        if(byYear!=0)return byYear;
-        final byTitle=a.title.toLowerCase().compareTo(b.title.toLowerCase());
-        return byTitle!=0?byTitle:a.url.compareTo(b.url);
-      });
+    final queryMatch=query.isEmpty?null:query;
+    final filtered=_catalogByYear(source).where((e)=>
+      (category==null||e.type==category) &&
+      (queryMatch==null||e.title.toLowerCase().contains(queryMatch))).toList();
     final start=(page-1)*20;
     if(start>=filtered.length)return [];
     final selected=filtered.skip(start).take(20).toList();
