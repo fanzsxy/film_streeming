@@ -18,6 +18,27 @@ jobs:
         run: |
           flutter config --enable-windows-desktop
           flutter create --platforms=windows --project-name filmstream_personal .
+      - name: Brand Windows executable and title
+        shell: pwsh
+        run: |
+          $cmake = "windows/CMakeLists.txt"
+          $text = Get-Content $cmake -Raw
+          $text = $text.Replace('set(BINARY_NAME "filmstream_personal")', 'set(BINARY_NAME "film_streaming")')
+          if ($text -notmatch 'set\(BINARY_NAME "film_streaming"\)') { throw "Unable to update Windows CMake executable name" }
+          Set-Content $cmake $text -Encoding UTF8
+          $main = "windows/runner/main.cpp"
+          $text = Get-Content $main -Raw
+          $text = $text.Replace('L"filmstream_personal"', 'L"Film Streaming"')
+          Set-Content $main $text -Encoding UTF8
+          $rc = "windows/runner/Runner.rc"
+          $text = Get-Content $rc -Raw
+          $text = $text.Replace('filmstream_personal', 'Film Streaming')
+          Set-Content $rc $text -Encoding UTF8
+      - name: Generate Film Streaming Windows icon
+        shell: pwsh
+        run: |
+          python -m pip install "Pillow==11.3.0"
+          python tools/generate_windows_icon.py
       - name: Install dependencies
         run: flutter pub get
       - name: Build Windows desktop
@@ -33,7 +54,7 @@ jobs:
         shell: pwsh
         run: |
           $output = "build/windows/x64/runner/Release"
-          if (-not (Test-Path "$output/filmstream_personal.exe")) { throw "Windows exe not found in $output" }
+          if (-not (Test-Path "$output/film_streaming.exe")) { throw "Windows exe not found in $output" }
           Compress-Archive -Path "$output/*" -DestinationPath "Film-Streaming-Windows.zip" -Force
       - name: Install Inno Setup compiler
         shell: pwsh
