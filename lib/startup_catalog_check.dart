@@ -37,6 +37,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   final successfulKinds = <String>{};
   static const scanTimeout = Duration(seconds:45);
   final scanTimers = <String, Future<void>>{};
+  final domRetryKinds = <String>{};
 
   @override void initState() {
     super.initState();
@@ -134,7 +135,16 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       if(data is String)data=jsonDecode(data);
       if(data is String)data=jsonDecode(data);
       if(data is! List || data.isEmpty){
-        await _log('Scan otomatis $kind: tidak menemukan kartu judul pada halaman.');
+        // Pages often finish navigating before JS-rendered cards are ready.
+        // Retry one time on the same authorized page, without navigating
+        // elsewhere or bypassing restrictions.
+        if(domRetryKinds.add(kind) && !completed.contains(kind)) {
+          saving = false;
+          await Future<void>.delayed(const Duration(seconds: 3));
+          if(mounted && !completed.contains(kind)) await _scanOne(kind);
+          return;
+        }
+        await _log('Scan otomatis $kind: halaman termuat tetapi tidak ada kartu judul setelah dicoba ulang.');
         return;
       }
       final storage=await SharedPreferences.getInstance();
@@ -225,7 +235,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       // remain queued for the next app launch.
       await _sendPending();
     }catch(e){
-      await _log('Scan otomatis $kind gagal: ${e.runtimeType}. Coba scan manual.');
+      await _log('Scan otomatis $kind gagal: ${e.runtimeType}. Akan dicoba lagi saat aplikasi dibuka.');
       // Page may be denied, temporarily unavailable, or have changed markup.
     }finally{
       saving=false;
