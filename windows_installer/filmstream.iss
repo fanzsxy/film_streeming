@@ -11,7 +11,7 @@ AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\Film Streaming
 DefaultGroupName=Film Streaming
-OutputDir=..\..\installer-output
+OutputDir=..\installer-output
 OutputBaseFilename=Film-Streaming-Setup
 Compression=lzma2
 SolidCompression=yes
@@ -26,7 +26,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 
 [Files]
-Source: "..\..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\Film Streaming"; Filename: "{app}\{#MyAppExeName}"
