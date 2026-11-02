@@ -1,0 +1,32 @@
+name: Backend Python syntax check
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/check-backend.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/check-backend.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check backend Python syntax
+        run: python -m compileall -q backend
+      - name: Import API application and verify catalog route registration
+        run: |
+          python -m pip install -r backend/requirements.txt
+          cd backend
+          python -c "from phone_catalog_sync import router; assert any(getattr(route, 'path', None) == '/catalog/submit' for route in router.routes)"
