@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -83,6 +84,9 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       widget.onCatalogUpdated();
       await _log('$reviewed judul baru dari katalog GitHub sudah tersedia dalam pencarian.');
     }
+    // Windows has no Android WebView implementation. Keep remote catalog sync
+    // and search refresh, but do not start the Android-only page scanner.
+    if (Platform.isWindows) return;
     // Backfill records saved in prior app versions by the manual scanner.
     await _queueUnsyncedLocal();
     await _sendPending();

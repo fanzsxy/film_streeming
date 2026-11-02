@@ -1,0 +1,42 @@
+name: Build Film Streaming Windows Desktop
+on:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate Windows desktop runner
+        shell: pwsh
+        run: |
+          flutter config --enable-windows-desktop
+          flutter create --platforms=windows --project-name filmstream_personal .
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Build Windows desktop
+        shell: pwsh
+        env:
+          TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+          LK21_API_BASE: ${{ vars.LK21_API_BASE }}
+          SOURCE_API_BASE: ${{ vars.SOURCE_API_BASE }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:TMDB_TOKEN)) { throw 'TMDB_TOKEN secret is required.' }
+          flutter build windows --release --dart-define="TMDB_TOKEN=$env:TMDB_TOKEN" --dart-define="LK21_API_BASE=$env:LK21_API_BASE" --dart-define="SOURCE_API_BASE=$env:SOURCE_API_BASE"
+      - name: Package portable Windows app
+        shell: pwsh
+        run: |
+          $output = "build/windows/x64/runner/Release"
+          if (-not (Test-Path "$output/filmstream_personal.exe")) { throw "Windows exe not found in $output" }
+          Compress-Archive -Path "$output/*" -DestinationPath "Film-Streaming-Windows.zip" -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Film-Streaming-Windows-Portable
+          path: Film-Streaming-Windows.zip
+          if-no-files-found: error
