@@ -1,7 +1,7 @@
 #define MyAppName "Film Streaming"
 #define MyAppVersion "1.0.5"
 #define MyAppPublisher "Film Streaming"
-#define MyAppExeName "filmstream_personal.exe"
+#define MyAppExeName "film_streaming.exe"
 
 [Setup]
 AppId={{72B70AF8-217E-4A20-9EB6-A117A3ED1C66}
