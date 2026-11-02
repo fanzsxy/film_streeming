@@ -28,9 +28,9 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
       style.id = styleId;
       style.textContent = `
         body.filmstream-desktop-focus { background: #101218 !important; }
-        body.filmstream-desktop-focus > header,
-        body.filmstream-desktop-focus > nav,
-        body.filmstream-desktop-focus > footer,
+        body.filmstream-desktop-focus header,
+        body.filmstream-desktop-focus nav,
+        body.filmstream-desktop-focus footer,
         body.filmstream-desktop-focus aside,
         body.filmstream-desktop-focus .sidebar,
         body.filmstream-desktop-focus #sidebar,
@@ -40,7 +40,7 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
         body.filmstream-desktop-focus #navbar,
         body.filmstream-desktop-focus .breadcrumb,
         body.filmstream-desktop-focus .breadcrumbs,
-        body.filmstream-desktop-focus .search-form { display: none !important; }
+        body.filmstream-desktop-focus .search-form,\n        body.filmstream-desktop-focus .movie-list,\n        body.filmstream-desktop-focus .related,\n        body.filmstream-desktop-focus .related-film,\n        body.filmstream-desktop-focus .logo,\n        body.filmstream-desktop-focus .site-header,\n        body.filmstream-desktop-focus #header { display: none !important; }
         body.filmstream-desktop-focus main,
         body.filmstream-desktop-focus .container,
         body.filmstream-desktop-focus .content,
