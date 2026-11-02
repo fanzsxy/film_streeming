@@ -4,6 +4,7 @@ import hmac
 import json
 import os
 import re
+import logging
 from datetime import datetime, timezone
 from uuid import uuid4
 from urllib.parse import urlparse
@@ -12,6 +13,7 @@ import requests
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 REPO = "fanzsxy/film_streeming"
 HOSTS = {"movie": "tv12.lk21official.cc", "series": "tv.lk21online.de"}
@@ -30,7 +32,8 @@ def github(method, path, token, **kwargs):
         timeout=25, **kwargs,
     )
     if not response.ok:
-        raise HTTPException(502, "GitHub API rejected catalog PR operation")
+        logger.error("Catalog GitHub operation failed: %s %s status=%s", method, path.split("?")[0], response.status_code)
+        raise HTTPException(502, f"GitHub catalog operation failed: HTTP {response.status_code}")
     return response.json()
 
 
@@ -68,9 +71,14 @@ def submit_catalog(payload: PhoneImport, x_filmstream_sync_key: str = Header(def
         used.add(key)
         item = {"title": title, "year": year, "url": url, "type": kind}
         poster = str(row.get("poster_url") or "")
-        img = urlparse(poster) if len(poster) <= 900 else urlparse("")
-        if (img.scheme == "https" and img.hostname and not img.username and not img.password
-            and not img.port and not img.query and not img.fragment):
+        try:
+            img = urlparse(poster) if len(poster) <= 900 else urlparse("")
+            poster_ok = (img.scheme == "https" and bool(img.hostname)
+                         and not img.username and not img.password
+                         and img.port is None and not img.query and not img.fragment)
+        except ValueError:
+            poster_ok = False
+        if poster_ok:
             item["poster_url"] = poster
         rating = row.get("rating")
         if isinstance(rating, (int, float)) and not isinstance(rating, bool) and 0 < rating <= 10:
