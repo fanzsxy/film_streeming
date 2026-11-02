@@ -18,7 +18,7 @@ HOSTS = {"movie": "tv12.lk21official.cc", "series": "tv.lk21online.de"}
 
 
 class PhoneImport(BaseModel):
-    items: list[dict] = Field(min_length=1, max_length=500)
+    items: list[dict] = Field(min_length=1, max_length=100)
 
 
 def github(method, path, token, **kwargs):
@@ -54,10 +54,10 @@ def submit_catalog(payload: PhoneImport, x_filmstream_sync_key: str = Header(def
             year = int(row.get("year"))
         except (ValueError, TypeError):
             continue
-        parsed = urlparse(url)
+        if len(url) > 700:\n            continue\n        parsed = urlparse(url)
         if (not title or len(title) > 180 or not 1900 <= year <= datetime.now(timezone.utc).year + 2
             or parsed.scheme != "https" or parsed.hostname != HOSTS[kind] or parsed.port is not None
-            or parsed.username or parsed.password or parsed.query or parsed.fragment):
+            or parsed.username or parsed.password or parsed.query or parsed.fragment\n            or parsed.params or not parsed.path.startswith("/")):
             continue
         key = (kind, title.casefold(), year)
         if key in used:
@@ -65,8 +65,8 @@ def submit_catalog(payload: PhoneImport, x_filmstream_sync_key: str = Header(def
         used.add(key)
         item = {"title": title, "year": year, "url": url, "type": kind}
         poster = str(row.get("poster_url") or "")
-        img = urlparse(poster)
-        if img.scheme == "https" and img.hostname and not img.username and not img.password:
+        img = urlparse(poster) if len(poster) <= 900 else urlparse("")
+        if (img.scheme == "https" and img.hostname and not img.username and not img.password\n            and not img.port and not img.query and not img.fragment):
             item["poster_url"] = poster
         rating = row.get("rating")
         if isinstance(rating, (int, float)) and not isinstance(rating, bool) and 0 < rating <= 10:
