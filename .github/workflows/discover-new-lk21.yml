@@ -26,6 +26,8 @@ jobs:
           python-version: '3.12'
       - name: Install metadata-only crawler dependencies
         run: pip install -r crawler/requirements.txt
+      - name: Test catalog discovery parsing and access guard
+        run: python -m unittest discover -s tests -p 'test_auto_discovery.py' -v
       - name: Inspect newest public LK21 movie and series listings
         run: python tools/auto_discover_lk21.py --pages 2 --delay 3
       - name: Upload discovery report
