@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "Miss Culinary",
+      "year": 2019,
+      "url": "https://tv.lk21online.de/miss-culinary-2019",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-miss-culinary-2019-lk21.jpg.webp",
+      "rating": 7.2
+    },
+    {
+      "title": "Collision",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/collision-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-collision-2026-lk21.jpg.webp",
+      "rating": 3.7
+    },
+    {
+      "title": "You Alone Know Me",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/you-alone-know-me-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-you-alone-know-me-2026-lk21.jpg.webp",
+      "rating": 7.1
+    },
+    {
+      "title": "Stranger Things: Tales from '85",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/stranger-things-tales-from-85-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-stranger-things-tales-from-85-2026-lk21.jpg.webp",
+      "rating": 5.9
+    },
+    {
+      "title": "Rinnan: The Traitor Within",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/rinnan-traitor-within-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-rinnan-traitor-within-2026-lk21.jpg.webp",
+      "rating": 7.8
+    },
+    {
+      "title": "A Love to Last",
+      "year": 2017,
+      "url": "https://tv.lk21online.de/love-last-2017",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-love-last-2017-lk21.jpg.webp",
+      "rating": 5.3
+    },
+    {
+      "title": "When the Lights Rise",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/when-lights-rise-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-when-lights-rise-2026-lk21.jpg.webp",
+      "rating": 10
+    }
+  ]
+}
