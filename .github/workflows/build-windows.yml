@@ -50,6 +50,35 @@ jobs:
         run: |
           if ([string]::IsNullOrWhiteSpace($env:TMDB_TOKEN)) { throw 'TMDB_TOKEN secret is required.' }
           flutter build windows --release --dart-define="TMDB_TOKEN=$env:TMDB_TOKEN" --dart-define="LK21_API_BASE=$env:LK21_API_BASE" --dart-define="SOURCE_API_BASE=$env:SOURCE_API_BASE"
+      - name: Sign Windows application (trusted certificate required for release)
+        id: signing
+        shell: pwsh
+        env:
+          WINDOWS_CODESIGN_PFX_BASE64: ${{ secrets.WINDOWS_CODESIGN_PFX_BASE64 }}
+          WINDOWS_CODESIGN_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CODESIGN_PFX_BASE64) -or
+              [string]::IsNullOrWhiteSpace($env:WINDOWS_CODESIGN_PASSWORD)) {
+            "signed=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            Write-Warning "No Windows Authenticode certificate configured. Installer distribution will be skipped; portable development ZIP only."
+            exit 0
+          }
+          $certPath = Join-Path $env:RUNNER_TEMP "filmstream-signing.pfx"
+          try {
+            [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String($env:WINDOWS_CODESIGN_PFX_BASE64))
+            $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\\Windows Kits\\10\\bin" -Filter signtool.exe -Recurse |
+              Where-Object { $_.FullName -like '*\\x64\\signtool.exe' } |
+              Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+            if (-not $signTool) { throw "Windows SDK SignTool not found" }
+            $exe = "build/windows/x64/runner/Release/film_streaming.exe"
+            & $signTool sign /f $certPath /p $env:WINDOWS_CODESIGN_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $exe
+            if ($LASTEXITCODE -ne 0) { throw "Authenticode signing failed" }
+            & $signTool verify /pa /v $exe
+            if ($LASTEXITCODE -ne 0) { throw "Application signature verification failed" }
+            "signed=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          } finally {
+            Remove-Item $certPath -ErrorAction SilentlyContinue
+          }
       - name: Package portable Windows app
         shell: pwsh
         run: |
@@ -60,6 +89,7 @@ jobs:
         shell: pwsh
         run: choco install innosetup --yes --no-progress
       - name: Build Windows setup installer
+        if: steps.signing.outputs.signed == 'true'
         shell: pwsh
         run: |
           $iscc = "${env:ProgramFiles(x86)}\\Inno Setup 6\\ISCC.exe"
@@ -67,7 +97,31 @@ jobs:
           & $iscc "windows_installer\\filmstream.iss"
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed ($LASTEXITCODE)" }
           if (-not (Test-Path "installer-output\\Film-Streaming-Setup.exe")) { throw "Installer output not found" }
+      - name: Sign and verify Windows installer
+        if: steps.signing.outputs.signed == 'true'
+        shell: pwsh
+        env:
+          WINDOWS_CODESIGN_PFX_BASE64: ${{ secrets.WINDOWS_CODESIGN_PFX_BASE64 }}
+          WINDOWS_CODESIGN_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+        run: |
+          $certPath = Join-Path $env:RUNNER_TEMP "filmstream-signing.pfx"
+          try {
+            [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String($env:WINDOWS_CODESIGN_PFX_BASE64))
+            $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\\Windows Kits\\10\\bin" -Filter signtool.exe -Recurse |
+              Where-Object { $_.FullName -like '*\\x64\\signtool.exe' } |
+              Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+            if (-not $signTool) { throw "Windows SDK SignTool not found" }
+            $installer = "installer-output/Film-Streaming-Setup.exe"
+            & $signTool sign /f $certPath /p $env:WINDOWS_CODESIGN_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $installer
+            if ($LASTEXITCODE -ne 0) { throw "Installer signing failed" }
+            & $signTool verify /pa /v $installer
+            if ($LASTEXITCODE -ne 0) { throw "Installer signature verification failed" }
+            Get-FileHash $installer -Algorithm SHA256 | Format-List
+          } finally {
+            Remove-Item $certPath -ErrorAction SilentlyContinue
+          }
       - uses: actions/upload-artifact@v4
+        if: steps.signing.outputs.signed == 'true'
         with:
           name: Film-Streaming-Windows-Installer
           path: installer-output/Film-Streaming-Setup.exe
@@ -76,4 +130,20 @@ jobs:
         with:
           name: Film-Streaming-Windows-Portable
           path: Film-Streaming-Windows.zip
+          if-no-files-found: error
+      - name: Publish SHA256 checksums
+        shell: pwsh
+        run: |
+          Get-FileHash "Film-Streaming-Windows.zip" -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  Film-Streaming-Windows.zip" } |
+            Set-Content "SHA256SUMS.txt"
+          if (Test-Path "installer-output/Film-Streaming-Setup.exe") {
+            Get-FileHash "installer-output/Film-Streaming-Setup.exe" -Algorithm SHA256 |
+              ForEach-Object { "$($_.Hash.ToLower())  Film-Streaming-Setup.exe" } |
+              Add-Content "SHA256SUMS.txt"
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Film-Streaming-Windows-Checksums
+          path: SHA256SUMS.txt
           if-no-files-found: error
