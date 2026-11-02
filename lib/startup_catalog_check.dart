@@ -34,6 +34,9 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   bool active = false;
   bool saving = false;
   bool anyScanSucceeded = false;
+  final successfulKinds = <String>{};
+  static const scanTimeout = Duration(seconds:45);
+  final scanTimers = <String, Future<void>>{};
 
   @override void initState() {
     super.initState();
@@ -74,6 +77,13 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     setState(() => active = true);
     for (final kind in hosts.keys) {
       final path = kind == 'movie' ? '/latest' : '/latest-series';
+      // Some Android WebViews never call onPageFinished (for example when
+      // blocked or offscreen). Do not leave scanner/timestamp stuck forever.
+      scanTimers[kind] = Future<void>.delayed(scanTimeout, () async {
+        if (!mounted || completed.contains(kind)) return;
+        await _log('Scan $kind timeout; akan dicoba lagi saat membuka aplikasi.');
+        await _finish(kind, false);
+      });
       controllers[kind]!.loadRequest(Uri.https(hosts[kind]!, path));
     }
   }
@@ -318,8 +328,12 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
 
   Future<void> _finish(String kind,bool success) async {
     if(!mounted||!completed.add(kind))return;
+    if(success)successfulKinds.add(kind);
     if(completed.length==hosts.length){
-      if(anyScanSucceeded){
+      // Only a complete Film + Series scan advances the daily timestamp.
+      // Never suppress retries for 24h after a partial or blocked scan.
+      if(success && anyScanSucceeded && completed.length==hosts.length &&
+          successfulKinds.length==hosts.length){
         final prefs=await SharedPreferences.getInstance();
         await prefs.setInt(timestampKey,DateTime.now().millisecondsSinceEpoch);
       }
