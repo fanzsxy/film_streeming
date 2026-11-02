@@ -139,8 +139,13 @@ class LocalCatalogMetadata {
         ? entry.activeSourceUrl : entry.url;
     return Movie.fromJson(data,fallback:entry.type);
   }
-  static Future<Movie?> enrich(CatalogEntry entry) =>
-      _results.putIfAbsent(entry.url, () async {
+  static Future<Movie?> enrich(CatalogEntry entry) {
+    // Bound the in-memory TMDB resolver cache; do not retain thousands of
+    // futures indefinitely after prolonged browsing/searching.
+    if (_results.length >= 500 && !_results.containsKey(entry.url)) {
+      _results.remove(_results.keys.first);
+    }
+    return _results.putIfAbsent(entry.url, () async {
         // Offline verified mapping: avoid search request for every catalog item.
         if (entry.tmdbId != null) {
           // A catalog TMDB ID alone has no artwork. Fetch its real poster first
@@ -190,6 +195,7 @@ class LocalCatalogMetadata {
           return _withCollectedMetadata(entry, {'id': -_stableId(entry.url)});
         }
       });
+  }
   // Compact persistent index. Cache only filter metadata, never huge TMDB detail responses.
   static const _filterIndexKey='tmdb_filter_index_v2';
   static final Map<String,Future<Map<String,dynamic>?>> _filterDetails={};
