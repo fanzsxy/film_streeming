@@ -29,11 +29,25 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("filmstreamRelease") {
+            val keystorePath = System.getenv("FILMSTREAM_KEYSTORE_PATH")
+            val storePass = System.getenv("FILMSTREAM_STORE_PASSWORD")
+            val keyPass = System.getenv("FILMSTREAM_KEY_PASSWORD")
+            require(!keystorePath.isNullOrBlank() &&
+                !storePass.isNullOrBlank() && !keyPass.isNullOrBlank()) {
+                "Release signing secrets are missing. Configure the stable Film Streaming keystore."
+            }
+            storeFile = file(keystorePath)
+            storePassword = storePass
+            keyAlias = "filmstream"
+            keyPassword = keyPass
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("filmstreamRelease")
         }
     }
 }
