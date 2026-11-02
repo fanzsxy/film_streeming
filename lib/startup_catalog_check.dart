@@ -38,6 +38,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   static const scanTimeout = Duration(seconds:45);
   final scanTimers = <String, Future<void>>{};
   final domRetryKinds = <String>{};
+  final diagnostics = <String,String>{};
 
   @override void initState() {
     super.initState();
@@ -73,9 +74,15 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
                 ? NavigationDecision.navigate
                 : NavigationDecision.prevent;
           },
-          onPageFinished: (_) => _scanOne(kind),
+          onPageFinished: (url) {
+            diagnostics[kind] = 'page finished: $url';
+            _scanOne(kind);
+          },
           onWebResourceError: (error) {
-            if (error.isForMainFrame == true) _finish(kind, false);
+            if (error.isForMainFrame == true) {
+              _log('Scan $kind gagal memuat halaman: ${error.description}');
+              _finish(kind, false);
+            }
           },
         ));
       controllers[kind] = controller;
@@ -105,7 +112,10 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     try {
       final current = Uri.tryParse(await controllers[kind]!.currentUrl() ?? '');
       if (current == null || current.scheme != 'https' ||
-          current.host != hosts[kind]) return;
+          current.host != hosts[kind]) {
+        await _log('Scan $kind berhenti: situs berpindah dari domain yang diizinkan.');
+        return;
+      }
       final raw = await controllers[kind]!.runJavaScriptReturningResult(r'''(() => {
         const records=[];
         for(const a of document.querySelectorAll('a[href]')){
@@ -358,13 +368,17 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
 
   @override Widget build(BuildContext context) {
     if(!active)return const SizedBox.shrink();
-    return SizedBox(
-      width:1,height:1,
-      child:Stack(children:[
+    // Android pages may omit cards entirely for a 1x1 viewport. Mount each
+    // WebView with a phone-sized viewport while clipping its painted output.
+    // No offsite navigation or interaction is enabled by this change.
+    return SizedBox(width:1,height:1,child:ClipRect(child:OverflowBox(
+      alignment:Alignment.topLeft,
+      minWidth:360,maxWidth:360,minHeight:640,maxHeight:640,
+      child:IgnorePointer(child:Opacity(opacity:0.01,child:Stack(children:[
         for(final controller in controllers.values)
-          IgnorePointer(child:Opacity(opacity:0,child:SizedBox(
-            width:1,height:1,child:WebViewWidget(controller:controller)))),
-      ]),
-    );
+          SizedBox(width:360,height:640,
+            child:WebViewWidget(controller:controller)),
+      ]))),
+    )));
   }
 }
