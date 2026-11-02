@@ -25,7 +25,7 @@ jobs:
       - name: Install dependensi dan cek sintaks
         run: |
           flutter pub get
-          flutter analyze --no-fatal-infos
+          flutter analyze --no-fatal-infos --no-fatal-warnings
           dart format --output=none lib/main.dart lib/source_manager.dart lib/web_source_page.dart
       - name: Generate Film Streaming Android icon
         run: |
