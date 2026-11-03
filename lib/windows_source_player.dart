@@ -20,33 +20,91 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
   bool _ready = false;
   bool _showFullPage = false;
 
+  // Inject before page parsing; keep video/iframe and its own server controls.
   static const _focusScript = r'''
     (() => {
-      const styleId = 'filmstream-desktop-focus';
-      if (document.getElementById(styleId)) return;
-      const style = document.createElement('style');
-      style.id = styleId;
-      style.textContent = `
-        body.filmstream-desktop-focus { background: #101218 !important; }
-        body.filmstream-desktop-focus header,
-        body.filmstream-desktop-focus nav,
-        body.filmstream-desktop-focus footer,
-        body.filmstream-desktop-focus aside,
-        body.filmstream-desktop-focus .sidebar,
-        body.filmstream-desktop-focus #sidebar,
-        body.filmstream-desktop-focus .related-movies,
-        body.filmstream-desktop-focus .movie-related,
-        body.filmstream-desktop-focus .navbar,
-        body.filmstream-desktop-focus #navbar,
-        body.filmstream-desktop-focus .breadcrumb,
-        body.filmstream-desktop-focus .breadcrumbs,
-        body.filmstream-desktop-focus .search-form,\n        body.filmstream-desktop-focus .movie-list,\n        body.filmstream-desktop-focus .related,\n        body.filmstream-desktop-focus .related-film,\n        body.filmstream-desktop-focus .logo,\n        body.filmstream-desktop-focus .site-header,\n        body.filmstream-desktop-focus #header { display: none !important; }
-        body.filmstream-desktop-focus main,
-        body.filmstream-desktop-focus .container,
-        body.filmstream-desktop-focus .content,
-        body.filmstream-desktop-focus .main-content { max-width: none !important; width: 100% !important; margin: 0 auto !important; }
-      `;
-      (document.head || document.documentElement).appendChild(style);
+      if (window.__filmstreamSetFocus) return;
+      const attr = 'data-filmstream-hidden';
+      const controls = '#player-select,#player-list,.player-options,.server-list,.servers,.list-server,.episodes,.episode-list,.season-list,.ganti-player';
+      const selectors = '#player,#movie-player,#video-player,.player-container,.player-wrapper,.player-area,.video-container,.video-player,.watch-player,.embed-responsive,video,iframe';
+      let focused = true, currentPlayer = null, scheduled = false;
+
+      function ensureStyle() {
+        if (!document.documentElement || document.getElementById('filmstream-style')) return;
+        const style = document.createElement('style');
+        style.id = 'filmstream-style';
+        style.textContent = [
+          'html.filmstream-focus, html.filmstream-focus body {background:#101218!important;}',
+          'html.filmstream-focus [data-filmstream-hidden] {display:none!important;}',
+          'html.filmstream-focus header, html.filmstream-focus nav,',
+          'html.filmstream-focus footer, html.filmstream-focus aside,',
+          'html.filmstream-focus #header, html.filmstream-focus #footer,',
+          'html.filmstream-focus .site-header, html.filmstream-focus .navbar,',
+          'html.filmstream-focus .sidebar, html.filmstream-focus #sidebar,',
+          'html.filmstream-focus .related-movies, html.filmstream-focus .movie-related,',
+          'html.filmstream-focus .related-film, html.filmstream-focus .search-form',
+          '{display:none!important;}',
+          'html.filmstream-focus main, html.filmstream-focus .container',
+          '{max-width:100%!important;width:100%!important;}'
+        ].join(' ');
+        (document.head || document.documentElement).appendChild(style);
+      }
+
+      function findPlayer() {
+        for (const el of document.querySelectorAll(selectors)) {
+          if (!el.isConnected || el.closest('header,nav,aside,footer')) continue;
+          const box = el.getBoundingClientRect();
+          if (box.width < 260 || box.height < 140) continue;
+          if (el.matches('video,iframe')) {
+            return el.closest('#player,.player-container,.player-wrapper,.video-container,.player-area') || el;
+          }
+          return el;
+        }
+        return null;
+      }
+      function hasControls(el) {
+        return el.matches(controls) || !!el.querySelector(controls);
+      }
+      function apply() {
+        ensureStyle();
+        if (!document.documentElement || !document.body) return;
+        document.documentElement.classList.toggle('filmstream-focus',focused);
+        if (!focused) return;
+        const player = findPlayer();
+        if (!player) return;
+        if (currentPlayer !== player) {
+          document.querySelectorAll('['+attr+']').forEach(el=>el.removeAttribute(attr));
+          currentPlayer=player;
+        }
+        let node=player;
+        while (node && node!==document.body && node.parentElement) {
+          for (const sibling of node.parentElement.children) {
+            if (sibling===node || ['STYLE','SCRIPT','LINK'].includes(sibling.tagName) ||
+                sibling.hasAttribute(attr) || hasControls(sibling)) continue;
+            sibling.setAttribute(attr,'');
+          }
+          node=node.parentElement;
+        }
+      }
+      function schedule() {
+        if (scheduled) return;
+        scheduled=true;
+        requestAnimationFrame(()=>{scheduled=false;apply();});
+      }
+      window.__filmstreamSetFocus=(enable)=>{
+        focused=!!enable;
+        if (!focused) document.documentElement?.classList.remove('filmstream-focus');
+        schedule();
+      };
+      ensureStyle();
+      document.addEventListener('DOMContentLoaded',schedule,{once:true});
+      const observe=()=>{
+        if (!document.documentElement) return;
+        new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
+        schedule();
+      };
+      if (document.documentElement) observe();
+      else document.addEventListener('DOMContentLoaded',observe,{once:true});
     })();
   ''';
 
@@ -55,10 +113,10 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
     try {
       await _controller.executeScript(_focusScript);
       await _controller.executeScript(
-        "document.body && document.body.classList.toggle('filmstream-desktop-focus', ${!_showFullPage})");
-    } catch (_) { /* The source page may have navigated. */ }
+        'window.__filmstreamSetFocus && window.__filmstreamSetFocus(' +
+        (!_showFullPage).toString() + ')');
+    } catch (_) { /* Retain the source player when injection is restricted. */ }
   }
-
 
   @override
   void initState() {
@@ -70,12 +128,7 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
     try {
       await _controller.initialize();
       await _controller.setPopupWindowPolicy(WebviewPopupWindowPolicy.deny);
-      await _controller.addScriptToExecuteOnDocumentCreated(r'''
-        document.addEventListener('DOMContentLoaded', () => {
-          if (!document.body || !location.hostname.endsWith('lk21official.cc')) return;
-          document.body.classList.add('filmstream-desktop-focus');
-        });
-      ''');
+      await _controller.addScriptToExecuteOnDocumentCreated(_focusScript);
       await _controller.loadUrl(widget.url.toString());
       if (mounted) setState(() => _ready = true);
       await _applyFocus();
@@ -115,7 +168,21 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
         borderRadius: BorderRadius.circular(16),
         child: AspectRatio(
           aspectRatio: 16 / 9,
-          child: ColoredBox(color: Colors.black, child: player),
+          child: Stack(children: [
+            Positioned.fill(child: ColoredBox(color: Colors.black, child: player)),
+            Positioned(right: 10, top: 10, child: Material(
+              color: const Color(0xdd171b22),
+              borderRadius: BorderRadius.circular(9),
+              child: IconButton(
+                tooltip: _showFullPage ? 'Tampilkan player saja' : 'Lihat halaman sumber',
+                icon: Icon(_showFullPage ? Icons.smart_display : Icons.article_outlined),
+                onPressed: _ready ? () {
+                  setState(() => _showFullPage = !_showFullPage);
+                  _applyFocus();
+                } : null,
+              ),
+            )),
+          ]),
         ),
       );
     }
