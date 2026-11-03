@@ -1,6 +1,12 @@
 name: Build Film Streaming Windows Desktop
 on:
   workflow_dispatch:
+    inputs:
+      personal_installer:
+        description: 'Build unsigned installer for personal testing (not trusted or for public distribution)'
+        type: boolean
+        required: true
+        default: true
 
 jobs:
   windows:
@@ -60,7 +66,7 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CODESIGN_PFX_BASE64) -or
               [string]::IsNullOrWhiteSpace($env:WINDOWS_CODESIGN_PASSWORD)) {
             "signed=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-            Write-Warning "No Windows Authenticode certificate configured. Installer distribution will be skipped; portable development ZIP only."
+            Write-Warning "No Windows Authenticode certificate configured. Only the explicitly opted-in personal unsigned installer may be created."
             exit 0
           }
           $certPath = Join-Path $env:RUNNER_TEMP "filmstream-signing.pfx"
@@ -89,7 +95,7 @@ jobs:
         shell: pwsh
         run: choco install innosetup --yes --no-progress
       - name: Build Windows setup installer
-        if: steps.signing.outputs.signed == 'true'
+        if: steps.signing.outputs.signed == 'true' || inputs.personal_installer == true
         shell: pwsh
         run: |
           $iscc = "${env:ProgramFiles(x86)}\\Inno Setup 6\\ISCC.exe"
@@ -121,6 +127,13 @@ jobs:
             Remove-Item $certPath -ErrorAction SilentlyContinue
           }
       - uses: actions/upload-artifact@v4
+        if: steps.signing.outputs.signed != 'true' && inputs.personal_installer == true
+        with:
+          name: Film-Streaming-Windows-PERSONAL-UNSIGNED-Installer
+          path: installer-output/Film-Streaming-Setup.exe
+          if-no-files-found: error
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
         if: steps.signing.outputs.signed == 'true'
         with:
           name: Film-Streaming-Windows-Installer
@@ -131,6 +144,13 @@ jobs:
           name: Film-Streaming-Windows-Portable
           path: Film-Streaming-Windows.zip
           if-no-files-found: error
+      - name: Warn about unsigned personal installer
+        if: steps.signing.outputs.signed != 'true' && inputs.personal_installer == true
+        shell: pwsh
+        run: |
+          Write-Warning "UNSIGNED PERSONAL BUILD: Chrome and Windows can block this artifact. Do not disable security protections. This build is for testing, not public distribution."
+          "### Unsigned installer for personal testing only" | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          "This installer is **not Authenticode signed** and is not guaranteed safe or trusted by Chrome/Windows. Do not bypass security warnings. Check repository and build provenance and scan before using." | Out-File $env:GITHUB_STEP_SUMMARY -Append
       - name: Publish SHA256 checksums
         shell: pwsh
         run: |
