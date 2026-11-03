@@ -168,7 +168,21 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
         borderRadius: BorderRadius.circular(16),
         child: AspectRatio(
           aspectRatio: 16 / 9,
-          child: ColoredBox(color: Colors.black, child: player),
+          child: Stack(children: [
+            Positioned.fill(child: ColoredBox(color: Colors.black, child: player)),
+            Positioned(right: 10, top: 10, child: Material(
+              color: const Color(0xdd171b22),
+              borderRadius: BorderRadius.circular(9),
+              child: IconButton(
+                tooltip: _showFullPage ? 'Tampilkan player saja' : 'Lihat halaman sumber',
+                icon: Icon(_showFullPage ? Icons.smart_display : Icons.article_outlined),
+                onPressed: _ready ? () {
+                  setState(() => _showFullPage = !_showFullPage);
+                  _applyFocus();
+                } : null,
+              ),
+            )),
+          ]),
         ),
       );
     }
