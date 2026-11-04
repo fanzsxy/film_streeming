@@ -1315,12 +1315,27 @@ class _DetailPageState extends State<DetailPage> {
            onFullscreenExit:(){
              if(detailScroll.hasClients)detailScroll.jumpTo(0);
            })
-       else if (m.type == 'tv' && !Platform.isWindows)
-         SizedBox(height:215,width:double.infinity,
-           child:m.poster.isNotEmpty
-             ? Image.network(filmstreamImageUrl(m.poster),fit:BoxFit.contain,
-                 errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.movie_outlined,size:72)))
-             : const Center(child:Icon(Icons.movie_outlined,size:72))),
+       else if (m.type == 'tv')
+         Platform.isWindows
+           ? LayoutBuilder(builder:(context,limits) {
+               final screen=MediaQuery.sizeOf(context);
+               final height=screen.width>=960
+                 ? (screen.height-146).clamp(330.0,800.0)
+                 : (screen.height*.46).clamp(235.0,440.0);
+               return SizedBox(width:double.infinity,height:height,
+                 child:ClipRRect(borderRadius:BorderRadius.circular(12),
+                   child:ColoredBox(color:Colors.black,
+                     child:Center(child: m.poster.isNotEmpty
+                       ? Image.network(filmstreamImageUrl(m.poster),
+                           fit:BoxFit.contain,
+                           errorBuilder:(_,__,___)=>const Icon(Icons.movie_outlined,size:72))
+                       : const Icon(Icons.movie_outlined,size:72)))));
+             })
+           : SizedBox(height:215,width:double.infinity,
+               child:m.poster.isNotEmpty
+                 ? Image.network(filmstreamImageUrl(m.poster),fit:BoxFit.contain,
+                     errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.movie_outlined,size:72)))
+                 : const Center(child:Icon(Icons.movie_outlined,size:72))),
        ]);
        final detailPane = ListView(controller: detailScroll, children: [
          Padding(padding: const EdgeInsets.all(16), child: Column(
