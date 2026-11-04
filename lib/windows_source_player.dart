@@ -24,6 +24,7 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
   bool _ready = false;
   bool _showFullPage = false;
   bool _focusAvailable = false;
+  String _playerDiagnostic = 'Memeriksa struktur player...';
   bool _switching = false;
   String? _error;
   List<String> _servers = const [];
@@ -31,94 +32,125 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
 
   // Match Android WebSourcePage's tested player selectors.
   // Do not promote the iframe to a new URL or modify playback requests.
+  // Keep the source document and its own playback scripts intact.
+  // A pre-play poster does not always contain an iframe. The previous version
+  // required an iframe, so it silently fell back to the whole LK21 page.
   static const _playerScript = r'''
     (() => {
       if (window.__filmstreamWindowsFocus) return true;
       let focused = true;
       let scheduled = false;
+      let currentRoot = null;
+      const marker = 'data-fs-player-root';
+      const hidden = 'data-fs-hidden';
+
+      function visible(el) {
+        if (!el || !el.isConnected) return false;
+        const rect = el.getBoundingClientRect();
+        return rect.width >= 250 && rect.height >= 150;
+      }
       function locate() {
-        const shell = document.querySelector(
-          '.player-section-wrapper, .player-area, .main-player'
-        ) || document.querySelector('iframe#main-player')?.parentElement;
-        const iframe = shell?.querySelector('iframe#main-player, iframe[src]');
-        const player = document.querySelector('.main-player') ||
-          iframe?.closest('.player-wrapper, .player-area');
-        return shell && iframe && player ? {shell,iframe,player} : null;
+        // Prefer the provider's *left* media column, not its whole wrapper.
+        // It remains present while the playable iframe is still a poster.
+        const selectors = [
+          '.main-player:has(iframe),.main-player:has(video)',
+          '.player-left','.player-area','.main-player',
+          '#main-player','#player','.player-wrapper','.video-container',
+          '.player-section-wrapper'
+        ];
+        for (const selector of selectors) {
+          for (const el of document.querySelectorAll(selector)) {
+            if (!visible(el) || el.closest('header,nav,footer,aside')) continue;
+            if (el.classList.contains('player-section-wrapper')) {
+              const left = el.querySelector('.player-left,.main-player,.player-area');
+              if (visible(left)) return left;
+            }
+            return el;
+          }
+        }
+        return null;
       }
       function style() {
-        let el = document.getElementById('fs-windows-player-style');
-        if (el) return;
-        el = document.createElement('style');
-        el.id = 'fs-windows-player-style';
+        if (!document.documentElement || document.getElementById('fs-windows-focus-style')) return;
+        const el = document.createElement('style');
+        el.id = 'fs-windows-focus-style';
         el.textContent = [
-          'html.fs-windows-player,html.fs-windows-player body {',
-          'margin:0!important;padding:0!important;background:#101014!important;',
-          'overflow:hidden!important;overscroll-behavior:none!important;}',
-          'html.fs-windows-player .player-section-wrapper {top:0!important;transform:none!important;}',
-          'html.fs-windows-player body > nav,html.fs-windows-player body > header,',
-          'html.fs-windows-player body > footer,html.fs-windows-player .sub-header,',
-          'html.fs-windows-player .main-header,html.fs-windows-player .main-section,',
-          'html.fs-windows-player .player-right,html.fs-windows-player .mobile-nav,',
-          'html.fs-windows-player .site-footer,html.fs-windows-player .bottom-nav,',
-          'html.fs-windows-player .mobile-bottom-nav,',
-          'html.fs-windows-player .player-section-wrapper ~ * {display:none!important;}',
-          'html.fs-windows-player .player-section-wrapper,',
-          'html.fs-windows-player .player-section-wrapper .container,',
-          'html.fs-windows-player .player-area,',
-          'html.fs-windows-player .player-wrapper,',
-          'html.fs-windows-player .player-left {width:100%!important;',
-          'max-width:100%!important;margin:0!important;padding:0!important;',
-          'box-sizing:border-box!important;}',
-          'html.fs-windows-player .player-section-wrapper .player-action {display:none!important;}',
-          'html.fs-windows-player .player-options,',
-          'html.fs-windows-player #player-list {position:absolute!important;',
-          'left:-20000px!important;top:0!important;width:1px!important;',
-          'height:1px!important;overflow:hidden!important;opacity:0!important;',
-          'pointer-events:none!important;}',
-          'html.fs-windows-player .main-player {width:100vw!important;',
-          'max-width:100vw!important;height:100vh!important;min-height:0!important;',
-          'margin:0!important;padding:0!important;overflow:hidden!important;',
-          'position:fixed!important;top:0!important;left:0!important;',
-          'z-index:2147483640!important;background:#000!important;}',
-          'html.fs-windows-player .main-player > iframe,',
-          'html.fs-windows-player .main-player > #main-player {',
-          'display:block!important;position:absolute!important;inset:0!important;',
-          'width:100%!important;height:100%!important;min-height:0!important;',
-          'max-height:100%!important;border:0!important;margin:0!important;}'
+          'html.fs-focus,html.fs-focus body {margin:0!important;',
+          'padding:0!important;background:#101014!important;',
+          'overflow:hidden!important;}',
+          'html.fs-focus ['+hidden+'] {display:none!important;}',
+          'html.fs-focus ['+marker+'] {display:block!important;',
+          'position:fixed!important;inset:0!important;z-index:2147483000!important;',
+          'width:100vw!important;max-width:100vw!important;',
+          'height:100vh!important;min-height:0!important;',
+          'padding:0!important;margin:0!important;',
+          'background:#000!important;overflow:auto!important;}',
+          'html.fs-focus ['+marker+'] iframe,',
+          'html.fs-focus ['+marker+'] video {max-width:100%!important;}',
+          'html.fs-focus ['+marker+'] .main-player {width:100%!important;',
+          'max-width:100%!important;margin:0 auto!important;}'
         ].join(' ');
         (document.head || document.documentElement).appendChild(el);
       }
       function apply() {
+        style();
         if (!document.documentElement || !document.body) return;
-        const player = locate();
-        document.documentElement.classList.toggle('fs-windows-player',
-          focused && !!player);
-        if (focused && player) {
-          window.scrollTo(0, 0);
-          document.documentElement.scrollTop = 0;
-          document.body.scrollTop = 0;
+        const root = locate();
+        document.documentElement.classList.toggle('fs-focus', focused && !!root);
+        if (!focused) return;
+        if (!root) {
+          if (currentRoot) currentRoot.removeAttribute(marker);
+          currentRoot = null;
+          return;
         }
+        if (root !== currentRoot) {
+          document.querySelectorAll('['+marker+'],['+hidden+']').forEach(el => {
+            el.removeAttribute(marker);
+            el.removeAttribute(hidden);
+          });
+          currentRoot = root;
+        }
+        root.setAttribute(marker,'');
+        let node = root;
+        while (node && node !== document.body && node.parentElement) {
+          const parent = node.parentElement;
+          for (const sibling of parent.children) {
+            if (sibling === node ||
+                ['SCRIPT','STYLE','LINK'].includes(sibling.tagName)) continue;
+            sibling.setAttribute(hidden,'');
+          }
+          node = parent;
+        }
+        window.scrollTo(0,0);
       }
       function schedule() {
         if (scheduled) return;
         scheduled = true;
         requestAnimationFrame(() => { scheduled = false; apply(); });
       }
-      window.__filmstreamWindowsFocus = (value) => {
+      window.__filmstreamWindowsFocus = value => {
         focused = !!value;
+        if (!focused) document.documentElement?.classList.remove('fs-focus');
         schedule();
-        return !!locate();
+        return {
+          found: !!locate(),
+          focused,
+          player: locate()?.className || locate()?.id || '',
+          iframe: document.querySelectorAll('iframe').length,
+          poster: document.querySelectorAll('.player-left img,.main-player img').length
+        };
       };
       style();
       document.addEventListener('DOMContentLoaded', schedule);
-      const observe = () => {
+      const startObserver = () => {
         if (!document.documentElement) return;
+        // Observe inserted nodes only: attribute observation would loop.
         new MutationObserver(schedule).observe(document.documentElement,
-          {childList:true, subtree:true});
+          {childList:true,subtree:true});
         schedule();
       };
-      if (document.documentElement) observe();
-      else document.addEventListener('DOMContentLoaded',observe,{once:true});
+      if (document.documentElement) startObserver();
+      else document.addEventListener('DOMContentLoaded', startObserver, {once:true});
       return true;
     })();
   ''';
@@ -173,8 +205,16 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
         "window.__filmstreamWindowsFocus ? "
         "window.__filmstreamWindowsFocus(" + (!_showFullPage).toString() +
         ") : false");
-      final focus = result == true || result.toString() == 'true';
-      if (mounted && _focusAvailable != focus) setState(() => _focusAvailable = focus);
+      final focus = result is Map && result['found'] == true;
+      final diagnostic = result is Map
+          ? 'Player: ${focus ? "ditemukan" : "belum ditemukan"} · '
+            'iframe: ${result['iframe'] ?? 0} · '
+            'poster: ${result['poster'] ?? 0} · '
+            'area: ${result['player'] ?? "-"}'
+          : 'Skrip fokus tidak memberikan hasil: ${result.runtimeType}';
+      if (mounted && (_focusAvailable != focus || _playerDiagnostic != diagnostic)) {
+        setState(() { _focusAvailable = focus; _playerDiagnostic = diagnostic; });
+      }
       final raw = await _controller.executeScript(_serverScript);
       dynamic data = raw;
       if (data is String) data = jsonDecode(data);
@@ -295,7 +335,7 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
           child: TextButton.icon(
             onPressed: _toggleSourcePage,
             icon: const Icon(Icons.article_outlined),
-            label: const Text('Player belum ditemukan · Tampilkan halaman sumber'),
+            label: Text('Player belum ditemukan · $_playerDiagnostic · Halaman sumber'),
           ),
         )),
       Positioned(right: 10, top: 10, child: Material(
@@ -315,6 +355,12 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
     final body = Column(children: [
       Expanded(child: ColoredBox(color: Colors.black, child: _playerArea())),
       _serverButtons(),
+      if (!_showFullPage && _ready) Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+        child: Text(_playerDiagnostic,
+          style: const TextStyle(fontSize: 10, color: Colors.white54),
+          maxLines: 1, overflow: TextOverflow.ellipsis),
+      ),
     ]);
     if (widget.embedded) {
       return ClipRRect(
