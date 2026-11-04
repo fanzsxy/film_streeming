@@ -10,8 +10,12 @@ class WindowsSourcePlayer extends StatefulWidget {
   final String title;
   final Uri url;
   final bool embedded;
+  final List<String> genres;
+  final String synopsis;
+  final String year;
   const WindowsSourcePlayer({
     super.key, required this.title, required this.url, this.embedded = false,
+    this.genres = const [], this.synopsis = '', this.year = '',
   });
 
   @override
@@ -350,9 +354,40 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
     ]);
   }
 
+  Widget _informationPanel() {
+    final synopsis = widget.synopsis.trim();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
+      decoration: const BoxDecoration(
+        color: Color(0xff191c24),
+        border: Border(top: BorderSide(color: Color(0xff30343d))),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(widget.title, style: const TextStyle(
+          fontWeight: FontWeight.w800, fontSize: 21)),
+        const SizedBox(height: 9),
+        if (widget.year.isNotEmpty || widget.genres.isNotEmpty)
+          Wrap(spacing: 7, runSpacing: 7, crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (widget.year.isNotEmpty)
+                Chip(label: Text(widget.year), visualDensity: VisualDensity.compact),
+              for (final genre in widget.genres)
+                Chip(label: Text(genre), visualDensity: VisualDensity.compact),
+            ]),
+        const SizedBox(height: 15),
+        const Text('Sinopsis', style: TextStyle(
+          fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xffe5aa55))),
+        const SizedBox(height: 7),
+        Text(synopsis.isNotEmpty ? synopsis : 'Sinopsis belum tersedia untuk judul ini.',
+          style: const TextStyle(fontSize: 14, height: 1.55, color: Colors.white70)),
+      ]),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final body = Column(children: [
+    final playerBody = Column(children: [
       Expanded(child: ColoredBox(color: Colors.black, child: _playerArea())),
       _serverButtons(),
       if (!_showFullPage && _ready) Padding(
@@ -363,13 +398,14 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
       ),
     ]);
     if (widget.embedded) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: AspectRatio(
-          aspectRatio: 16 / 9,
-          child: ColoredBox(color: Colors.black, child: body),
+      return Column(mainAxisSize: MainAxisSize.min, children: [
+        ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+          child: AspectRatio(aspectRatio: 16 / 9,
+            child: ColoredBox(color: Colors.black, child: playerBody)),
         ),
-      );
+        _informationPanel(),
+      ]);
     }
     return Scaffold(
       appBar: AppBar(
@@ -387,7 +423,13 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
           ),
         ],
       ),
-      body: body,
+      body: Column(children: [
+        Expanded(child: playerBody),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 265),
+          child: SingleChildScrollView(child: _informationPanel()),
+        ),
+      ]),
     );
   }
 }
