@@ -1113,7 +1113,7 @@ Future<void> recordWebProgress(Movie movie, Uri page, int positionMs, int durati
     updatedAt:DateTime.now().millisecondsSinceEpoch,completed:completed));
 }
 
-Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? resolved, VoidCallback? onFullscreenExit, ValueChanged<String>? onSynopsisFound}) =>
+Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? resolved, VoidCallback? onFullscreenExit, ValueChanged<String>? onSynopsisFound, ValueChanged<List<String>>? onGenresFound}) =>
   FutureBuilder<Uri>(
     future: resolved ?? resolveSourcePage(movie),
     builder: (context, snapshot) {
@@ -1129,6 +1129,8 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
           genres: movie.genres.map((id) => _FilmstreamFilterState.genres[id]).whereType<String>().toList(),
           tmdbId: movie.id,
           mediaType: movie.type,
+          onSynopsisFound: onSynopsisFound,
+          onGenresFound: onGenresFound,
         );
       }
       return WebSourcePage(
@@ -1168,6 +1170,8 @@ class _DetailPageState extends State<DetailPage> {
  Uri? selectedEpisodeUrl;
  int? sourceSeason,sourceEpisode;
  String sourceSynopsis='';
+ List<String> sourceGenres=const [];
+ void _receiveGenres(List<String> names){if(!mounted)return;final clean=names.where((name)=>name.trim().isNotEmpty).toSet().toList();if(clean.join('|')!=sourceGenres.join('|'))setState(()=>sourceGenres=clean);}
  void _receiveSynopsis(String text){final clean=text.trim();if(clean.isEmpty||!mounted)return;final old=sourceSynopsis.trim();if(old.isNotEmpty && old.length>=clean.length && !old.endsWith('...') && !old.endsWith('…'))return;if(clean!=old)setState(()=>sourceSynopsis=clean);}
  final videoUrl=TextEditingController(),subtitleUrl=TextEditingController(),sourcePage=TextEditingController();late bool favorite;late Future<Map<String,dynamic>> details; late Future<Uri> sourceFuture;
  @override void initState(){super.initState();favorite=widget.isFavorite;details=widget.movie.id>0?Tmdb.bilingualDetail('${widget.movie.type}/${widget.movie.id}'):Future.value(<String,dynamic>{}); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}}
@@ -1273,13 +1277,13 @@ class _DetailPageState extends State<DetailPage> {
      // platform view stays mounted while the user scrolls or selects a season.
      body: Column(children: [
        if (m.type == 'movie')
-         inlineSource(m, resolved: sourceFuture, onSynopsisFound:_receiveSynopsis, onFullscreenExit: () {
+         inlineSource(m, resolved: sourceFuture, onSynopsisFound:_receiveSynopsis, onGenresFound:_receiveGenres, onFullscreenExit: () {
            if (detailScroll.hasClients) detailScroll.jumpTo(0);
          })
        else if (m.type == 'tv' && selectedEpisodeUrl != null)
          inlineSource(m, season:sourceSeason ?? 0, episode:sourceEpisode ?? 0,
            resolved:Future.value(selectedEpisodeUrl!),
-           onSynopsisFound:_receiveSynopsis,
+           onSynopsisFound:_receiveSynopsis, onGenresFound:_receiveGenres,
            onFullscreenExit:(){
              if(detailScroll.hasClients)detailScroll.jumpTo(0);
            })
@@ -1299,10 +1303,16 @@ class _DetailPageState extends State<DetailPage> {
              FutureBuilder<Map<String,dynamic>>(
                future:details,
                builder:(context,snapshot){
-                 final genres=(snapshot.data?['genres'] as List? ?? const [])
+                 final tmdbGenres=(snapshot.data?['genres'] as List? ?? const [])
                    .whereType<Map>().map((g)=>(g['name']??'').toString())
                    .where((g)=>g.isNotEmpty).toList();
-                 if(genres.isEmpty)return const SizedBox.shrink();
+                 final genres=tmdbGenres.isNotEmpty ? tmdbGenres :
+                   (Platform.isWindows ? sourceGenres : <String>[]);
+                 if(genres.isEmpty)return Platform.isWindows
+                   ? const Padding(padding:EdgeInsets.symmetric(vertical:8),
+                       child:Text('Genre belum tersedia dari TMDB atau LK21.',
+                         style:TextStyle(color:Colors.white70)))
+                   : const SizedBox.shrink();
                  return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
                    const Text('Genre',style:TextStyle(fontSize:17,fontWeight:FontWeight.bold)),
                    const SizedBox(height:8),
@@ -1314,13 +1324,16 @@ class _DetailPageState extends State<DetailPage> {
                // Keep the synopsis section hidden until genuine source/catalog
                // text is available instead of flashing a placeholder.
                final fromCrawler=m.overview.trim();
-               final description=sourceSynopsis.isNotEmpty?sourceSynopsis:fromCrawler;
-               if(description.isEmpty)return const SizedBox.shrink();
+               // On Windows the synopsis must come directly from the source,
+               // not the catalog or TMDB; Android retains its prior behavior.
+               final description=Platform.isWindows ? sourceSynopsis :
+                 (sourceSynopsis.isNotEmpty?sourceSynopsis:fromCrawler);
+               if(description.isEmpty && !Platform.isWindows)return const SizedBox.shrink();
                return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
                  const SizedBox(height:14),
                  const Text('Sinopsis',style:TextStyle(fontSize:17,fontWeight:FontWeight.bold)),
                  const SizedBox(height:7),
-                 Text(description),
+                 Text(description.isEmpty ? 'Sinopsis belum tersedia dari LK21.' : description),
                ]);
              }),
              if(m.type=='tv')...[

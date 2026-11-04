@@ -15,10 +15,13 @@ class WindowsSourcePlayer extends StatefulWidget {
   final String year;
   final int tmdbId;
   final String mediaType;
+  final ValueChanged<String>? onSynopsisFound;
+  final ValueChanged<List<String>>? onGenresFound;
   const WindowsSourcePlayer({
     super.key, required this.title, required this.url, this.embedded = false,
     this.genres = const [], this.year = '', this.tmdbId = 0,
     this.mediaType = 'movie',
+    this.onSynopsisFound, this.onGenresFound,
   });
 
   @override
@@ -247,12 +250,16 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
           .toSet()
           .toList(growable: false);
       final synopsis = (data['synopsis'] ?? '').toString().trim();
-      if (_lk21Synopsis != synopsis ||
-          genres.join('|') != _lk21Genres.join('|')) {
+      final changedSynopsis = synopsis.isNotEmpty && synopsis != _lk21Synopsis;
+      final changedGenres = genres.isNotEmpty &&
+          genres.join('|') != _lk21Genres.join('|');
+      if (changedSynopsis || changedGenres) {
         setState(() {
-          _lk21Synopsis = synopsis;
-          _lk21Genres = genres;
+          if (changedSynopsis) _lk21Synopsis = synopsis;
+          if (changedGenres) _lk21Genres = genres;
         });
+        if (changedSynopsis) widget.onSynopsisFound?.call(synopsis);
+        if (changedGenres) widget.onGenresFound?.call(genres);
       }
     } catch (_) {
       // The source may not have finished loading its detail metadata.
@@ -483,14 +490,15 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
       ),
     ]);
     if (widget.embedded) {
-      return Column(mainAxisSize: MainAxisSize.min, children: [
-        ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-          child: AspectRatio(aspectRatio: 16 / 9,
-            child: ColoredBox(color: Colors.black, child: playerBody)),
-        ),
-        _informationPanel(),
-      ]);
+      // Windows window width can make a 16:9 player taller than the screen.
+      // Leave room for the scrollable title/genre/synopsis below in DetailPage.
+      final viewport = MediaQuery.sizeOf(context);
+      final availableHeight = (viewport.height * 0.54).clamp(240.0, 520.0);
+      return SizedBox(
+        width: double.infinity,
+        height: availableHeight,
+        child: ColoredBox(color: Colors.black, child: playerBody),
+      );
     }
     return Scaffold(
       appBar: AppBar(
