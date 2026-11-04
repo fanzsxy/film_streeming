@@ -1193,12 +1193,14 @@ class _DetailPageState extends State<DetailPage> {
  Uri? selectedEpisodeUrl;
  int? sourceSeason,sourceEpisode;
  String sourceSynopsis='';
+ bool _sourceSynopsisPending=true;
+ Timer? _sourceSynopsisTimeout;
  List<String> sourceGenres=const [];
  void _receiveGenres(List<String> names){if(!mounted)return;final clean=names.where((name)=>name.trim().isNotEmpty).toSet().toList();if(clean.join('|')!=sourceGenres.join('|'))setState(()=>sourceGenres=clean);}
- void _receiveSynopsis(String text){final clean=text.trim();if(clean.isEmpty||!mounted)return;final old=sourceSynopsis.trim();if(old.isNotEmpty && old.length>=clean.length && !old.endsWith('...') && !old.endsWith('…'))return;if(clean!=old)setState(()=>sourceSynopsis=clean);}
+ void _receiveSynopsis(String text){final clean=text.trim();if(clean.isEmpty||!mounted)return;_sourceSynopsisTimeout?.cancel();_sourceSynopsisPending=false;final old=sourceSynopsis.trim();if(old.isNotEmpty && old.length>=clean.length && !old.endsWith('...') && !old.endsWith('…'))return;if(clean!=old)setState(()=>sourceSynopsis=clean);}
  final videoUrl=TextEditingController(),subtitleUrl=TextEditingController(),sourcePage=TextEditingController();late bool favorite;late Future<Map<String,dynamic>> details; late Future<Uri> sourceFuture;
- @override void initState(){super.initState();favorite=widget.isFavorite;details=widget.movie.id>0?Tmdb.bilingualDetail('${widget.movie.type}/${widget.movie.id}'):Future.value(<String,dynamic>{}); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}}
- @override void dispose(){videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();detailScroll.dispose();super.dispose();}
+ @override void initState(){super.initState();_sourceSynopsisTimeout=Timer(const Duration(seconds:24),(){if(mounted)setState(()=>_sourceSynopsisPending=false);});favorite=widget.isFavorite;details=widget.movie.id>0?Tmdb.bilingualDetail('${widget.movie.type}/${widget.movie.id}'):Future.value(<String,dynamic>{}); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}}
+ @override void dispose(){_sourceSynopsisTimeout?.cancel();videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();detailScroll.dispose();super.dispose();}
  bool https(String input){final u=Uri.tryParse(input.trim());return u!=null&&u.scheme=='https'&&u.host.isNotEmpty;}
 
  int? selectedSeason;
@@ -1377,7 +1379,14 @@ class _DetailPageState extends State<DetailPage> {
                  const SizedBox(height:14),
                  const Text('Sinopsis',style:TextStyle(fontSize:17,fontWeight:FontWeight.bold)),
                  const SizedBox(height:7),
-                 Text(description.isEmpty ? 'Sinopsis belum tersedia dari LK21.' : description),
+                 if(Platform.isWindows && m.type=='tv' &&
+                     description.isEmpty && _sourceSynopsisPending)
+                   const Row(children:[
+                     SizedBox(width:16,height:16,child:CircularProgressIndicator(strokeWidth:2)),
+                     SizedBox(width:12),
+                     Expanded(child:Text('Memuat sinopsis dari halaman sumber...')),
+                   ])
+                 else Text(description.isEmpty ? 'Sinopsis belum tersedia dari LK21.' : description),
                ]);
              }),
              if(m.type=='tv')...[
