@@ -9,9 +9,10 @@ class WindowsSeasonPicker extends StatefulWidget {
   final String title;
   final String year;
   final void Function(int season, int episode, Uri url) onEpisodeSelected;
+  final ValueChanged<String>? onSynopsisFound;
   const WindowsSeasonPicker({
     super.key, required this.source, required this.title,
-    required this.year, required this.onEpisodeSelected,
+    required this.year, required this.onEpisodeSelected, this.onSynopsisFound,
   });
   @override
   State<WindowsSeasonPicker> createState() => _WindowsSeasonPickerState();
@@ -56,7 +57,10 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
         if(season>0&&episode>0&&episode<1000&&(explicit||group||panel?.contains(a)))
           episodes.push({season,episode,url:u.href});
       });
-      return JSON.stringify({seasons,episodes,active});
+      const description=document.querySelector(
+        '[itemprop="description"],.sinopsis,.synopsis,.entry-content .desc,.film-synopsis,.summary,.description');
+      const synopsis=(description?.textContent||'').trim().replace(/\s+/g,' ');
+      return JSON.stringify({seasons,episodes,active,synopsis});
     })();
   ''';
 
@@ -105,6 +109,8 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
       dynamic data=await _web.executeScript(_scanScript);
       for(var i=0;i<2&&data is String;i++) data=jsonDecode(data);
       if(data is! Map||!mounted)return;
+      final synopsis=(data['synopsis']??'').toString().trim();
+      if(synopsis.isNotEmpty) widget.onSynopsisFound?.call(synopsis);
       final seasons=<int>{};
       final found=<int,Map<int,Uri>>{};
       for(final entry in (data['seasons'] as List? ?? const [])) {
