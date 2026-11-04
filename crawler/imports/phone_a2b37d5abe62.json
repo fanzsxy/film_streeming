@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "The Stories",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/stories-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-stories-2026-lk21.jpg.webp",
+      "rating": 7.8
+    },
+    {
+      "title": "The Forger",
+      "year": 2022,
+      "url": "https://tv12.lk21official.cc/forger-2022",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-forger-2022-lk21.jpg.webp",
+      "rating": 6.3
+    },
+    {
+      "title": "Home",
+      "year": 2023,
+      "url": "https://tv12.lk21official.cc/home-2023",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-home-2023-lk21.jpg.webp",
+      "rating": 6.9
+    },
+    {
+      "title": "Mamu",
+      "year": 2024,
+      "url": "https://tv12.lk21official.cc/mamu-2024",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-mamu-2024-lk21.jpg.webp",
+      "rating": 7.3
+    },
+    {
+      "title": "Good Brother",
+      "year": 2020,
+      "url": "https://tv12.lk21official.cc/good-brother-2020",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-good-brother-2020-lk21.jpg.webp",
+      "rating": 9.5
+    },
+    {
+      "title": "Heartbeat",
+      "year": 2022,
+      "url": "https://tv12.lk21official.cc/heartbeat-2022",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-heartbeat-2022-lk21.jpg.webp",
+      "rating": 8.1
+    },
+    {
+      "title": "Truly Scary Stories: Autumn Special 26",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/truly-scary-stories-autumn-special-26-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-truly-scary-stories-autumn-special-26-2026-2-lk21.jpg.webp",
+      "rating": 8.3
+    }
+  ]
+}
