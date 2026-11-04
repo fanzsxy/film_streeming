@@ -4,6 +4,7 @@ import 'windows_source_player.dart';
 import 'source_domain_config.dart';
 import 'source_manager.dart';
 import 'source_season_picker.dart';
+import 'windows_season_picker.dart';
 import 'web_source_page.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
@@ -1287,7 +1288,7 @@ class _DetailPageState extends State<DetailPage> {
            onFullscreenExit:(){
              if(detailScroll.hasClients)detailScroll.jumpTo(0);
            })
-       else if (m.type == 'tv')
+       else if (m.type == 'tv' && !Platform.isWindows)
          SizedBox(height:215,width:double.infinity,
            child:m.poster.isNotEmpty
              ? Image.network(filmstreamImageUrl(m.poster),fit:BoxFit.contain,
@@ -1341,6 +1342,20 @@ class _DetailPageState extends State<DetailPage> {
                FutureBuilder<Uri>(future:sourceFuture,builder:(context,snapshot){
                  if(snapshot.hasError)return const Text('Sumber series belum tersedia.');
                  if(!snapshot.hasData)return const LinearProgressIndicator();
+                 if(Platform.isWindows) return WindowsSeasonPicker(
+                   key:ValueKey('windows-season-${m.id}'),
+                   source:snapshot.data!, title:m.title, year:m.year,
+                   onSynopsisFound:_receiveSynopsis,
+                   onEpisodeSelected:(season,episode,url){
+                     setState((){
+                       sourceSeason=season;
+                       sourceEpisode=episode;
+                       selectedEpisodeUrl=url;
+                     });
+                     if(detailScroll.hasClients)detailScroll.animateTo(0,
+                       duration:const Duration(milliseconds:250),curve:Curves.easeOut);
+                   },
+                 );
                  return SourceSeasonPicker(
                    key:ValueKey('source-season-${m.id}'),
                    source:snapshot.data!, title:m.title, year:m.year,
