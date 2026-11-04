@@ -1,0 +1,230 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:webview_flutter_windows/webview_flutter_windows.dart';
+
+/// Windows-only episode list: reads actual source links through WebView2.
+class WindowsSeasonPicker extends StatefulWidget {
+  final Uri source;
+  final String title;
+  final String year;
+  final void Function(int season, int episode, Uri url) onEpisodeSelected;
+  final ValueChanged<String>? onSynopsisFound;
+  const WindowsSeasonPicker({
+    super.key, required this.source, required this.title,
+    required this.year, required this.onEpisodeSelected, this.onSynopsisFound,
+  });
+  @override
+  State<WindowsSeasonPicker> createState() => _WindowsSeasonPickerState();
+}
+
+class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
+  final WebviewController _web = WebviewController();
+  Timer? _poll;
+  bool _ready = false, _busy = false, _showPage = false, _searched = false;
+  String? _error;
+  int? _selected;
+  final Map<int, Map<int, Uri>> _episodes = {};
+  final Set<int> _seasons = {};
+
+  static const _scanScript = r'''
+    (() => {
+      const selects=[...document.querySelectorAll('select')];
+      const seasons=[];
+      selects.forEach((s,i)=>[...s.options].forEach(o=>{
+        const m=((o.textContent||'')+' '+o.value).match(/(?:season|musim)\s*(\d+)/i);
+        if(m)seasons.push({number:Number(m[1]),index:i,value:o.value});
+      }));
+      const seasonSelect=selects.find(s=>[...s.options].some(
+        o=>/(?:season|musim)\s*\d+/i.test(o.textContent||'')));
+      const panel=seasonSelect?.closest('section,.row,.box,.content,.entry-content');
+      const current=(seasonSelect?.selectedOptions?.[0]?.textContent||'')
+        .match(/(?:season|musim)\s*(\d+)/i);
+      const active=Number(current?.[1]||
+        (location.pathname.match(/(?:season|musim)[-_ ]*(\d+)/i)||[])[1]||
+        seasons.find(x=>x.value===seasonSelect?.value)?.number||0);
+      const episodes=[];
+      document.querySelectorAll('a[href],a[data-url],a[data-href]').forEach(a=>{
+        const raw=a.getAttribute('href')||a.dataset.url||a.dataset.href;
+        if(!raw||raw==='#'||raw.startsWith('javascript:'))return;
+        let u;try{u=new URL(raw,location.href);}catch(_){return;}
+        if(u.protocol!=='https:'||u.host!==location.host)return;
+        const explicit=u.pathname.match(/(?:season|musim)[-_ ]*(\d+).*?(?:episode|eps?|ep)[-_ ]*0*(\d+)/i);
+        const numbered=(a.textContent||'').trim().match(/^(?:episode|eps?|ep)?\s*0*(\d+)$/i);
+        const group=a.closest('.episode,.episodes,.episode-list,.episode-grid,.ep-list,.series-episode,.server-episode,.episode-items,.episodelist,.episode-container,[class*="episode"],[id*="episode"]');
+        const season=explicit?Number(explicit[1]):active;
+        const episode=explicit?Number(explicit[2]):numbered&&(group||panel?.contains(a))?Number(numbered[1]):0;
+        if(season>0&&episode>0&&episode<1000&&(explicit||group||panel?.contains(a)))
+          episodes.push({season,episode,url:u.href});
+      });
+      const description=document.querySelector(
+        '[itemprop="description"],.sinopsis,.synopsis,.entry-content .desc,.film-synopsis,.summary,.description');
+      const synopsis=(description?.textContent||'').trim().replace(/\s+/g,' ');
+      return JSON.stringify({seasons,episodes,active,synopsis});
+    })();
+  ''';
+
+  @override
+  void initState() { super.initState(); _initialize(); }
+
+  Future<void> _initialize() async {
+    try {
+      await _web.initialize();
+      await _web.setPopupWindowPolicy(WebviewPopupWindowPolicy.deny);
+      await _web.loadUrl(widget.source.toString());
+      if(!mounted)return;
+      setState(()=>_ready=true);
+      await _scan();
+      _poll=Timer.periodic(const Duration(seconds:3),(_)=>_scan());
+    } catch (_) {
+      if(mounted)setState(()=>_error='Gagal membuka halaman sumber series.');
+    }
+  }
+
+  Future<void> _scan() async {
+    if(!_ready||_busy||!mounted)return;
+    _busy=true;
+    try {
+      if(!_searched && widget.source.path.startsWith('/search')) {
+        final js=r'''(() => {
+          const norm=s=>(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+          const matches=[...document.querySelectorAll('a[href]')].filter(a=>{
+            const item=a.closest('article,.item,.result,.movie,.film,.poster');
+            return norm(a.textContent||a.getAttribute('title'))===norm(TITLE) &&
+              (item?.textContent||a.textContent||'').includes(YEAR);
+          });
+          if(matches.length!==1)return '';
+          const u=new URL(matches[0].href,location.href);
+          return u.protocol==='https:'&&u.host===location.host?u.href:'';
+        })()'''.replaceAll('TITLE',jsonEncode(widget.title))
+               .replaceAll('YEAR',jsonEncode(widget.year));
+        final target=await _web.executeScript(js);
+        final uri=Uri.tryParse(target?.toString()??'');
+        if(uri!=null&&uri.scheme=='https'&&uri.host==widget.source.host) {
+          _searched=true;
+          await _web.loadUrl(uri.toString());
+          return;
+        }
+      }
+      await _web.executeScript(r'''(() => {
+        if(window.__fsPickerExpanded)return;
+        const text=el=>(el?.textContent||'').trim().toLowerCase();
+        const el=[...document.querySelectorAll('button,a,[role="button"],span')]
+          .find(node=>{
+            if(!/^(lihat selengkapnya|baca selengkapnya|selengkapnya|read more|show more)$/i.test(text(node)))return false;
+            if(node.tagName==='A'){
+              const href=(node.getAttribute('href')||'').trim();
+              if(href && href!=='#' && !href.startsWith('javascript:'))return false;
+            }
+            return true;
+          });
+        if(el){window.__fsPickerExpanded=true;el.click();}
+      })()''');
+      dynamic data=await _web.executeScript(_scanScript);
+      for(var i=0;i<2&&data is String;i++) data=jsonDecode(data);
+      if(data is! Map||!mounted)return;
+      final synopsis=(data['synopsis']??'').toString().trim();
+      if(synopsis.isNotEmpty) widget.onSynopsisFound?.call(synopsis);
+      final seasons=<int>{};
+      final found=<int,Map<int,Uri>>{};
+      for(final entry in (data['seasons'] as List? ?? const [])) {
+        if(entry is Map && entry['number'] is num) {
+          final n=(entry['number'] as num).toInt();
+          if(n>0)seasons.add(n);
+        }
+      }
+      for(final entry in (data['episodes'] as List? ?? const [])) {
+        if(entry is! Map)continue;
+        final season=(entry['season'] as num?)?.toInt()??0;
+        final episode=(entry['episode'] as num?)?.toInt()??0;
+        final uri=Uri.tryParse((entry['url']??'').toString());
+        if(season<1||episode<1||uri==null||uri.scheme!='https'||
+           uri.host!=widget.source.host)continue;
+        seasons.add(season);
+        found.putIfAbsent(season,()=>{})[episode]=uri;
+      }
+      final active=(data['active'] as num?)?.toInt()??0;
+      if(active>0)seasons.add(active);
+      if(seasons.isNotEmpty)setState(() {
+        _seasons.addAll(seasons);
+        for(final entry in found.entries) {
+          if(entry.value.length >= (_episodes[entry.key]?.length??0))
+            _episodes[entry.key]=entry.value;
+        }
+        _selected ??= (_seasons.toList()..sort()).first;
+        _error=null;
+      });
+    }catch(_){ /* Source can still be loading. */ }
+    finally{_busy=false;}
+  }
+
+  Future<void> _selectSeason(int n) async {
+    setState(()=>_selected=n);
+    try {
+      final script=r'''(() => {
+        const n=NUMBER;
+        for(const s of document.querySelectorAll('select')) {
+          const o=[...s.options].find(o=>
+            new RegExp('(?:season|musim)\\s*'+n+'(?!\\d)','i').test(
+              (o.textContent||'')+' '+o.value));
+          if(!o)continue;
+          s.value=o.value;
+          s.dispatchEvent(new Event('input',{bubbles:true}));
+          s.dispatchEvent(new Event('change',{bubbles:true}));
+          return true;
+        }
+        return false;
+      })()'''.replaceAll('NUMBER',n.toString());
+      await _web.executeScript(script);
+      await Future<void>.delayed(const Duration(milliseconds:600));
+      await _scan();
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() { _poll?.cancel(); _web.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    final seasons=_seasons.toList()..sort();
+    final links=_episodes[_selected]??<int,Uri>{};
+    final numbers=links.keys.toList()..sort();
+    return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+      // Keep the WebView2 reader mounted; it is never used as a video player.
+      SizedBox(height:_showPage?300:2, width:double.infinity,
+        child:_ready?Webview(_web):const SizedBox.shrink()),
+      const SizedBox(height:12),
+      const Text('Pilih Season',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
+      if(!_ready)const LinearProgressIndicator(),
+      if(_error!=null)Text(_error!,style:const TextStyle(color:Colors.orangeAccent)),
+      if(seasons.isEmpty && _ready)const Text(
+        'Daftar season belum ditemukan dari halaman sumber.',
+        style:TextStyle(color:Colors.white70)),
+      if(seasons.isNotEmpty)Wrap(spacing:8,runSpacing:6,children:[
+        for(final season in seasons)ChoiceChip(
+          label:Text('Season $season'),
+          selected:_selected==season,onSelected:(_)=>_selectSeason(season)),
+      ]),
+      if(_selected!=null)...[
+        const SizedBox(height:12),
+        Text('Episode · Season $_selected',
+          style:const TextStyle(fontWeight:FontWeight.bold,fontSize:17)),
+        const SizedBox(height:8),
+        if(numbers.isEmpty)const Text('Episode belum tersedia dari sumber.',
+          style:TextStyle(color:Colors.white70)),
+        Wrap(spacing:8,runSpacing:8,children:[
+          for(final episode in numbers)OutlinedButton.icon(
+            icon:const Icon(Icons.play_circle_outline),
+            label:Text('Episode $episode'),
+            onPressed:()=>widget.onEpisodeSelected(_selected!,episode,links[episode]!)),
+        ]),
+      ],
+      const SizedBox(height:8),
+      TextButton.icon(
+        onPressed:()=>setState(()=>_showPage=!_showPage),
+        icon:Icon(_showPage?Icons.visibility_off:Icons.article_outlined),
+        label:Text(_showPage?'Sembunyikan halaman sumber':'Tampilkan halaman sumber'),
+      ),
+    ]);
+  }
+}

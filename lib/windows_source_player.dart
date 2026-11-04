@@ -200,17 +200,51 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
   static const _sourceMetadataScript = r'''
     (() => {
       const text = el => (el?.textContent || '').trim().replace(/\s+/g,' ');
-      const synopsisNode = document.querySelector(
-        '[itemprop="description"],.sinopsis,.synopsis,' +
-        '.entry-content .desc,.film-synopsis,.summary,.description'
-      );
-      const genreNodes = document.querySelectorAll(
+      // Source pages sometimes collapse the synopsis with "read more".
+      // Only activate local text expansion controls, not external links.
+      if (!window.__fsSynopsisExpandAttempted) {
+        const candidates=[...document.querySelectorAll('button,a,[role="button"],span')];
+        const expand=candidates.find(el=>{
+          const label=text(el).toLowerCase();
+          if(!/^(lihat selengkapnya|baca selengkapnya|selengkapnya|read more|show more|more)$/i.test(label))return false;
+          if(el.tagName==='A') {
+            const href=(el.getAttribute('href')||'').trim();
+            if(href && href!=='#' && !href.startsWith('javascript:'))return false;
+          }
+          return true;
+        });
+        if(expand) {
+          window.__fsSynopsisExpandAttempted=true;
+          expand.click();
+        }
+      }
+      const synopsisSelectors=[
+        '[itemprop="description"]','.sinopsis','.synopsis',
+        '.entry-content .desc','.film-synopsis','.summary','.description'
+      ];
+      const descriptions=synopsisSelectors
+        .flatMap(sel=>[...document.querySelectorAll(sel)].map(text))
+        .filter(x=>x.length>=30);
+      // Meta descriptions are still directly supplied by the source page.
+      for(const name of ['description','og:description','twitter:description']) {
+        const meta=document.querySelector('meta[name="'+name+'"],meta[property="'+name+'"]');
+        const value=(meta?.content||'').trim().replace(/\s+/g,' ');
+        if(value.length>=30) descriptions.push(value);
+      }
+      // Prefer the longest available original source text over an abbreviated teaser.
+      descriptions.sort((a,b)=>{
+        const ta=/(\.\.\.|…)$/u.test(a)?1:0;
+        const tb=/(\.\.\.|…)$/u.test(b)?1:0;
+        return ta===tb ? b.length-a.length : ta-tb;
+      });
+      const synopsis=descriptions[0]||'';
+      const genreNodes=document.querySelectorAll(
         '.genres a,.genre a,[rel="tag"],a[href*="/genre/"]'
       );
       return JSON.stringify({
-        synopsis: text(synopsisNode),
-        genres: [...new Set([...genreNodes].map(text)
-          .filter(x => x && x.length < 35))].slice(0,12),
+        synopsis: synopsis,
+        genres:[...new Set([...genreNodes].map(text)
+          .filter(x=>x&&x.length<35))].slice(0,12),
       });
     })();
   ''';
