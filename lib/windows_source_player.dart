@@ -103,6 +103,10 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
           'background:#000!important;overflow:auto!important;}',
           'html.fs-focus ['+marker+'] iframe,',
           'html.fs-focus ['+marker+'] video {max-width:100%!important;}',
+          'html.fs-focus #adContainer,html.fs-focus #nativeAds,',
+          'html.fs-focus #adsLink,html.fs-focus .ads-container,',
+          'html.fs-focus .advertisement,html.fs-focus .advertising,',
+          'html.fs-focus [data-ad-slot] {display:none!important;}',
           'html.fs-focus ['+marker+'] .main-player {width:100%!important;',
           'max-width:100%!important;margin:0 auto!important;}'
         ].join(' ');
@@ -431,7 +435,7 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
           child: TextButton.icon(
             onPressed: _toggleSourcePage,
             icon: const Icon(Icons.article_outlined),
-            label: Text('Player belum ditemukan · $_playerDiagnostic · Halaman sumber'),
+            label: const Text('Pemutar belum siap · Lihat halaman sumber'),
           ),
         )),
       Positioned(right: 10, top: 10, child: Material(
@@ -482,22 +486,24 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
     final playerBody = Column(children: [
       Expanded(child: ColoredBox(color: Colors.black, child: _playerArea())),
       _serverButtons(),
-      if (!_showFullPage && _ready) Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-        child: Text(_playerDiagnostic,
-          style: const TextStyle(fontSize: 10, color: Colors.white54),
-          maxLines: 1, overflow: TextOverflow.ellipsis),
-      ),
     ]);
     if (widget.embedded) {
       // Windows window width can make a 16:9 player taller than the screen.
       // Leave room for the scrollable title/genre/synopsis below in DetailPage.
       final viewport = MediaQuery.sizeOf(context);
-      final availableHeight = (viewport.height * 0.54).clamp(240.0, 520.0);
+      final availableHeight = (viewport.height * 0.41).clamp(220.0, 390.0);
       return SizedBox(
         width: double.infinity,
         height: availableHeight,
-        child: ColoredBox(color: Colors.black, child: playerBody),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 980),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: ColoredBox(color: Colors.black, child: playerBody),
+            ),
+          ),
+        ),
       );
     }
     return Scaffold(
