@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "The Remarried Empress",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/remarried-empress-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-remarried-empress-2026-lk21.jpg.webp",
+      "rating": 9
+    },
+    {
+      "title": "Story of Yanxi Palace",
+      "year": 2018,
+      "url": "https://tv.lk21online.de/story-yanxi-palace-2018",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-story-yanxi-palace-2018-lk21.jpg.webp",
+      "rating": 8.2
+    },
+    {
+      "title": "Summer Vacation",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/summer-vacation-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-summer-vacation-2026-lk21.jpg.webp",
+      "rating": 8.8
+    },
+    {
+      "title": "Let's Go",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/lets-go-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-lets-go-2026-lk21.jpg.webp"
+    },
+    {
+      "title": "Political Lupin",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/political-lupin-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-political-lupin-2026-lk21.jpg.webp",
+      "rating": 8.5
+    }
+  ]
+}
