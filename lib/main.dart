@@ -1125,6 +1125,9 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
           title: movie.title,
           url: snapshot.data!,
           embedded: true,
+          year: movie.year == '—' ? '' : movie.year,
+          genres: movie.genres.map((id) => HomePage.genreNames[id] ?? 'Genre $id').toList(),
+          synopsis: movie.overview,
         );
       }
       return WebSourcePage(
@@ -1145,7 +1148,12 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0,
   final page = await resolveSourcePage(movie);
   if (!context.mounted) return;
   if (Platform.isWindows) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => WindowsSourcePlayer(title: movie.title, url: page)));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => WindowsSourcePlayer(
+      title: movie.title, url: page,
+      year: movie.year == '—' ? '' : movie.year,
+      genres: movie.genres.map((id) => HomePage.genreNames[id] ?? 'Genre $id').toList(),
+      synopsis: movie.overview,
+    )));
     return;
   }
   Navigator.push(context, MaterialPageRoute(builder: (_) => WebSourcePage(
