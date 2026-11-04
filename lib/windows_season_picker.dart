@@ -25,7 +25,9 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
   bool _ready = false, _busy = false, _showPage = false, _searched = false;
   bool _changingSeason = false, _initialSeasonSynced = false;
   bool _initialSearchFinished = false;
+  bool _episodeSearchFinished = false;
   Timer? _initialTimeout;
+  Timer? _episodeTimeout;
   int? _pendingSeason;
   final Set<String> _openedEpisodes = <String>{};
   String get _viewedKey => 'opened_source_episodes_v1:${Uri.encodeComponent(widget.title.trim().toLowerCase())}:${widget.year}';
@@ -161,8 +163,17 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
       if(active>0)seasons.add(active);
       if(expectedSeason!=null && active!=expectedSeason) return;
       if(seasons.isNotEmpty)setState(() {
+        if(!_initialSearchFinished && _episodeTimeout==null){
+          _episodeTimeout=Timer(const Duration(seconds:18),(){
+            if(mounted)setState(()=>_episodeSearchFinished=true);
+          });
+        }
         _initialSearchFinished=true;
         _initialTimeout?.cancel();
+        if(found.values.any((list)=>list.isNotEmpty)){
+          _episodeSearchFinished=true;
+          _episodeTimeout?.cancel();
+        }
         _seasons.addAll(seasons);
         for(final entry in found.entries) {
           if(entry.value.length >= (_episodes[entry.key]?.length??0))
@@ -257,7 +268,7 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
   }
 
   @override
-  void dispose() { _initialTimeout?.cancel(); _poll?.cancel(); _web.dispose(); super.dispose(); }
+  void dispose() { _initialTimeout?.cancel(); _episodeTimeout?.cancel(); _poll?.cancel(); _web.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -289,7 +300,11 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
         Text('Episode · Season $_selected',
           style:const TextStyle(fontWeight:FontWeight.bold,fontSize:17)),
         const SizedBox(height:8),
-        if(numbers.isEmpty && !_changingSeason && _initialSearchFinished)const Text('Episode belum tersedia dari sumber.',
+        if(numbers.isEmpty && !_changingSeason && !_episodeSearchFinished)...[
+          const LinearProgressIndicator(),
+          const Padding(padding:EdgeInsets.symmetric(vertical:8),child:Text('Memuat episode dari sumber...',style:TextStyle(color:Colors.white70))),
+        ],
+        if(numbers.isEmpty && !_changingSeason && _episodeSearchFinished)const Text('Episode belum tersedia dari sumber.',
           style:TextStyle(color:Colors.white70)),
         Wrap(spacing:8,runSpacing:8,children:[
           for(final episode in numbers)OutlinedButton.icon(
