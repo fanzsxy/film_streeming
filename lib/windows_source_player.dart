@@ -11,7 +11,6 @@ class WindowsSourcePlayer extends StatefulWidget {
   final String title;
   final Uri url;
   final bool embedded;
-  final bool fullscreenPlayer;
   final List<String> genres;
   final String year;
   final int tmdbId;
@@ -20,7 +19,6 @@ class WindowsSourcePlayer extends StatefulWidget {
   final ValueChanged<List<String>>? onGenresFound;
   const WindowsSourcePlayer({
     super.key, required this.title, required this.url, this.embedded = false,
-    this.fullscreenPlayer = false,
     this.genres = const [], this.year = '', this.tmdbId = 0,
     this.mediaType = 'movie',
     this.onSynopsisFound, this.onGenresFound,
@@ -33,6 +31,9 @@ class WindowsSourcePlayer extends StatefulWidget {
 class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
   final WebviewController _controller = WebviewController();
   Timer? _poller;
+  StreamSubscription<bool>? _nativeFullscreenSubscription;
+  final OverlayPortalController _fullscreenPortal = OverlayPortalController();
+  bool _nativeFullscreen = false;
   bool _ready = false;
   bool _showFullPage = false;
   bool _focusAvailable = false;
@@ -317,6 +318,11 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
   Future<void> _initialize() async {
     try {
       await _controller.initialize();
+      // WebView2 raises this when the P2P/HYDRAX iframe uses its own
+      // Fullscreen button. Move the *same* Webview into a window-filling
+      // overlay; do not navigate, reload or simulate a player click.
+      _nativeFullscreenSubscription =
+          _controller.containsFullScreenElementChanged.listen(_onNativeFullscreen);
       await _controller.setPopupWindowPolicy(WebviewPopupWindowPolicy.deny);
       await _controller.addScriptToExecuteOnDocumentCreated(_playerScript);
       await _controller.loadUrl(widget.url.toString());
@@ -429,26 +435,23 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
   @override
   void dispose() {
     _poller?.cancel();
+    _nativeFullscreenSubscription?.cancel();
+    if (_nativeFullscreen) _fullscreenPortal.hide();
     _controller.dispose();
     super.dispose();
   }
 
-  void _openFullscreen() {
-    if (!_ready) return;
-    // A dedicated full-window WebView2 is more reliable on Windows than
-    // requestFullscreen() in a cross-origin provider iframe. It reloads the
-    // provider page; the original embedded player remains mounted behind it.
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => WindowsSourcePlayer(
-        title: widget.title,
-        url: widget.url,
-        fullscreenPlayer: true,
-        genres: widget.genres,
-        year: widget.year,
-        tmdbId: widget.tmdbId,
-        mediaType: widget.mediaType,
-      ),
-    ));
+  void _onNativeFullscreen(bool requested) {
+    if (!mounted || _nativeFullscreen == requested) return;
+    if (requested) {
+      setState(() => _nativeFullscreen = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _nativeFullscreen) _fullscreenPortal.show();
+      });
+    } else {
+      _fullscreenPortal.hide();
+      setState(() => _nativeFullscreen = false);
+    }
   }
 
   Widget _serverButtons() {
@@ -473,26 +476,22 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
       return Center(child: Padding(
         padding: const EdgeInsets.all(20),
         child: Text('Pemutar Windows gagal dimuat.\n$_error',
-            textAlign: TextAlign.center),
+          textAlign: TextAlign.center),
       ));
     }
     if (!_ready) return const Center(child: CircularProgressIndicator());
-    return Stack(children: [
-      Positioned.fill(child: Webview(_controller)),
-      // Provider iframe fullscreen events are not consistently exposed to
-      // Flutter on Windows. Put an app-owned control over the site's lower
-      // right fullscreen area instead of adding controls at the top.
-      if (!widget.fullscreenPlayer && _focusAvailable)
-        Positioned(right: 3, bottom: 3, child: Material(
-          color: const Color(0xbb171b22),
-          borderRadius: BorderRadius.circular(6),
-          child: IconButton(
-            tooltip: 'Fullscreen pemutar',
-            icon: const Icon(Icons.fullscreen, size: 23),
-            onPressed: _openFullscreen,
-          ),
-        )),
-    ]);
+    // The provider's fullscreen button is never covered by Flutter. When
+    // WebView2 reports HTML fullscreen, render the SAME controller at the
+    // overlay's full size; the video and its seek position stay mounted.
+    return OverlayPortal(
+      controller: _fullscreenPortal,
+      overlayChildBuilder: (_) => Positioned.fill(
+        child: ColoredBox(color: Colors.black, child: Webview(_controller)),
+      ),
+      child: _nativeFullscreen
+        ? const ColoredBox(color: Colors.black)
+        : Webview(_controller),
+    );
   }
 
   Widget _informationPanel() {
@@ -549,23 +548,6 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
           borderRadius: BorderRadius.circular(12),
           child: ColoredBox(color: Colors.black, child: playerBody),
         ),
-      );
-    }
-    if (widget.fullscreenPlayer) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        body: SafeArea(child: Stack(children: [
-          Positioned.fill(child: playerBody),
-          Positioned(top: 12, left: 12, child: Material(
-            color: const Color(0xdd171b22),
-            borderRadius: BorderRadius.circular(10),
-            child: IconButton(
-              tooltip: 'Keluar dari layar penuh',
-              icon: const Icon(Icons.fullscreen_exit),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          )),
-        ])),
       );
     }
     return Scaffold(
