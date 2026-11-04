@@ -451,11 +451,6 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
     ));
   }
 
-  void _toggleSourcePage() {
-    setState(() => _showFullPage = !_showFullPage);
-    _updateFocusAndServers();
-  }
-
   Widget _serverButtons() {
     if (_servers.isEmpty || _showFullPage) return const SizedBox.shrink();
     return Container(
@@ -477,40 +472,26 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
     if (_error != null) {
       return Center(child: Padding(
         padding: const EdgeInsets.all(20),
-        child: Text('Pemutar Windows gagal dimuat.\n$_error',textAlign:TextAlign.center),
+        child: Text('Pemutar Windows gagal dimuat.\n$_error',
+            textAlign: TextAlign.center),
       ));
     }
     if (!_ready) return const Center(child: CircularProgressIndicator());
     return Stack(children: [
       Positioned.fill(child: Webview(_controller)),
-      if (!_focusAvailable && !_showFullPage)
-        Positioned(left: 12, right: 12, bottom: 8, child: Align(
-          alignment: Alignment.bottomCenter,
-          child: TextButton.icon(
-            onPressed: _toggleSourcePage,
-            icon: const Icon(Icons.article_outlined),
-            label: const Text('Pemutar belum siap · Lihat halaman sumber'),
-          ),
-        )),
-      if (!widget.fullscreenPlayer)
-        Positioned(right: 57, top: 10, child: Material(
-          color: const Color(0xdd171b22),
-          borderRadius: BorderRadius.circular(9),
+      // Provider iframe fullscreen events are not consistently exposed to
+      // Flutter on Windows. Put an app-owned control over the site's lower
+      // right fullscreen area instead of adding controls at the top.
+      if (!widget.fullscreenPlayer && _focusAvailable)
+        Positioned(right: 3, bottom: 3, child: Material(
+          color: const Color(0xbb171b22),
+          borderRadius: BorderRadius.circular(6),
           child: IconButton(
-            tooltip: 'Layar penuh Film Streaming',
-            icon: const Icon(Icons.fullscreen),
+            tooltip: 'Fullscreen pemutar',
+            icon: const Icon(Icons.fullscreen, size: 23),
             onPressed: _openFullscreen,
           ),
         )),
-      Positioned(right: 10, top: 10, child: Material(
-        color: const Color(0xdd171b22),
-        borderRadius: BorderRadius.circular(9),
-        child: IconButton(
-          tooltip: _showFullPage ? 'Kembali ke player' : 'Halaman sumber',
-          onPressed: _toggleSourcePage,
-          icon: Icon(_showFullPage ? Icons.smart_display_outlined : Icons.article_outlined),
-        ),
-      )),
     ]);
   }
 
@@ -596,11 +577,7 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
             onPressed: _ready ? () => _controller.loadUrl(widget.url.toString()) : null,
             icon: const Icon(Icons.refresh),
           ),
-          IconButton(
-            tooltip: _showFullPage ? 'Mode player' : 'Halaman sumber',
-            onPressed: _ready ? _toggleSourcePage : null,
-            icon: Icon(_showFullPage ? Icons.smart_display_outlined : Icons.crop_free),
-          ),
+
         ],
       ),
       body: Column(children: [
