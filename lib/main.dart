@@ -1127,7 +1127,8 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
           embedded: true,
           year: movie.year == '—' ? '' : movie.year,
           genres: movie.genres.map((id) => HomePage.genreNames[id] ?? 'Genre $id').toList(),
-          synopsis: movie.overview,
+          tmdbId: movie.id,
+          mediaType: movie.type,
         );
       }
       return WebSourcePage(
@@ -1152,7 +1153,8 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0,
       title: movie.title, url: page,
       year: movie.year == '—' ? '' : movie.year,
       genres: movie.genres.map((id) => HomePage.genreNames[id] ?? 'Genre $id').toList(),
-      synopsis: movie.overview,
+      tmdbId: movie.id,
+      mediaType: movie.type,
     )));
     return;
   }
