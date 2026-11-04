@@ -8,6 +8,7 @@ import 'windows_season_picker.dart';
 import 'web_source_page.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
+import 'dart:ui' show PointerDeviceKind;
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
@@ -27,6 +28,17 @@ String filmstreamHeroImageUrl(String path) {
     return path.replaceFirst(RegExp(r'/t/p/[^/]+/'), '/t/p/w1280/');
   }
   return path; // Do not modify source-hosted image URLs.
+}
+// Enable dragging the Home banner/genre rails with a desktop mouse.
+class FilmstreamDesktopDragBehavior extends MaterialScrollBehavior {
+  const FilmstreamDesktopDragBehavior();
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.trackpad,
+  };
 }
 SliverGridDelegate filmstreamGridDelegate(BuildContext context) =>
     Platform.isWindows
@@ -785,14 +797,30 @@ class _CinemaHeroState extends State<CinemaHero> with AutomaticKeepAliveClientMi
   _heroCount=entries.length;
   if(entries.isEmpty)return const SizedBox(height:14);
   return Column(children:[
-   SizedBox(height:Platform.isWindows ? 316 : 202,child:PageView.builder(controller:pager,itemCount:entries.length,onPageChanged:(i)=>setState(()=>selected=i),
+   ScrollConfiguration(behavior:const FilmstreamDesktopDragBehavior(),child:SizedBox(height:Platform.isWindows ? 316 : 202,child:PageView.builder(controller:pager,itemCount:entries.length,onPageChanged:(i)=>setState(()=>selected=i),
     itemBuilder:(context,i){final m=entries[i];return Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:7),child:InkWell(onTap:()=>widget.onTap(m),borderRadius:BorderRadius.circular(16),child:ClipRRect(borderRadius:BorderRadius.circular(16),child:Stack(fit:StackFit.expand,children:[
       Image.network(filmstreamHeroImageUrl(m.backdrop),fit:BoxFit.cover,gaplessPlayback:true,errorBuilder:(_,__,___)=>const ColoredBox(color:Color(0xff252a34))),
       const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Colors.transparent,Color(0xdd000000)]))),
       Positioned(bottom:13,left:15,right:15,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m.title,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800,fontSize:21)),Text('Film · ${m.year}  ★ ${m.rating.toStringAsFixed(1)}',style:const TextStyle(fontSize:12,color:Colors.white70))]))
-    ]))));})),
+    ]))));}))),
    const SizedBox(height:5),
-   Row(mainAxisAlignment:MainAxisAlignment.center,children:List.generate(entries.length,(i)=>AnimatedContainer(duration:const Duration(milliseconds:180),margin:const EdgeInsets.symmetric(horizontal:3),width:i==selected?16:5,height:5,decoration:BoxDecoration(color:i==selected?const Color(0xffe5aa55):Colors.white30,borderRadius:BorderRadius.circular(4))))),
+   Row(mainAxisAlignment:MainAxisAlignment.center,children:[
+     if(Platform.isWindows) IconButton(
+       tooltip:'Banner sebelumnya',
+       icon:const Icon(Icons.chevron_left),
+       onPressed:entries.length<2?null:(){
+         if(pager.hasClients)pager.animateToPage((selected-1+entries.length)%entries.length,
+           duration:const Duration(milliseconds:280),curve:Curves.easeOut);
+       }),
+     ...List.generate(entries.length,(i)=>AnimatedContainer(duration:const Duration(milliseconds:180),margin:const EdgeInsets.symmetric(horizontal:3),width:i==selected?16:5,height:5,decoration:BoxDecoration(color:i==selected?const Color(0xffe5aa55):Colors.white30,borderRadius:BorderRadius.circular(4)))),
+     if(Platform.isWindows) IconButton(
+       tooltip:'Banner berikutnya',
+       icon:const Icon(Icons.chevron_right),
+       onPressed:entries.length<2?null:(){
+         if(pager.hasClients)pager.animateToPage((selected+1)%entries.length,
+           duration:const Duration(milliseconds:280),curve:Curves.easeOut);
+       }),
+   ]),
   ]);
  });}
 }
@@ -802,6 +830,15 @@ class CinemaGenres extends StatefulWidget {
  @override State<CinemaGenres> createState()=>_CinemaGenresState();
 }
 class _CinemaGenresState extends State<CinemaGenres> {
+ final ScrollController _genreScroll=ScrollController();
+ @override void dispose(){_genreScroll.dispose();super.dispose();}
+ void _moveGenre(double amount) {
+   if(!_genreScroll.hasClients)return;
+   final target=(_genreScroll.offset+amount).clamp(
+     0.0,_genreScroll.position.maxScrollExtent);
+   _genreScroll.animateTo(target,
+     duration:const Duration(milliseconds:280),curve:Curves.easeOut);
+ }
  static IconData iconFor(int id) {
   switch(id) {
    case 28: return Icons.bolt_outlined;
@@ -848,12 +885,22 @@ class _CinemaGenresState extends State<CinemaGenres> {
    final data=s.data??const <MapEntry<int,String>>[];
    return Padding(padding:const EdgeInsets.only(top:22,bottom:4),child:Column(
     crossAxisAlignment:CrossAxisAlignment.start,children:[
-     const Padding(padding:EdgeInsets.symmetric(horizontal:16),child:Text('JELAJAHI GENRE',
-       style:TextStyle(letterSpacing:1.6,fontSize:11,color:Colors.white70,fontWeight:FontWeight.w700))),
+     Row(children:[
+       const Expanded(child:Padding(padding:EdgeInsets.symmetric(horizontal:16),
+         child:Text('JELAJAHI GENRE',
+           style:TextStyle(letterSpacing:1.6,fontSize:11,color:Colors.white70,fontWeight:FontWeight.w700)))),
+       if(Platform.isWindows)...[
+         IconButton(tooltip:'Genre sebelumnya',onPressed:()=>_moveGenre(-320),
+           icon:const Icon(Icons.chevron_left)),
+         IconButton(tooltip:'Genre berikutnya',onPressed:()=>_moveGenre(320),
+           icon:const Icon(Icons.chevron_right)),
+       ],
+     ]),
      const SizedBox(height:12),
      if(s.hasError) const Padding(padding:EdgeInsets.symmetric(horizontal:16),child:Text('Genre TMDB tidak tersedia. Cek koneksi.'))
      else if(!s.hasData) const SizedBox(height:77,child:Center(child:CircularProgressIndicator()))
-     else SizedBox(height:77,child:ListView.separated(
+     else SizedBox(height:77,child:ScrollConfiguration(behavior:const FilmstreamDesktopDragBehavior(),child:ListView.separated(
+      controller:_genreScroll,
       key:const PageStorageKey('tmdb-genre-list'),scrollDirection:Axis.horizontal,
       padding:const EdgeInsets.symmetric(horizontal:16),itemCount:data.length,
       separatorBuilder:(_,__)=>const SizedBox(width:14),
@@ -866,7 +913,7 @@ class _CinemaGenresState extends State<CinemaGenres> {
          Text(g.value,maxLines:2,textAlign:TextAlign.center,overflow:TextOverflow.ellipsis,
           style:const TextStyle(fontSize:11,color:Colors.white70)),
         ])));
-      }))
+      })))
     ]));
   });
 }
@@ -907,12 +954,12 @@ class LastWatchedRail extends StatelessWidget {
    // Beranda menampilkan satu kartu per judul (episode terbaru saja).
    // Entri lama dari sekadar membuka detail tanpa progres tidak dihitung tontonan.
    final seen = <String>{};
-   final recent = history.where((e) => e.url.isNotEmpty && (e.positionMs > 0 || e.completed))
+   final recent = history.where((e) => e.url.isNotEmpty && (e.positionMs > 0 || e.completed || (Platform.isWindows && e.subtitle=='__webview__')))
        .where((e) => seen.add('${e.type}:${e.tmdbId > 0 ? e.tmdbId : e.title}'))
        .take(12).toList();
    if(recent.isEmpty)return const SizedBox.shrink();
    return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-     Padding(padding:const EdgeInsets.fromLTRB(16,18,12,10),child:Row(children:[const Expanded(child:Text('Terakhir Ditonton',style:TextStyle(fontSize:22,fontWeight:FontWeight.bold))),TextButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const HistoryPage())),child:const Text('Lihat Lainnya  ›'))])),
+     Padding(padding:const EdgeInsets.fromLTRB(16,18,12,10),child:Row(children:[Expanded(child:Text(Platform.isWindows?'Riwayat Dibuka / Ditonton':'Terakhir Ditonton',style:const TextStyle(fontSize:22,fontWeight:FontWeight.bold))),TextButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const HistoryPage())),child:const Text('Lihat Lainnya  ›'))])),
      SizedBox(height:187,child:ListView.separated(key:const PageStorageKey('last-watched-rail'),scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:16),itemCount:recent.length,separatorBuilder:(_,__)=>const SizedBox(width:12),itemBuilder:(context,i){
        final e=recent[i];return SizedBox(width:176,child:InkWell(borderRadius:BorderRadius.circular(12),onTap:()=>_open(context,e),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
          ClipRRect(borderRadius:BorderRadius.circular(10),child:Stack(children:[
@@ -1193,12 +1240,34 @@ class _DetailPageState extends State<DetailPage> {
  Uri? selectedEpisodeUrl;
  int? sourceSeason,sourceEpisode;
  String sourceSynopsis='';
+ bool _sourceSynopsisPending=true;
+ Timer? _sourceSynopsisTimeout;
  List<String> sourceGenres=const [];
  void _receiveGenres(List<String> names){if(!mounted)return;final clean=names.where((name)=>name.trim().isNotEmpty).toSet().toList();if(clean.join('|')!=sourceGenres.join('|'))setState(()=>sourceGenres=clean);}
- void _receiveSynopsis(String text){final clean=text.trim();if(clean.isEmpty||!mounted)return;final old=sourceSynopsis.trim();if(old.isNotEmpty && old.length>=clean.length && !old.endsWith('...') && !old.endsWith('…'))return;if(clean!=old)setState(()=>sourceSynopsis=clean);}
+ void _receiveSynopsis(String text){final clean=text.trim();if(clean.isEmpty||!mounted)return;_sourceSynopsisTimeout?.cancel();_sourceSynopsisPending=false;final old=sourceSynopsis.trim();if(old.isNotEmpty && old.length>=clean.length && !old.endsWith('...') && !old.endsWith('…'))return;if(clean!=old)setState(()=>sourceSynopsis=clean);}
  final videoUrl=TextEditingController(),subtitleUrl=TextEditingController(),sourcePage=TextEditingController();late bool favorite;late Future<Map<String,dynamic>> details; late Future<Uri> sourceFuture;
- @override void initState(){super.initState();favorite=widget.isFavorite;details=widget.movie.id>0?Tmdb.bilingualDetail('${widget.movie.type}/${widget.movie.id}'):Future.value(<String,dynamic>{}); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}}
- @override void dispose(){videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();detailScroll.dispose();super.dispose();}
+ @override void initState(){super.initState();_sourceSynopsisTimeout=Timer(const Duration(seconds:24),(){if(mounted)setState(()=>_sourceSynopsisPending=false);});favorite=widget.isFavorite;details=widget.movie.id>0?Tmdb.bilingualDetail('${widget.movie.type}/${widget.movie.id}'):Future.value(<String,dynamic>{}); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}
+   if (Platform.isWindows && widget.movie.type=='movie') {
+     sourceFuture.then((url)=>_recordWindowsOpened(url)).catchError((Object _){});
+   }
+ }
+ @override void dispose(){_sourceSynopsisTimeout?.cancel();videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();detailScroll.dispose();super.dispose();}
+ // Windows WebView2 does not expose reliable cross-origin video progress.
+ // Record that a title/episode was opened, without inventing watch position.
+ Future<void> _recordWindowsOpened(Uri uri, {int season=0,int episode=0}) async {
+   if(!Platform.isWindows || widget.movie.id<=0)return;
+   final m=widget.movie;
+   final key=m.type=='tv'?'tv:${m.id}:$season:$episode':'movie:${m.id}';
+   final old=WatchStore.find(key);
+   final entry=WatchEntry(
+     key:key, title:m.title, poster:m.poster, type:m.type,
+     url:uri.toString(), subtitle:'__webview__', tmdbId:m.id,
+     season:season,episode:episode,
+     positionMs:old?.positionMs??0,durationMs:old?.durationMs??0,
+     updatedAt:DateTime.now().millisecondsSinceEpoch,completed:false,
+   );
+   await WatchStore.save(entry);
+ }
  bool https(String input){final u=Uri.tryParse(input.trim());return u!=null&&u.scheme=='https'&&u.host.isNotEmpty;}
 
  int? selectedSeason;
@@ -1377,7 +1446,14 @@ class _DetailPageState extends State<DetailPage> {
                  const SizedBox(height:14),
                  const Text('Sinopsis',style:TextStyle(fontSize:17,fontWeight:FontWeight.bold)),
                  const SizedBox(height:7),
-                 Text(description.isEmpty ? 'Sinopsis belum tersedia dari LK21.' : description),
+                 if(Platform.isWindows && m.type=='tv' &&
+                     description.isEmpty && _sourceSynopsisPending)
+                   const Row(children:[
+                     SizedBox(width:16,height:16,child:CircularProgressIndicator(strokeWidth:2)),
+                     SizedBox(width:12),
+                     Expanded(child:Text('Memuat sinopsis dari halaman sumber...')),
+                   ])
+                 else Text(description.isEmpty ? 'Sinopsis belum tersedia dari LK21.' : description),
                ]);
              }),
              if(m.type=='tv')...[
@@ -1395,6 +1471,9 @@ class _DetailPageState extends State<DetailPage> {
                        sourceEpisode=episode;
                        selectedEpisodeUrl=url;
                      });
+                     if(Platform.isWindows) {
+                       _recordWindowsOpened(url,season:season,episode:episode);
+                     }
                      if(detailScroll.hasClients)detailScroll.animateTo(0,
                        duration:const Duration(milliseconds:250),curve:Curves.easeOut);
                    },
