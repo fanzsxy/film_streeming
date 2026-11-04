@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:webview_flutter_windows/webview_flutter_windows.dart';
 
 /// Windows WebView2 version of the Android focused source player.
@@ -11,11 +12,13 @@ class WindowsSourcePlayer extends StatefulWidget {
   final Uri url;
   final bool embedded;
   final List<String> genres;
-  final String synopsis;
   final String year;
+  final int tmdbId;
+  final String mediaType;
   const WindowsSourcePlayer({
     super.key, required this.title, required this.url, this.embedded = false,
-    this.genres = const [], this.synopsis = '', this.year = '',
+    this.genres = const [], this.year = '', this.tmdbId = 0,
+    this.mediaType = 'movie',
   });
 
   @override
@@ -33,6 +36,12 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
   String? _error;
   List<String> _servers = const [];
   String _selectedServer = '';
+  List<String> _tmdbGenres = const [];
+  List<String> _lk21Genres = const [];
+  String _lk21Synopsis = '';
+  static const _tmdbToken = String.fromEnvironment('TMDB_TOKEN');
+  List<String> get _displayGenres => _tmdbGenres.isNotEmpty
+      ? _tmdbGenres : _lk21Genres;
 
   // Match Android WebSourcePage's tested player selectors.
   // Do not promote the iframe to a new URL or modify playback requests.
@@ -179,9 +188,82 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
     })();
   ''';
 
+  // Metadata read directly from the source page, as in Android.
+  // Do not use TMDB or catalog overviews as synopsis fallbacks.
+  static const _sourceMetadataScript = r'''
+    (() => {
+      const text = el => (el?.textContent || '').trim().replace(/\s+/g,' ');
+      const synopsisNode = document.querySelector(
+        '[itemprop="description"],.sinopsis,.synopsis,' +
+        '.entry-content .desc,.film-synopsis,.summary,.description'
+      );
+      const genreNodes = document.querySelectorAll(
+        '.genres a,.genre a,[rel="tag"],a[href*="/genre/"]'
+      );
+      return JSON.stringify({
+        synopsis: text(synopsisNode),
+        genres: [...new Set([...genreNodes].map(text)
+          .filter(x => x && x.length < 35))].slice(0,12),
+      });
+    })();
+  ''';
+
+  Future<void> _loadTmdbGenres() async {
+    if (widget.tmdbId <= 0 || _tmdbToken.isEmpty) return;
+    try {
+      final media = widget.mediaType == 'tv' || widget.mediaType == 'series'
+          ? 'tv' : 'movie';
+      final uri = Uri.https('api.themoviedb.org',
+          '/3/$media/' + widget.tmdbId.toString(), {'language':'id-ID'});
+      final response = await http.get(uri, headers: {
+        'Authorization':'Bearer $_tmdbToken', 'accept':'application/json',
+      }).timeout(const Duration(seconds: 15));
+      if (response.statusCode != 200) return;
+      final data = jsonDecode(response.body);
+      if (data is! Map) return;
+      final genres = (data['genres'] as List? ?? const [])
+          .whereType<Map>()
+          .map((entry) => (entry['name'] ?? '').toString().trim())
+          .where((name) => name.isNotEmpty)
+          .toSet()
+          .toList(growable: false);
+      if (mounted && genres.isNotEmpty) setState(() => _tmdbGenres = genres);
+    } catch (_) {
+      // Keep cached TMDB genres; if absent use LK21.
+    }
+  }
+
+  Future<void> _readLk21Metadata() async {
+    if (!_ready || !mounted) return;
+    try {
+      dynamic data = await _controller.executeScript(_sourceMetadataScript);
+      for (var i = 0; i < 2 && data is String; i++) {
+        data = jsonDecode(data);
+      }
+      if (data is! Map || !mounted) return;
+      final genres = (data['genres'] as List? ?? const [])
+          .whereType<String>()
+          .where((name) => name.trim().isNotEmpty)
+          .toSet()
+          .toList(growable: false);
+      final synopsis = (data['synopsis'] ?? '').toString().trim();
+      if (_lk21Synopsis != synopsis ||
+          genres.join('|') != _lk21Genres.join('|')) {
+        setState(() {
+          _lk21Synopsis = synopsis;
+          _lk21Genres = genres;
+        });
+      }
+    } catch (_) {
+      // The source may not have finished loading its detail metadata.
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _tmdbGenres = widget.genres.where((name) => name.isNotEmpty).toList();
+    _loadTmdbGenres();
     _initialize();
   }
 
@@ -204,6 +286,7 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
 
   Future<void> _updateFocusAndServers() async {
     if (!_ready || !mounted) return;
+    await _readLk21Metadata();
     try {
       final result = await _controller.executeScript(
         "window.__filmstreamWindowsFocus ? "
@@ -289,6 +372,8 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
     if (_ready && oldWidget.url != widget.url) {
       _servers = const [];
       _selectedServer = '';
+      _lk21Genres = const [];
+      _lk21Synopsis = '';
       _controller.loadUrl(widget.url.toString()).then((_) =>
         _updateFocusAndServers());
     }
@@ -355,7 +440,7 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
   }
 
   Widget _informationPanel() {
-    final synopsis = widget.synopsis.trim();
+    final synopsis = _lk21Synopsis;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
@@ -367,19 +452,19 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
         Text(widget.title, style: const TextStyle(
           fontWeight: FontWeight.w800, fontSize: 21)),
         const SizedBox(height: 9),
-        if (widget.year.isNotEmpty || widget.genres.isNotEmpty)
+        if (widget.year.isNotEmpty || _displayGenres.isNotEmpty)
           Wrap(spacing: 7, runSpacing: 7, crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               if (widget.year.isNotEmpty)
                 Chip(label: Text(widget.year), visualDensity: VisualDensity.compact),
-              for (final genre in widget.genres)
+              for (final genre in _displayGenres)
                 Chip(label: Text(genre), visualDensity: VisualDensity.compact),
             ]),
         const SizedBox(height: 15),
         const Text('Sinopsis', style: TextStyle(
           fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xffe5aa55))),
         const SizedBox(height: 7),
-        Text(synopsis.isNotEmpty ? synopsis : 'Sinopsis belum tersedia untuk judul ini.',
+        Text(synopsis.isNotEmpty ? synopsis : 'Sinopsis belum tersedia dari LK21 untuk judul ini.',
           style: const TextStyle(fontSize: 14, height: 1.55, color: Colors.white70)),
       ]),
     );
