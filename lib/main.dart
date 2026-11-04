@@ -544,7 +544,9 @@ class DesktopShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!Platform.isWindows) return child;
-    return LayoutBuilder(builder: (context, constraints) => Row(children: [
+    return ScrollConfiguration(
+      behavior: const FilmstreamDesktopDragBehavior(),
+      child: LayoutBuilder(builder: (context, constraints) => Row(children: [
       Container(
         width: constraints.maxWidth < 950 ? 76 : 232,
         padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 10),
@@ -575,7 +577,7 @@ class DesktopShell extends StatelessWidget {
         ]),
       ),
       Expanded(child: child),
-    ]));
+    ])));
   }
 }
 
@@ -941,11 +943,26 @@ class MovieRail extends StatefulWidget {
  @override State<MovieRail> createState()=>_MovieRailState();
 }
 class _MovieRailState extends State<MovieRail> with AutomaticKeepAliveClientMixin<MovieRail> {
+ final ScrollController _railScroll = ScrollController();
+ void _scrollRail(double delta) {
+   if(!_railScroll.hasClients) return;
+   final next = (_railScroll.offset + delta).clamp(
+     0.0, _railScroll.position.maxScrollExtent);
+   _railScroll.animateTo(next,
+     duration:const Duration(milliseconds:300),curve:Curves.easeOut);
+ }
+ @override void dispose(){_railScroll.dispose();super.dispose();}
  @override bool get wantKeepAlive => true;
  late Future<List<Movie>> request;
  @override void initState(){super.initState();request=Tmdb.rail(widget.endpoint,widget.type);}
  @override void didUpdateWidget(covariant MovieRail old){super.didUpdateWidget(old);if(old.endpoint!=widget.endpoint||old.type!=widget.type){request=Tmdb.rail(widget.endpoint,widget.type);}}
- @override Widget build(BuildContext context){super.build(context);return FutureBuilder<List<Movie>>(future:request,builder:(context,s)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Padding(padding:const EdgeInsets.fromLTRB(16,18,12,12),child:Row(children:[Expanded(child:Text(widget.title,style:const TextStyle(fontSize:19,fontWeight:FontWeight.w700))),TextButton(onPressed:widget.onSeeAll,child:const Row(mainAxisSize:MainAxisSize.min,children:[Text('Lihat Lainnya',style:TextStyle(fontSize:12,fontWeight:FontWeight.w600)),SizedBox(width:2),Icon(Icons.chevron_right,size:17)]))])),if(s.hasError)Padding(padding:const EdgeInsets.all(16),child:Text('${s.error}')) else SizedBox(height:267,child:!s.hasData?const Center(child:CircularProgressIndicator()):ListView.builder(key:PageStorageKey('rail:${widget.endpoint}'),scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:12),itemCount:s.data!.length,itemBuilder:(context,i)=>SizedBox(width:153,child:Padding(padding:const EdgeInsets.symmetric(horizontal:4),child:MovieTile(movie:s.data![i],onTap:widget.onTap)))))]));}
+ @override Widget build(BuildContext context){super.build(context);return FutureBuilder<List<Movie>>(future:request,builder:(context,s)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Padding(padding:const EdgeInsets.fromLTRB(16,18,12,12),child:Row(children:[Expanded(child:Text(widget.title,style:const TextStyle(fontSize:19,fontWeight:FontWeight.w700))),if(Platform.isWindows)...[
+ IconButton(tooltip:'Geser ${widget.title} ke kiri',
+   onPressed:()=>_scrollRail(-500),icon:const Icon(Icons.chevron_left)),
+ IconButton(tooltip:'Geser ${widget.title} ke kanan',
+   onPressed:()=>_scrollRail(500),icon:const Icon(Icons.chevron_right)),
+],
+TextButton(onPressed:widget.onSeeAll,child:const Row(mainAxisSize:MainAxisSize.min,children:[Text('Lihat Lainnya',style:TextStyle(fontSize:12,fontWeight:FontWeight.w600)),SizedBox(width:2),Icon(Icons.chevron_right,size:17)]))])),if(s.hasError)Padding(padding:const EdgeInsets.all(16),child:Text('${s.error}')) else SizedBox(height:267,child:!s.hasData?const Center(child:CircularProgressIndicator()):ListView.builder(controller:_railScroll,key:PageStorageKey('rail:${widget.endpoint}'),scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:12),itemCount:s.data!.length,itemBuilder:(context,i)=>SizedBox(width:153,child:Padding(padding:const EdgeInsets.symmetric(horizontal:4),child:MovieTile(movie:s.data![i],onTap:widget.onTap)))))]));}
 }
 class LastWatchedRail extends StatelessWidget {
  const LastWatchedRail({super.key});
