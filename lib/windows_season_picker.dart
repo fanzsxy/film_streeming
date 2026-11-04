@@ -91,7 +91,7 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
   }
 
   Future<void> _scan({int? expectedSeason}) async {
-    if(!_ready||_busy||!mounted)return;
+    if(!_ready||_busy||!mounted||(_changingSeason && expectedSeason==null))return;
     _busy=true;
     try {
       if(!_searched && widget.source.path.startsWith('/search')) {
@@ -289,12 +289,19 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
             onPressed:()=>_openEpisode(_selected!,episode,links[episode]!)),
         ]),
       ],
-      const SizedBox(height:8),
-      TextButton.icon(
-        onPressed:()=>setState(()=>_showPage=!_showPage),
-        icon:Icon(_showPage?Icons.visibility_off:Icons.article_outlined),
-        label:Text(_showPage?'Sembunyikan halaman sumber':'Tampilkan halaman sumber'),
-      ),
+      if(seasons.isEmpty && _ready)...[
+        const SizedBox(height:8),
+        TextButton.icon(
+          onPressed:()=>_scan(),
+          icon:const Icon(Icons.refresh),
+          label:const Text('Coba baca ulang episode'),
+        ),
+        TextButton.icon(
+          onPressed:()=>setState(()=>_showPage=!_showPage),
+          icon:const Icon(Icons.article_outlined),
+          label:Text(_showPage?'Sembunyikan halaman sumber':'Lihat halaman sumber'),
+        ),
+      ],
     ]);
   }
 }
