@@ -577,7 +577,7 @@ class DesktopShell extends StatelessWidget {
         ]),
       ),
       Expanded(child: child),
-    ]));
+    ])));
   }
 }
 
