@@ -8,6 +8,7 @@ import 'windows_season_picker.dart';
 import 'web_source_page.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
+import 'dart:ui' show PointerDeviceKind;
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
@@ -27,6 +28,17 @@ String filmstreamHeroImageUrl(String path) {
     return path.replaceFirst(RegExp(r'/t/p/[^/]+/'), '/t/p/w1280/');
   }
   return path; // Do not modify source-hosted image URLs.
+}
+// Enable dragging the Home banner/genre rails with a desktop mouse.
+class FilmstreamDesktopDragBehavior extends MaterialScrollBehavior {
+  const FilmstreamDesktopDragBehavior();
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.trackpad,
+  };
 }
 SliverGridDelegate filmstreamGridDelegate(BuildContext context) =>
     Platform.isWindows
@@ -785,14 +797,30 @@ class _CinemaHeroState extends State<CinemaHero> with AutomaticKeepAliveClientMi
   _heroCount=entries.length;
   if(entries.isEmpty)return const SizedBox(height:14);
   return Column(children:[
-   SizedBox(height:Platform.isWindows ? 316 : 202,child:PageView.builder(controller:pager,itemCount:entries.length,onPageChanged:(i)=>setState(()=>selected=i),
+   ScrollConfiguration(behavior:const FilmstreamDesktopDragBehavior(),child:SizedBox(height:Platform.isWindows ? 316 : 202,child:PageView.builder(controller:pager,itemCount:entries.length,onPageChanged:(i)=>setState(()=>selected=i),
     itemBuilder:(context,i){final m=entries[i];return Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:7),child:InkWell(onTap:()=>widget.onTap(m),borderRadius:BorderRadius.circular(16),child:ClipRRect(borderRadius:BorderRadius.circular(16),child:Stack(fit:StackFit.expand,children:[
       Image.network(filmstreamHeroImageUrl(m.backdrop),fit:BoxFit.cover,gaplessPlayback:true,errorBuilder:(_,__,___)=>const ColoredBox(color:Color(0xff252a34))),
       const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Colors.transparent,Color(0xdd000000)]))),
       Positioned(bottom:13,left:15,right:15,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m.title,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800,fontSize:21)),Text('Film · ${m.year}  ★ ${m.rating.toStringAsFixed(1)}',style:const TextStyle(fontSize:12,color:Colors.white70))]))
-    ]))));})),
+    ]))));}))),
    const SizedBox(height:5),
-   Row(mainAxisAlignment:MainAxisAlignment.center,children:List.generate(entries.length,(i)=>AnimatedContainer(duration:const Duration(milliseconds:180),margin:const EdgeInsets.symmetric(horizontal:3),width:i==selected?16:5,height:5,decoration:BoxDecoration(color:i==selected?const Color(0xffe5aa55):Colors.white30,borderRadius:BorderRadius.circular(4))))),
+   Row(mainAxisAlignment:MainAxisAlignment.center,children:[
+     if(Platform.isWindows) IconButton(
+       tooltip:'Banner sebelumnya',
+       icon:const Icon(Icons.chevron_left),
+       onPressed:entries.length<2?null:(){
+         if(pager.hasClients)pager.animateToPage((selected-1+entries.length)%entries.length,
+           duration:const Duration(milliseconds:280),curve:Curves.easeOut);
+       }),
+     ...List.generate(entries.length,(i)=>AnimatedContainer(duration:const Duration(milliseconds:180),margin:const EdgeInsets.symmetric(horizontal:3),width:i==selected?16:5,height:5,decoration:BoxDecoration(color:i==selected?const Color(0xffe5aa55):Colors.white30,borderRadius:BorderRadius.circular(4)))),
+     if(Platform.isWindows) IconButton(
+       tooltip:'Banner berikutnya',
+       icon:const Icon(Icons.chevron_right),
+       onPressed:entries.length<2?null:(){
+         if(pager.hasClients)pager.animateToPage((selected+1)%entries.length,
+           duration:const Duration(milliseconds:280),curve:Curves.easeOut);
+       }),
+   ]),
   ]);
  });}
 }
@@ -802,6 +830,15 @@ class CinemaGenres extends StatefulWidget {
  @override State<CinemaGenres> createState()=>_CinemaGenresState();
 }
 class _CinemaGenresState extends State<CinemaGenres> {
+ final ScrollController _genreScroll=ScrollController();
+ @override void dispose(){_genreScroll.dispose();super.dispose();}
+ void _moveGenre(double amount) {
+   if(!_genreScroll.hasClients)return;
+   final target=(_genreScroll.offset+amount).clamp(
+     0.0,_genreScroll.position.maxScrollExtent);
+   _genreScroll.animateTo(target,
+     duration:const Duration(milliseconds:280),curve:Curves.easeOut);
+ }
  static IconData iconFor(int id) {
   switch(id) {
    case 28: return Icons.bolt_outlined;
@@ -848,12 +885,22 @@ class _CinemaGenresState extends State<CinemaGenres> {
    final data=s.data??const <MapEntry<int,String>>[];
    return Padding(padding:const EdgeInsets.only(top:22,bottom:4),child:Column(
     crossAxisAlignment:CrossAxisAlignment.start,children:[
-     const Padding(padding:EdgeInsets.symmetric(horizontal:16),child:Text('JELAJAHI GENRE',
-       style:TextStyle(letterSpacing:1.6,fontSize:11,color:Colors.white70,fontWeight:FontWeight.w700))),
+     Row(children:[
+       const Expanded(child:Padding(padding:EdgeInsets.symmetric(horizontal:16),
+         child:Text('JELAJAHI GENRE',
+           style:TextStyle(letterSpacing:1.6,fontSize:11,color:Colors.white70,fontWeight:FontWeight.w700)))),
+       if(Platform.isWindows)...[
+         IconButton(tooltip:'Genre sebelumnya',onPressed:()=>_moveGenre(-320),
+           icon:const Icon(Icons.chevron_left)),
+         IconButton(tooltip:'Genre berikutnya',onPressed:()=>_moveGenre(320),
+           icon:const Icon(Icons.chevron_right)),
+       ],
+     ]),
      const SizedBox(height:12),
      if(s.hasError) const Padding(padding:EdgeInsets.symmetric(horizontal:16),child:Text('Genre TMDB tidak tersedia. Cek koneksi.'))
      else if(!s.hasData) const SizedBox(height:77,child:Center(child:CircularProgressIndicator()))
-     else SizedBox(height:77,child:ListView.separated(
+     else SizedBox(height:77,child:ScrollConfiguration(behavior:const FilmstreamDesktopDragBehavior(),child:ListView.separated(
+      controller:_genreScroll,
       key:const PageStorageKey('tmdb-genre-list'),scrollDirection:Axis.horizontal,
       padding:const EdgeInsets.symmetric(horizontal:16),itemCount:data.length,
       separatorBuilder:(_,__)=>const SizedBox(width:14),
@@ -866,7 +913,7 @@ class _CinemaGenresState extends State<CinemaGenres> {
          Text(g.value,maxLines:2,textAlign:TextAlign.center,overflow:TextOverflow.ellipsis,
           style:const TextStyle(fontSize:11,color:Colors.white70)),
         ])));
-      }))
+      })))
     ]));
   });
 }
