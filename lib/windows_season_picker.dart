@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter_windows/webview_flutter_windows.dart';
 
 /// Windows-only episode list: reads actual source links through WebView2.
@@ -22,6 +23,10 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
   final WebviewController _web = WebviewController();
   Timer? _poll;
   bool _ready = false, _busy = false, _showPage = false, _searched = false;
+  bool _changingSeason = false, _initialSeasonSynced = false;
+  int? _pendingSeason;
+  final Set<String> _openedEpisodes = <String>{};
+  String get _viewedKey => 'opened_source_episodes_v1:${Uri.encodeComponent(widget.title.trim().toLowerCase())}:${widget.year}';
   String? _error;
   int? _selected;
   final Map<int, Map<int, Uri>> _episodes = {};
@@ -69,6 +74,10 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
 
   Future<void> _initialize() async {
     try {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        _openedEpisodes.addAll(prefs.getStringList(_viewedKey) ?? const <String>[]);
+      } catch (_) {/* History is optional. */}
       await _web.initialize();
       await _web.setPopupWindowPolicy(WebviewPopupWindowPolicy.deny);
       await _web.loadUrl(widget.source.toString());
@@ -81,7 +90,7 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
     }
   }
 
-  Future<void> _scan() async {
+  Future<void> _scan({int? expectedSeason}) async {
     if(!_ready||_busy||!mounted)return;
     _busy=true;
     try {
@@ -145,6 +154,7 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
       }
       final active=(data['active'] as num?)?.toInt()??0;
       if(active>0)seasons.add(active);
+      if(expectedSeason!=null && active!=expectedSeason) return;
       if(seasons.isNotEmpty)setState(() {
         _seasons.addAll(seasons);
         for(final entry in found.entries) {
@@ -152,14 +162,38 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
             _episodes[entry.key]=entry.value;
         }
         _selected ??= (_seasons.toList()..sort()).first;
+        if (expectedSeason != null &&
+            (_episodes[expectedSeason]?.isNotEmpty ?? false)) {
+          _changingSeason=false;
+          _pendingSeason=null;
+        }
         _error=null;
       });
+      if (!_initialSeasonSynced && expectedSeason == null &&
+          _seasons.isNotEmpty) {
+        _initialSeasonSynced = true;
+        final first = (_seasons.toList()..sort()).first;
+        if (active > 0 && active != first) {
+          // Android starts on the first season rather than the site's last.
+          _selectSeason(first, force:true);
+        }
+      }
     }catch(_){ /* Source can still be loading. */ }
     finally{_busy=false;}
   }
 
-  Future<void> _selectSeason(int n) async {
-    setState(()=>_selected=n);
+  Future<void> _selectSeason(int n, {bool force = false}) async {
+    if (_changingSeason && !force) return;
+    if (!force && _episodes[n]?.isNotEmpty == true) {
+      setState(() => _selected=n);
+      return;
+    }
+    setState(() {
+      _selected=n;
+      _changingSeason=true;
+      _pendingSeason=n;
+      _error=null;
+    });
     try {
       final script=r'''(() => {
         const n=NUMBER;
@@ -175,10 +209,44 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
         }
         return false;
       })()'''.replaceAll('NUMBER',n.toString());
-      await _web.executeScript(script);
-      await Future<void>.delayed(const Duration(milliseconds:600));
-      await _scan();
-    } catch (_) {}
+      final result=await _web.executeScript(script);
+      if (result != true && result.toString() != 'true') {
+        throw StateError('Season selector unavailable');
+      }
+      for (var attempt=0;attempt<9;attempt++) {
+        await Future<void>.delayed(const Duration(milliseconds:450));
+        if (!mounted || _pendingSeason!=n) return;
+        await _scan(expectedSeason:n);
+        if (!_changingSeason) return;
+      }
+      if (mounted && _pendingSeason==n) {
+        setState(() {
+          _changingSeason=false;
+          _pendingSeason=null;
+          _error=(_episodes[n]?.isNotEmpty??false)
+              ? 'Sebagian episode ditemukan; periksa halaman sumber jika kurang.'
+              : 'Daftar episode season ini belum ditemukan dari sumber.';
+        });
+      }
+    } catch (_) {
+      if (mounted && _pendingSeason==n) {
+        setState(() {
+          _changingSeason=false;
+          _pendingSeason=null;
+          _error='Tidak dapat mengganti season dari sumber.';
+        });
+      }
+    }
+  }
+
+  Future<void> _openEpisode(int season, int episode, Uri uri) async {
+    final key='$season:$episode';
+    setState(() => _openedEpisodes.add(key));
+    widget.onEpisodeSelected(season,episode,uri);
+    try {
+      final prefs=await SharedPreferences.getInstance();
+      await prefs.setStringList(_viewedKey, _openedEpisodes.toList()..sort());
+    } catch (_) {/* Playback must work without local storage. */}
   }
 
   @override
@@ -188,7 +256,7 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
   Widget build(BuildContext context) {
     final seasons=_seasons.toList()..sort();
     final links=_episodes[_selected]??<int,Uri>{};
-    final numbers=links.keys.toList()..sort();
+    final numbers=_changingSeason ? <int>[] : (links.keys.toList()..sort());
     return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       // Keep the WebView2 reader mounted; it is never used as a video player.
       SizedBox(height:_showPage?300:2, width:double.infinity,
@@ -197,6 +265,7 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
       const Text('Pilih Season',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
       if(!_ready)const LinearProgressIndicator(),
       if(_error!=null)Text(_error!,style:const TextStyle(color:Colors.orangeAccent)),
+      if(_changingSeason) const LinearProgressIndicator(),
       if(seasons.isEmpty && _ready)const Text(
         'Daftar season belum ditemukan dari halaman sumber.',
         style:TextStyle(color:Colors.white70)),
@@ -210,13 +279,14 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
         Text('Episode · Season $_selected',
           style:const TextStyle(fontWeight:FontWeight.bold,fontSize:17)),
         const SizedBox(height:8),
-        if(numbers.isEmpty)const Text('Episode belum tersedia dari sumber.',
+        if(numbers.isEmpty && !_changingSeason)const Text('Episode belum tersedia dari sumber.',
           style:TextStyle(color:Colors.white70)),
         Wrap(spacing:8,runSpacing:8,children:[
           for(final episode in numbers)OutlinedButton.icon(
-            icon:const Icon(Icons.play_circle_outline),
+            icon:Icon(_openedEpisodes.contains('$_selected:$episode')
+                ? Icons.check_circle : Icons.play_circle_outline),
             label:Text('Episode $episode'),
-            onPressed:()=>widget.onEpisodeSelected(_selected!,episode,links[episode]!)),
+            onPressed:()=>_openEpisode(_selected!,episode,links[episode]!)),
         ]),
       ],
       const SizedBox(height:8),
