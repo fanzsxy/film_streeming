@@ -1276,7 +1276,12 @@ class _DetailPageState extends State<DetailPage> {
          onPressed: () { widget.onFavorite(); setState(() => favorite = !favorite); })]),
      // Keep the Android WebView outside the scrolling episode list. The same
      // platform view stays mounted while the user scrolls or selects a season.
-     body: Column(children: [
+     body: LayoutBuilder(builder: (context, viewport) {
+       // Desktop: YouTube-style player on the left, metadata/episodes on the
+       // right. Keep the WebView mounted when the side panel scrolls.
+       final wideDesktop = Platform.isWindows && viewport.maxWidth >= 960;
+       final playerPane = Column(mainAxisSize:MainAxisSize.min, children: [
+
        if (m.type == 'movie')
          inlineSource(m, resolved: sourceFuture, onSynopsisFound:_receiveSynopsis, onGenresFound:_receiveGenres, onFullscreenExit: () {
            if (detailScroll.hasClients) detailScroll.jumpTo(0);
@@ -1294,7 +1299,8 @@ class _DetailPageState extends State<DetailPage> {
              ? Image.network(filmstreamImageUrl(m.poster),fit:BoxFit.contain,
                  errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.movie_outlined,size:72)))
              : const Center(child:Icon(Icons.movie_outlined,size:72))),
-       Expanded(child: ListView(controller: detailScroll, children: [
+       ]);
+       final detailPane = ListView(controller: detailScroll, children: [
          Padding(padding: const EdgeInsets.all(16), child: Column(
            crossAxisAlignment: CrossAxisAlignment.start, children: [
              Text(m.title, style: const TextStyle(fontSize: 29, fontWeight: FontWeight.w800,height:1.12)),
@@ -1375,8 +1381,27 @@ class _DetailPageState extends State<DetailPage> {
              // No TMDB episode picker: source numbering is authoritative.
            ],
          )),
-       ])),
-     ]),
+       ]),
+       if (wideDesktop) {
+         return Padding(
+           padding: const EdgeInsets.symmetric(horizontal:18, vertical:14),
+           child: Row(crossAxisAlignment:CrossAxisAlignment.start, children: [
+             Expanded(flex:7, child: Align(
+               alignment:Alignment.topCenter,
+               child: playerPane,
+             )),
+             const SizedBox(width:20),
+             Container(width:1, color:const Color(0xff30343d)),
+             const SizedBox(width:20),
+             Expanded(flex:4, child: detailPane),
+           ]),
+         );
+       }
+       return Column(children: [
+         playerPane,
+         Expanded(child: detailPane),
+       ]);
+     }),
    );
  }
 }
