@@ -534,50 +534,84 @@ class _HomePageState extends State<HomePage> {
 }
 // Cinema Booking-inspired layout using FilmStream's own TMDB data and widgets.
 
-class DesktopShell extends StatelessWidget {
+class DesktopShell extends StatefulWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final Widget child;
   const DesktopShell({super.key, required this.selectedIndex, required this.onSelected, required this.child});
+
+  @override
+  State<DesktopShell> createState() => _DesktopShellState();
+}
+
+class _DesktopShellState extends State<DesktopShell> {
+  bool _sidebarVisible = true;
   static const _titles = ['Beranda', 'Film', 'Series', 'Filter', 'Favorit'];
   static const _icons = [Icons.home_outlined, Icons.movie_outlined, Icons.tv_outlined, Icons.tune, Icons.favorite_outline];
+
   @override
   Widget build(BuildContext context) {
-    if (!Platform.isWindows) return child;
+    if (!Platform.isWindows) return widget.child;
     return ScrollConfiguration(
       behavior: const FilmstreamDesktopDragBehavior(),
-      child: LayoutBuilder(builder: (context, constraints) => Row(children: [
-      Container(
-        width: constraints.maxWidth < 950 ? 76 : 232,
-        padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 10),
-        decoration: const BoxDecoration(color: Color(0xff171b22),
-          border: Border(right: BorderSide(color: Color(0xff30343d)))),
-        child: Column(children: [
-          if (constraints.maxWidth >= 950)
-            const Padding(padding: EdgeInsets.only(bottom: 26, top: 10),
-              child: Text('FILM STREAMING', style: TextStyle(
-                color: Color(0xffe5aa55), fontSize: 17, fontWeight: FontWeight.w800))),
-          for (var i = 0; i < _titles.length; i++)
-            Padding(padding: const EdgeInsets.only(bottom: 7), child: Material(
-              color: selectedIndex == i ? const Color(0xff493724) : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              child: ListTile(
-                leading: Icon(_icons[i], color: selectedIndex == i
-                  ? const Color(0xffe5aa55) : Colors.white70),
-                title: constraints.maxWidth >= 950 ? Text(_titles[i]) : null,
-                selected: selectedIndex == i,
-                onTap: () => onSelected(i),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: LayoutBuilder(builder: (context, constraints) {
+        final fullWidth = constraints.maxWidth < 950 ? 76.0 : 232.0;
+        return Row(children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            width: _sidebarVisible ? fullWidth : 52,
+            decoration: const BoxDecoration(
+              color: Color(0xff171b22),
+              border: Border(right: BorderSide(color: Color(0xff30343d))),
+            ),
+            child: Column(children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 14),
+                child: IconButton(
+                  tooltip: _sidebarVisible ? 'Sembunyikan menu' : 'Tampilkan menu',
+                  icon: Icon(_sidebarVisible ? Icons.menu_open_rounded : Icons.menu_rounded),
+                  color: const Color(0xffe5aa55),
+                  onPressed: () => setState(() => _sidebarVisible = !_sidebarVisible),
+                ),
               ),
-            )),
-          const Spacer(),
-          if (constraints.maxWidth >= 950)
-            const Text('Windows Desktop', style: TextStyle(color: Colors.white38, fontSize: 12)),
-        ]),
-      ),
-      Expanded(child: child),
-    ])));
+              if (_sidebarVisible) ...[
+                if (constraints.maxWidth >= 950)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 26, top: 10),
+                    child: Text('FILM STREAMING', style: TextStyle(
+                      color: Color(0xffe5aa55), fontSize: 17, fontWeight: FontWeight.w800)),
+                  ),
+                for (var i = 0; i < _titles.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 10, right: 10, bottom: 7),
+                    child: Material(
+                      color: widget.selectedIndex == i ? const Color(0xff493724) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      child: ListTile(
+                        leading: Icon(_icons[i], color: widget.selectedIndex == i
+                            ? const Color(0xffe5aa55) : Colors.white70),
+                        title: constraints.maxWidth >= 950 ? Text(_titles[i]) : null,
+                        selected: widget.selectedIndex == i,
+                        onTap: () => widget.onSelected(i),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                const Spacer(),
+                if (constraints.maxWidth >= 950)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: Text('Windows Desktop', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                  ),
+              ],
+            ]),
+          ),
+          Expanded(child: widget.child),
+        ]);
+      }),
+    );
   }
 }
 
