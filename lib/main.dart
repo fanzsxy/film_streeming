@@ -1126,7 +1126,7 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
           url: snapshot.data!,
           embedded: true,
           year: movie.year == '—' ? '' : movie.year,
-          genres: movie.genres.map((id) => HomePage.genreNames[id] ?? 'Genre $id').toList(),
+          genres: movie.genres.map((id) => _FilmstreamFilterState.genres[id]).whereType<String>().toList(),
           tmdbId: movie.id,
           mediaType: movie.type,
         );
@@ -1152,7 +1152,7 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0,
     Navigator.push(context, MaterialPageRoute(builder: (_) => WindowsSourcePlayer(
       title: movie.title, url: page,
       year: movie.year == '—' ? '' : movie.year,
-      genres: movie.genres.map((id) => HomePage.genreNames[id] ?? 'Genre $id').toList(),
+      genres: movie.genres.map((id) => _FilmstreamFilterState.genres[id]).whereType<String>().toList(),
       tmdbId: movie.id,
       mediaType: movie.type,
     )));
