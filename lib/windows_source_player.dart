@@ -11,6 +11,7 @@ class WindowsSourcePlayer extends StatefulWidget {
   final String title;
   final Uri url;
   final bool embedded;
+  final bool fullscreenPlayer;
   final List<String> genres;
   final String year;
   final int tmdbId;
@@ -19,6 +20,7 @@ class WindowsSourcePlayer extends StatefulWidget {
   final ValueChanged<List<String>>? onGenresFound;
   const WindowsSourcePlayer({
     super.key, required this.title, required this.url, this.embedded = false,
+    this.fullscreenPlayer = false,
     this.genres = const [], this.year = '', this.tmdbId = 0,
     this.mediaType = 'movie',
     this.onSynopsisFound, this.onGenresFound,
@@ -431,6 +433,24 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
     super.dispose();
   }
 
+  void _openFullscreen() {
+    if (!_ready) return;
+    // A dedicated full-window WebView2 is more reliable on Windows than
+    // requestFullscreen() in a cross-origin provider iframe. It reloads the
+    // provider page; the original embedded player remains mounted behind it.
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => WindowsSourcePlayer(
+        title: widget.title,
+        url: widget.url,
+        fullscreenPlayer: true,
+        genres: widget.genres,
+        year: widget.year,
+        tmdbId: widget.tmdbId,
+        mediaType: widget.mediaType,
+      ),
+    ));
+  }
+
   void _toggleSourcePage() {
     setState(() => _showFullPage = !_showFullPage);
     _updateFocusAndServers();
@@ -470,6 +490,16 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
             onPressed: _toggleSourcePage,
             icon: const Icon(Icons.article_outlined),
             label: const Text('Pemutar belum siap · Lihat halaman sumber'),
+          ),
+        )),
+      if (!widget.fullscreenPlayer)
+        Positioned(right: 57, top: 10, child: Material(
+          color: const Color(0xdd171b22),
+          borderRadius: BorderRadius.circular(9),
+          child: IconButton(
+            tooltip: 'Layar penuh Film Streaming',
+            icon: const Icon(Icons.fullscreen),
+            onPressed: _openFullscreen,
           ),
         )),
       Positioned(right: 10, top: 10, child: Material(
@@ -525,19 +555,36 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
       // Windows window width can make a 16:9 player taller than the screen.
       // Leave room for the scrollable title/genre/synopsis below in DetailPage.
       final viewport = MediaQuery.sizeOf(context);
-      final availableHeight = (viewport.height * 0.41).clamp(220.0, 390.0);
+      // Fill the left desktop column vertically; only the metadata scrolls
+      // on the right. A single-column window keeps a smaller player.
+      final isWide = viewport.width >= 960;
+      final availableHeight = isWide
+          ? (viewport.height - 146).clamp(330.0, 800.0)
+          : (viewport.height * 0.46).clamp(235.0, 440.0);
       return SizedBox(
         width: double.infinity,
         height: availableHeight,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 980),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: ColoredBox(color: Colors.black, child: playerBody),
-            ),
-          ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: ColoredBox(color: Colors.black, child: playerBody),
         ),
+      );
+    }
+    if (widget.fullscreenPlayer) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(child: Stack(children: [
+          Positioned.fill(child: playerBody),
+          Positioned(top: 12, left: 12, child: Material(
+            color: const Color(0xdd171b22),
+            borderRadius: BorderRadius.circular(10),
+            child: IconButton(
+              tooltip: 'Keluar dari layar penuh',
+              icon: const Icon(Icons.fullscreen_exit),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          )),
+        ])),
       );
     }
     return Scaffold(
