@@ -1381,7 +1381,7 @@ class _DetailPageState extends State<DetailPage> {
              // No TMDB episode picker: source numbering is authoritative.
            ],
          )),
-       ]),
+       ]);
        if (wideDesktop) {
          return Padding(
            padding: const EdgeInsets.symmetric(horizontal:18, vertical:14),
