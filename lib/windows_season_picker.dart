@@ -86,7 +86,6 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
     _busy=true;
     try {
       if(!_searched && widget.source.path.startsWith('/search')) {
-        _searched=true;
         final js=r'''(() => {
           const norm=s=>(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
           const matches=[...document.querySelectorAll('a[href]')].filter(a=>{
@@ -102,10 +101,25 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
         final target=await _web.executeScript(js);
         final uri=Uri.tryParse(target?.toString()??'');
         if(uri!=null&&uri.scheme=='https'&&uri.host==widget.source.host) {
+          _searched=true;
           await _web.loadUrl(uri.toString());
           return;
         }
       }
+      await _web.executeScript(r'''(() => {
+        if(window.__fsPickerExpanded)return;
+        const text=el=>(el?.textContent||'').trim().toLowerCase();
+        const el=[...document.querySelectorAll('button,a,[role="button"],span')]
+          .find(node=>{
+            if(!/^(lihat selengkapnya|baca selengkapnya|selengkapnya|read more|show more)$/i.test(text(node)))return false;
+            if(node.tagName==='A'){
+              const href=(node.getAttribute('href')||'').trim();
+              if(href && href!=='#' && !href.startsWith('javascript:'))return false;
+            }
+            return true;
+          });
+        if(el){window.__fsPickerExpanded=true;el.click();}
+      })()''');
       dynamic data=await _web.executeScript(_scanScript);
       for(var i=0;i<2&&data is String;i++) data=jsonDecode(data);
       if(data is! Map||!mounted)return;
