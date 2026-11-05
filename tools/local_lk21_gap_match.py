@@ -21,7 +21,7 @@ from tools.reconcile_tmdb_gaps import reconcile
 CATALOG = Path("assets/catalog/filmstream_catalog.json")
 REPORT = Path("crawler/data/lk21_year_tmdb_report.json")
 OUTPUT = Path("crawler/data/local_lk21_gap_candidates.json")
-STATE = Path("crawler/data/local_lk21_title_search_progress.json")
+STATE = Path("crawler/data/local_lk21_catalog_first_progress.json")
 MANUAL_URLS = Path("crawler/data/manual_lk21_urls.json")
 BLOCK = re.compile(r"captcha|verify you are human|access denied", re.I)
 
@@ -232,6 +232,9 @@ def run(report_path, output, state_file, delay, limit):
         state = json.loads(state_file.read_text(encoding="utf-8-sig"))
     completed = state.setdefault("completed", {})
     found = state.setdefault("found", [])
+    # Isolate this verified pipeline from older, less strict candidate results.
+    write_json(output, {"new": found, "new_count": len(found), "checked": len(completed),
+                        "errors": state.get("errors", []), "applied": False})
     seen = {x["url"].rstrip("/") for x in found}
     session = requests.Session()
     session.headers.update({"User-Agent": UA})
