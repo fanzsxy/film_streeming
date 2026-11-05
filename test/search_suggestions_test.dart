@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:film_streeming/filmstream_catalog.dart';
-import 'package:film_streeming/search_suggestions.dart';
+import 'package:filmstream_personal/filmstream_catalog.dart';
+import 'package:filmstream_personal/search_suggestions.dart';
 
 void main() {
   const entries = <CatalogEntry>[
