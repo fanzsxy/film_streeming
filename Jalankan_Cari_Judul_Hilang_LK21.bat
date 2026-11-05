@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title FilmStream - Katalog ke TMDB ke LK21
+title FilmStream - Cari Semua Sisa Film Tahun 2025
 if not exist "crawler\data\lk21_year_tmdb_report.json" (
  echo Laporan TMDB belum ditemukan.
  pause
@@ -19,7 +19,8 @@ if errorlevel 1 (
 )
 py -3 -m playwright install chromium
 if errorlevel 1 goto fail
-py -3 -m tools.local_lk21_browser_search --limit 100 --delay 2
+echo Mencari SEMUA sisa kandidat tahun 2025, tidak berhenti setelah 100 judul.
+py -3 -m tools.local_lk21_browser_search --year 2025 --limit 0 --delay 2
 if errorlevel 1 goto fail
 echo [3/3] Preview kandidat yang bisa ditambahkan (tidak mengubah katalog)...
 py -3 -m tools.merge_verified_lk21
@@ -28,7 +29,8 @@ echo.
 echo Lihat crawler\data\local_lk21_gap_candidates.json
 echo Jika sudah dicek, untuk memasukkan ke katalog jalankan:
 echo py -3 -m tools.merge_verified_lk21 --apply
-echo Jalankan ulang BAT untuk memproses 100 judul berikutnya.
+echo Jika terputus, jalankan ulang BAT yang sama untuk melanjutkan checkpoint.
+echo Tahun 2024-2015 tidak diproses dalam mode ini.
 echo Pencarian LK21 memakai browser Chromium yang terlihat, bukan request bot.
 pause
 exit /b 0
