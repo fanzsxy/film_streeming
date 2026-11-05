@@ -85,11 +85,12 @@ def months(year):
         yield date(year, month, 1), date(year, month, calendar.monthrange(year, month)[1])
 
 
-def discover_window(start, end, token, delay, stats):
+def discover_window(start, end, token, delay, stats, filters=None):
     params = {"primary_release_date.gte": start.isoformat(),
               "primary_release_date.lte": end.isoformat(),
               "sort_by": "popularity.desc", "include_adult": "false",
               "language": "en-US"}
+    params.update(filters or {})
     first = tmdb_get("discover/movie", {**params, "page": 1}, token)
     stats["requests"] += 1
     pages = int(first.get("total_pages") or 0)
@@ -98,9 +99,9 @@ def discover_window(start, end, token, delay, stats):
             raise RuntimeError(f"TMDB >500 pages for day {start}: incomplete inventory")
         middle = start + timedelta(days=(end - start).days // 2)
         time.sleep(delay)
-        left = discover_window(start, middle, token, delay, stats)
+        left = discover_window(start, middle, token, delay, stats, filters)
         time.sleep(delay)
-        right = discover_window(middle + timedelta(days=1), end, token, delay, stats)
+        right = discover_window(middle + timedelta(days=1), end, token, delay, stats, filters)
         left.update(right)
         return left
     movies = {}
@@ -127,8 +128,11 @@ def save(path, payload):
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def discover_year(year, token, delay):
-    path = PROGRESS / f"{year}.json"
+def discover_year(year, token, delay, filters=None):
+    filters = filters or {}
+    # Filter-specific checkpoints prevent reusing the previous unfiltered scan.
+    tag = f"r{filters.get('with_runtime.gte', 'all')}_a{str(filters.get('vote_average.gte', 'all')).replace('.', 'p')}_v{filters.get('vote_count.gte', 'all')}"
+    path = PROGRESS / f"{year}_{tag}.json"
     progress = {"year": year, "completed_months": {}, "errors": {}}
     if path.exists():
         try:
@@ -143,7 +147,7 @@ def discover_year(year, token, delay):
             continue
         try:
             stats = {"requests": 0}
-            found = discover_window(start, end, token, delay, stats)
+            found = discover_window(start, end, token, delay, stats, filters)
             progress["completed_months"][key] = list(found.values())
             progress["errors"].pop(key, None)
             save(path, progress)
@@ -167,9 +171,17 @@ def main():
     parser.add_argument("--start-year", type=int, default=2015)
     parser.add_argument("--end-year", type=int, default=2025)
     parser.add_argument("--delay", type=float, default=0.30)
+    parser.add_argument("--min-runtime", type=int, default=70, help="Minimum runtime in minutes")
+    parser.add_argument("--min-rating", type=float, default=5.0, help="Minimum TMDB vote average")
+    parser.add_argument("--min-votes", type=int, default=10, help="Minimum number of TMDB votes")
     args = parser.parse_args()
     if not 2015 <= args.start_year <= args.end_year <= 2025 or args.delay < 0.25:
         parser.error("Use 2015..2025 and delay >= 0.25")
+    if not (0 <= args.min_runtime <= 600 and 0 <= args.min_rating <= 10 and args.min_votes >= 0):
+        parser.error("Filter out of range: runtime 0..600, rating 0..10, votes >= 0")
+    filters = {"with_runtime.gte": str(args.min_runtime),
+               "vote_average.gte": str(args.min_rating),
+               "vote_count.gte": str(args.min_votes)}
     token = os.getenv("TMDB_TOKEN", "").strip()
     if not token:
         parser.error("TMDB_TOKEN is missing")
@@ -180,9 +192,11 @@ def main():
     report = {"checked_at": datetime.now(timezone.utc).isoformat(),
               "years": [args.start_year, args.end_year], "source": "tmdb_monthly_discover",
               "by_year": {}, "new": [], "new_count": 0, "errors": {},
+              "tmdb_filters": {"min_runtime_minutes": args.min_runtime,
+                               "min_rating": args.min_rating, "min_votes": args.min_votes},
               "lk21_status": "local_only", "complete": False}
     for year in range(args.end_year, args.start_year - 1, -1):
-        movies, complete, errors = discover_year(year, token, args.delay)
+        movies, complete, errors = discover_year(year, token, args.delay, filters)
         gaps, probable, existing_matches = classify_movies(movies, items, year)
         report["by_year"][str(year)] = {
             "tmdb_found": len(movies), "not_in_catalog": len(gaps),
