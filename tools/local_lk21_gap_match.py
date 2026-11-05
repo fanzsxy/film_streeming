@@ -92,11 +92,66 @@ def missing_list(report):
                 yield str(year), movie
 
 
-def extract_matches(html, year, titles):
+def poster_url(raw, page_url):
+    """Get an actual HTTPS image URL, never placeholders or data URLs."""
+    if not raw:
+        return None
+    raw = raw.strip().split(",")[0].strip().split()[0]
+    url = urljoin(page_url, raw)
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+        return None
+    if url.startswith("data:") or url.endswith((".svg", ".gif")):
+        return None
+    return url
+
+
+def poster_from_node(image, page_url):
+    if image is None:
+        return None
+    for attr in ("data-src", "data-original", "data-lazy-src", "data-srcset", "src", "srcset"):
+        result = poster_url(image.get(attr), page_url)
+        if result:
+            return result
+    return None
+
+
+def extract_matches(html, year, titles, page_url=None):
+    """Extract observed title, film URL, year, and poster from LK21 search cards."""
+    page_url = page_url or MOVIE_BASE + "/"
     rows = candidates(html, MOVIE_BASE, "movie")
     names = {identity(t, year) for t in titles if t}
-    return [row for row in rows.values()
-            if row.get("year") == int(year) and identity(row.get("title", ""), year) in names]
+    wanted = {url: dict(row, poster=None) for url, row in rows.items()
+              if row.get("year") == int(year) and identity(row.get("title", ""), year) in names}
+    if not wanted:
+        return []
+    soup = BeautifulSoup(html, "html.parser")
+    for anchor in soup.select("a[href]"):
+        target = urljoin(MOVIE_BASE + "/", anchor.get("href", ""))
+        if target not in wanted or wanted[target]["poster"]:
+            continue
+        card = anchor.find_parent(["article", "li"]) or anchor.find_parent(
+            class_=re.compile(r"item|movie|series|poster|film", re.I)) or anchor
+        image = card.select_one("img")
+        wanted[target]["poster"] = poster_from_node(image, page_url)
+    return list(wanted.values())
+
+
+def poster_from_detail(html, detail_url):
+    """Fallback to detail-page poster metadata if search cards lack images."""
+    soup = BeautifulSoup(html, "html.parser")
+    for selector, attribute in (
+        ('meta[property="og:image"]', "content"),
+        ('meta[name="twitter:image"]', "content"),
+        ('article img', "data-src"),
+        ('article img', "src"),
+    ):
+        node = soup.select_one(selector)
+        if node:
+            poster = poster_url(node.get(attribute), detail_url)
+            if poster:
+                return poster
+    return None
 
 
 def run(report_path, output, state_file, delay, limit):
@@ -145,8 +200,9 @@ def run(report_path, output, state_file, delay, limit):
             # Search the same title only once, and use original title as fallback.
             matches = {}
             for title in dict.fromkeys(t for t in titles if t):
-                html = get_page(session, robots, search_url(search, title))
-                for row in extract_matches(html, year, titles):
+                url = search_url(search, title)
+                html = get_page(session, robots, url)
+                for row in extract_matches(html, year, titles, url):
                     matches[row["url"]] = row
                 if matches:
                     break
@@ -158,7 +214,16 @@ def run(report_path, output, state_file, delay, limit):
             break
         eligible = [m for m in matches.values() if m["url"].rstrip("/") not in known_urls | seen]
         if len(eligible) == 1:
-            row = {**eligible[0], "tmdb_id": movie["tmdb_id"], "tmdb_type": "movie"}
+            candidate = eligible[0]
+            if not candidate.get("poster"):
+                try:
+                    candidate["poster"] = poster_from_detail(
+                        get_page(session, robots, candidate["url"]), candidate["url"])
+                except RuntimeError as exc:
+                    state.setdefault("errors", []).append({"key": key, "message": "Poster unavailable: " + str(exc)})
+            row = {"title": candidate["title"], "url": candidate["url"],
+                   "year": candidate["year"], "poster": candidate.get("poster"),
+                   "type": "movie", "tmdb_id": movie["tmdb_id"], "tmdb_type": "movie"}
             found.append(row)
             seen.add(row["url"].rstrip("/"))
             completed[key] = "verified"
