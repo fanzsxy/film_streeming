@@ -5,9 +5,9 @@
     2025
   ],
   "stats": {
-    "already_in_catalog": 0,
-    "possible_alias": 0,
-    "to_search": 20203
+    "already_in_catalog": 131,
+    "possible_alias": 3,
+    "to_search": 20069
   },
   "items": [
     {
@@ -17,64 +17,10 @@
       "original_title": "哪吒之魔童闹海"
     },
     {
-      "tmdb_id": 1084199,
-      "year": 2025,
-      "title": "Companion",
-      "original_title": "Companion"
-    },
-    {
-      "tmdb_id": 993710,
-      "year": 2025,
-      "title": "Back in Action",
-      "original_title": "Back in Action"
-    },
-    {
-      "tmdb_id": 1224993,
-      "year": 2025,
-      "title": "Dark Nuns",
-      "original_title": "검은 수녀들"
-    },
-    {
-      "tmdb_id": 1341284,
-      "year": 2025,
-      "title": "Missing Child Videotape",
-      "original_title": "ミッシング・チャイルド・ビデオテープ"
-    },
-    {
-      "tmdb_id": 1126166,
-      "year": 2025,
-      "title": "Flight Risk",
-      "original_title": "Flight Risk"
-    },
-    {
-      "tmdb_id": 774370,
-      "year": 2025,
-      "title": "Dog Man",
-      "original_title": "Dog Man"
-    },
-    {
       "tmdb_id": 604685,
       "year": 2025,
       "title": "Den of Thieves 2: Pantera",
       "original_title": "Den of Thieves 2: Pantera"
-    },
-    {
-      "tmdb_id": 710295,
-      "year": 2025,
-      "title": "Wolf Man",
-      "original_title": "Wolf Man"
-    },
-    {
-      "tmdb_id": 1255788,
-      "year": 2025,
-      "title": "The Gardener",
-      "original_title": "Le Jardinier"
-    },
-    {
-      "tmdb_id": 1185528,
-      "year": 2025,
-      "title": "Legends of the Condor Heroes: The Gallants",
-      "original_title": "射雕英雄传：侠之大者"
     },
     {
       "tmdb_id": 1323784,
@@ -83,58 +29,10 @@
       "original_title": "Mala influencia"
     },
     {
-      "tmdb_id": 1410082,
-      "year": 2025,
-      "title": "Sniper: The Last Stand",
-      "original_title": "Sniper: The Last Stand"
-    },
-    {
-      "tmdb_id": 1261501,
-      "year": 2025,
-      "title": "Ad Vitam",
-      "original_title": "Ad Vitam"
-    },
-    {
-      "tmdb_id": 1205229,
-      "year": 2025,
-      "title": "Night of the Zoopocalypse",
-      "original_title": "Night of the Zoopocalypse"
-    },
-    {
-      "tmdb_id": 996821,
-      "year": 2025,
-      "title": "You're Cordially Invited",
-      "original_title": "You're Cordially Invited"
-    },
-    {
-      "tmdb_id": 1249289,
-      "year": 2025,
-      "title": "Alarum",
-      "original_title": "Alarum"
-    },
-    {
-      "tmdb_id": 926670,
-      "year": 2025,
-      "title": "Henry Danger: The Movie",
-      "original_title": "Henry Danger: The Movie"
-    },
-    {
       "tmdb_id": 1280672,
       "year": 2025,
       "title": "One of Them Days",
       "original_title": "One of Them Days"
-    },
-    {
-      "tmdb_id": 1020414,
-      "year": 2025,
-      "title": "Peter Pan's Neverland Nightmare",
-      "original_title": "Peter Pan's Neverland Nightmare"
-    },
-    {
-      "tmdb_id": 1195631,
-      "year": 2025,
-      "title": "William Tell",
-      "original_title": "William Tell"
     },
     {
       "tmdb_id": 1274746,
@@ -155,18 +53,6 @@
       "original_title": "Rüzgara Bırak"
     },
     {
-      "tmdb_id": 881415,
-      "year": 2025,
-      "title": "Love Me",
-      "original_title": "Love Me"
-    },
-    {
-      "tmdb_id": 1174128,
-      "year": 2025,
-      "title": "Forbidden Fairytale",
-      "original_title": "동화지만 청불입니다"
-    },
-    {
       "tmdb_id": 1220831,
       "year": 2025,
       "title": "Kundschafter des Friedens 2",
@@ -179,34 +65,10 @@
       "original_title": "唐探1900"
     },
     {
-      "tmdb_id": 797109,
-      "year": 2025,
-      "title": "Secret: Untold Melody",
-      "original_title": "말할 수 없는 비밀"
-    },
-    {
-      "tmdb_id": 1315986,
-      "year": 2025,
-      "title": "Man with No Past",
-      "original_title": "Man with No Past"
-    },
-    {
       "tmdb_id": 658224,
       "year": 2025,
       "title": "The Wizard of the Emerald City, Part I",
       "original_title": "Волшебник Изумрудного города. Дорога из жёлтого кирпича"
-    },
-    {
-      "tmdb_id": 850439,
-      "year": 2025,
-      "title": "The Damned",
-      "original_title": "The Damned"
-    },
-    {
-      "tmdb_id": 1009640,
-      "year": 2025,
-      "title": "Valiant One",
-      "original_title": "Valiant One"
     },
     {
       "tmdb_id": 1021679,
@@ -227,22 +89,10 @@
       "original_title": "Mica è Colpa Mia"
     },
     {
-      "tmdb_id": 1407861,
-      "year": 2025,
-      "title": "The Bayou",
-      "original_title": "The Bayou"
-    },
-    {
       "tmdb_id": 584855,
       "year": 2025,
       "title": "Fierce Town",
       "original_title": "Злой город"
-    },
-    {
-      "tmdb_id": 1297860,
-      "year": 2025,
-      "title": "Inheritance",
-      "original_title": "Inheritance"
     },
     {
       "tmdb_id": 1246369,
@@ -263,36 +113,6 @@
       "original_title": "Ei koskaan yksin"
     },
     {
-      "tmdb_id": 1300607,
-      "year": 2025,
-      "title": "Lucca's World",
-      "original_title": "Los dos hemisferios de Lucca"
-    },
-    {
-      "tmdb_id": 1416651,
-      "year": 2025,
-      "title": "Invincible Swordsman",
-      "original_title": "笑傲江湖"
-    },
-    {
-      "tmdb_id": 1400288,
-      "year": 2025,
-      "title": "Deaf President Now!",
-      "original_title": "Deaf President Now!"
-    },
-    {
-      "tmdb_id": 1388808,
-      "year": 2025,
-      "title": "Into the Deep",
-      "original_title": "Into the Deep"
-    },
-    {
-      "tmdb_id": 1195430,
-      "year": 2025,
-      "title": "Deva",
-      "original_title": "देवा"
-    },
-    {
       "tmdb_id": 1082424,
       "year": 2025,
       "title": "Jane Austen Wrecked My Life",
@@ -305,22 +125,10 @@
       "original_title": "神雕侠侣：问世间"
     },
     {
-      "tmdb_id": 1000438,
-      "year": 2025,
-      "title": "Emergency",
-      "original_title": "इमरजेंसी"
-    },
-    {
       "tmdb_id": 1341775,
       "year": 2025,
       "title": "ČERNÁK",
       "original_title": "ČERNÁK"
-    },
-    {
-      "tmdb_id": 1401905,
-      "year": 2025,
-      "title": "Don't Die: The Man Who Wants to Live Forever",
-      "original_title": "Don't Die: The Man Who Wants to Live Forever"
     },
     {
       "tmdb_id": 1391483,
@@ -329,22 +137,10 @@
       "original_title": "Tierra Baja"
     },
     {
-      "tmdb_id": 1129923,
-      "year": 2025,
-      "title": "Hitman 2",
-      "original_title": "히트맨 2"
-    },
-    {
       "tmdb_id": 1323853,
       "year": 2025,
       "title": "Norbert",
       "original_title": "Norbert"
-    },
-    {
-      "tmdb_id": 1279947,
-      "year": 2025,
-      "title": "Sunray: Fallen Soldier",
-      "original_title": "Sunray: Fallen Soldier"
     },
     {
       "tmdb_id": 1073112,
@@ -371,12 +167,6 @@
       "original_title": "Pengantin Setan"
     },
     {
-      "tmdb_id": 1091862,
-      "year": 2025,
-      "title": "Black Diamond",
-      "original_title": "Black Diamond"
-    },
-    {
       "tmdb_id": 1414312,
       "year": 2025,
       "title": "The Stringer: The Man Who Took the Photo",
@@ -389,22 +179,10 @@
       "original_title": "Ladies & Gentlemen... 50 Years of SNL Music"
     },
     {
-      "tmdb_id": 1143407,
-      "year": 2025,
-      "title": "Sky Force",
-      "original_title": "स्काई फ़ोर्स"
-    },
-    {
       "tmdb_id": 1280330,
       "year": 2025,
       "title": "Operation Hadal",
       "original_title": "蛟龙行动"
-    },
-    {
-      "tmdb_id": 1255795,
-      "year": 2025,
-      "title": "Putin",
-      "original_title": "Putin"
     },
     {
       "tmdb_id": 1252855,
@@ -431,28 +209,10 @@
       "original_title": "George A. Romero's Resident Evil"
     },
     {
-      "tmdb_id": 1202235,
-      "year": 2025,
-      "title": "Daaku Maharaaj",
-      "original_title": "డాకు మహారాజ్‌"
-    },
-    {
-      "tmdb_id": 842328,
-      "year": 2025,
-      "title": "Wish You Were Here",
-      "original_title": "Wish You Were Here"
-    },
-    {
       "tmdb_id": 659956,
       "year": 2025,
       "title": "Brave the Dark",
       "original_title": "Brave the Dark"
-    },
-    {
-      "tmdb_id": 1052558,
-      "year": 2025,
-      "title": "iPossessed",
-      "original_title": "iPossessed"
     },
     {
       "tmdb_id": 1294947,
@@ -501,12 +261,6 @@
       "year": 2025,
       "title": "Hot Pot Artist",
       "original_title": "火锅艺术家"
-    },
-    {
-      "tmdb_id": 1242669,
-      "year": 2025,
-      "title": "Mr. K",
-      "original_title": "Mr. K"
     },
     {
       "tmdb_id": 1250629,
@@ -581,12 +335,6 @@
       "original_title": "Una muerte silenciosa"
     },
     {
-      "tmdb_id": 955496,
-      "year": 2025,
-      "title": "Fateh",
-      "original_title": "फ़तेह"
-    },
-    {
       "tmdb_id": 935766,
       "year": 2025,
       "title": "Chuck Billy and The Marvelous Guava Tree",
@@ -597,12 +345,6 @@
       "year": 2025,
       "title": "Kudumbasthan",
       "original_title": "குடும்பஸ்தன்"
-    },
-    {
-      "tmdb_id": 1242382,
-      "year": 2025,
-      "title": "Sally",
-      "original_title": "Sally"
     },
     {
       "tmdb_id": 1003722,
@@ -633,12 +375,6 @@
       "year": 2025,
       "title": "Baby Blue",
       "original_title": "Baby Blue"
-    },
-    {
-      "tmdb_id": 1391385,
-      "year": 2025,
-      "title": "Uppercut",
-      "original_title": "Uppercut"
     },
     {
       "tmdb_id": 1175267,
@@ -695,28 +431,10 @@
       "original_title": "スロウトレイン"
     },
     {
-      "tmdb_id": 1012180,
-      "year": 2025,
-      "title": "Identity",
-      "original_title": "ഐഡന്റിറ്റി"
-    },
-    {
-      "tmdb_id": 1404382,
-      "year": 2025,
-      "title": "Gabriel Iglesias: Legend of Fluffy",
-      "original_title": "Gabriel Iglesias: Legend of Fluffy"
-    },
-    {
       "tmdb_id": 1396980,
       "year": 2025,
       "title": "Polar Opposites",
       "original_title": "Polar Opposites"
-    },
-    {
-      "tmdb_id": 1379877,
-      "year": 2025,
-      "title": "Azaad",
-      "original_title": "आज़ाद"
     },
     {
       "tmdb_id": 732707,
@@ -767,12 +485,6 @@
       "original_title": "La Fille d'un grand amour"
     },
     {
-      "tmdb_id": 1211999,
-      "year": 2025,
-      "title": "Kadhalikka Neramillai",
-      "original_title": "காதலிக்க நேரமில்லை"
-    },
-    {
       "tmdb_id": 1034391,
       "year": 2025,
       "title": "La mitad de Ana",
@@ -789,12 +501,6 @@
       "year": 2025,
       "title": "My Argentine Heart",
       "original_title": "My Argentine Heart"
-    },
-    {
-      "tmdb_id": 1323049,
-      "year": 2025,
-      "title": "Bone Face",
-      "original_title": "Bone Face"
     },
     {
       "tmdb_id": 861211,
@@ -819,12 +525,6 @@
       "year": 2025,
       "title": "Filmlovers!",
       "original_title": "Spectateurs !"
-    },
-    {
-      "tmdb_id": 931219,
-      "year": 2025,
-      "title": "The Black Hole",
-      "original_title": "Must auk"
     },
     {
       "tmdb_id": 1290465,
@@ -881,52 +581,10 @@
       "original_title": "Ari Shaffir: America's Sweetheart"
     },
     {
-      "tmdb_id": 1413643,
-      "year": 2025,
-      "title": "Alone",
-      "original_title": "Sin él"
-    },
-    {
       "tmdb_id": 1400135,
       "year": 2025,
       "title": "Do the Mæth",
       "original_title": "Na plech"
-    },
-    {
-      "tmdb_id": 950396,
-      "year": 2025,
-      "title": "The Gorge",
-      "original_title": "The Gorge"
-    },
-    {
-      "tmdb_id": 822119,
-      "year": 2025,
-      "title": "Captain America: Brave New World",
-      "original_title": "Captain America: Brave New World"
-    },
-    {
-      "tmdb_id": 696506,
-      "year": 2025,
-      "title": "Mickey 17",
-      "original_title": "Mickey 17"
-    },
-    {
-      "tmdb_id": 1294203,
-      "year": 2025,
-      "title": "My Fault: London",
-      "original_title": "My Fault: London"
-    },
-    {
-      "tmdb_id": 1124620,
-      "year": 2025,
-      "title": "The Monkey",
-      "original_title": "The Monkey"
-    },
-    {
-      "tmdb_id": 777443,
-      "year": 2025,
-      "title": "The Electric State",
-      "original_title": "The Electric State"
     },
     {
       "tmdb_id": 1356039,
@@ -935,106 +593,16 @@
       "original_title": "Contraataque"
     },
     {
-      "tmdb_id": 324544,
-      "year": 2025,
-      "title": "In the Lost Lands",
-      "original_title": "In the Lost Lands"
-    },
-    {
-      "tmdb_id": 1272149,
-      "year": 2025,
-      "title": "Bridget Jones: Mad About the Boy",
-      "original_title": "Bridget Jones: Mad About the Boy"
-    },
-    {
-      "tmdb_id": 857800,
-      "year": 2025,
-      "title": "Becoming Led Zeppelin",
-      "original_title": "Becoming Led Zeppelin"
-    },
-    {
-      "tmdb_id": 1422227,
-      "year": 2025,
-      "title": "Aşk Sadece Bir An",
-      "original_title": "Aşk Sadece Bir An"
-    },
-    {
       "tmdb_id": 1096642,
       "year": 2025,
       "title": "The Ties That Bind Us",
       "original_title": "L'Attachement"
     },
     {
-      "tmdb_id": 1203329,
-      "year": 2025,
-      "title": "The Witcher: Sirens of the Deep",
-      "original_title": "The Witcher: Sirens of the Deep"
-    },
-    {
-      "tmdb_id": 1302916,
-      "year": 2025,
-      "title": "Heart Eyes",
-      "original_title": "Heart Eyes"
-    },
-    {
-      "tmdb_id": 972533,
-      "year": 2025,
-      "title": "Last Breath",
-      "original_title": "Last Breath"
-    },
-    {
-      "tmdb_id": 1290182,
-      "year": 2025,
-      "title": "You Are the Apple of My Eye",
-      "original_title": "그 시절, 우리가 좋아했던 소녀"
-    },
-    {
-      "tmdb_id": 1356670,
-      "year": 2025,
-      "title": "Late Shift",
-      "original_title": "Heldin"
-    },
-    {
-      "tmdb_id": 1405338,
-      "year": 2025,
-      "title": "Demon City",
-      "original_title": "Demon City 鬼ゴロシ"
-    },
-    {
-      "tmdb_id": 1226406,
-      "year": 2025,
-      "title": "Love Hurts",
-      "original_title": "Love Hurts"
-    },
-    {
       "tmdb_id": 1392117,
       "year": 2025,
       "title": "Cooked",
       "original_title": "Umami"
-    },
-    {
-      "tmdb_id": 1393382,
-      "year": 2025,
-      "title": "Popeye's Revenge",
-      "original_title": "Popeye's Revenge"
-    },
-    {
-      "tmdb_id": 1262426,
-      "year": 2025,
-      "title": "Tinā",
-      "original_title": "Tinā"
-    },
-    {
-      "tmdb_id": 1226572,
-      "year": 2025,
-      "title": "Superboys of Malegaon",
-      "original_title": "सुपरबॉय्ज़ ऑफ मालेगाँव"
-    },
-    {
-      "tmdb_id": 1127767,
-      "year": 2025,
-      "title": "Riff Raff",
-      "original_title": "Riff Raff"
     },
     {
       "tmdb_id": 1084440,
@@ -1061,12 +629,6 @@
       "original_title": "SNL50: The Homecoming Concert"
     },
     {
-      "tmdb_id": 1233199,
-      "year": 2025,
-      "title": "Exorcism Chronicles: The Beginning",
-      "original_title": "퇴마록"
-    },
-    {
       "tmdb_id": 1212142,
       "year": 2025,
       "title": "Kinda Pregnant",
@@ -1077,12 +639,6 @@
       "year": 2025,
       "title": "The Poet",
       "original_title": "Пророк. История Александра Пушкина"
-    },
-    {
-      "tmdb_id": 1273049,
-      "year": 2025,
-      "title": "Dragon",
-      "original_title": "டிராகன்"
     },
     {
       "tmdb_id": 1297454,
@@ -1127,18 +683,6 @@
       "original_title": "FolleMente"
     },
     {
-      "tmdb_id": 1361622,
-      "year": 2025,
-      "title": "Honeymoon Crasher",
-      "original_title": "Lune de miel avec ma mère"
-    },
-    {
-      "tmdb_id": 1196943,
-      "year": 2025,
-      "title": "Chhaava",
-      "original_title": "छावा"
-    },
-    {
       "tmdb_id": 1413631,
       "year": 2025,
       "title": "Sisterhood, Inc.",
@@ -1163,24 +707,6 @@
       "original_title": "When I'm Ready"
     },
     {
-      "tmdb_id": 1312833,
-      "year": 2025,
-      "title": "A Knight's War",
-      "original_title": "A Knight's War"
-    },
-    {
-      "tmdb_id": 1252377,
-      "year": 2025,
-      "title": "La Dolce Villa",
-      "original_title": "La Dolce Villa"
-    },
-    {
-      "tmdb_id": 804862,
-      "year": 2025,
-      "title": "Bring Them Down",
-      "original_title": "Bring Them Down"
-    },
-    {
       "tmdb_id": 1219555,
       "year": 2025,
       "title": "More Beautiful",
@@ -1199,22 +725,10 @@
       "original_title": "Dis-moi juste que tu m'aimes"
     },
     {
-      "tmdb_id": 1230208,
-      "year": 2025,
-      "title": "Squad 36",
-      "original_title": "Bastion 36"
-    },
-    {
       "tmdb_id": 1393069,
       "year": 2025,
       "title": "The Most Beautiful Girl in the World",
       "original_title": "The Most Beautiful Girl in the World"
-    },
-    {
-      "tmdb_id": 1426674,
-      "year": 2025,
-      "title": "A Copenhagen Love Story",
-      "original_title": "Sult"
     },
     {
       "tmdb_id": 1137759,
@@ -1223,22 +737,10 @@
       "original_title": "God Save the Tuche"
     },
     {
-      "tmdb_id": 766369,
-      "year": 2025,
-      "title": "Nocturnal",
-      "original_title": "브로큰"
-    },
-    {
       "tmdb_id": 1229385,
       "year": 2025,
       "title": "Spirit World",
       "original_title": "Yōkai - le monde des esprits"
-    },
-    {
-      "tmdb_id": 1201012,
-      "year": 2025,
-      "title": "Dhoom Dhaam",
-      "original_title": "धूम धाम"
     },
     {
       "tmdb_id": 1342341,
@@ -1259,46 +761,16 @@
       "original_title": "Haut les mains !"
     },
     {
-      "tmdb_id": 1422179,
-      "year": 2025,
-      "title": "The Wrong Track",
-      "original_title": "På villspor"
-    },
-    {
       "tmdb_id": 1363381,
       "year": 2025,
       "title": "Haunting of Mount Gede",
       "original_title": "Petaka Gunung Gede"
     },
     {
-      "tmdb_id": 1281091,
-      "year": 2025,
-      "title": "Officer on Duty",
-      "original_title": "ഓഫീസര്‍ ഓണ്‍ ഡ്യൂട്ടി"
-    },
-    {
-      "tmdb_id": 1058615,
-      "year": 2025,
-      "title": "The Accidental Getaway Driver",
-      "original_title": "The Accidental Getaway Driver"
-    },
-    {
       "tmdb_id": 1176932,
       "year": 2025,
       "title": "A Girl Named Willow",
       "original_title": "Ein Mädchen namens Willow"
-    },
-    {
-      "tmdb_id": 1236471,
-      "year": 2025,
-      "title": "Everyone Is Going to Die",
-      "original_title": "Everyone Is Going to Die"
-    },
-    {
-      "tmdb_id": 1291526,
-      "year": 2025,
-      "title": "Womb",
-      "original_title": "Womb"
     },
     {
       "tmdb_id": 1235610,
@@ -1337,28 +809,10 @@
       "original_title": "My Amish Double Life"
     },
     {
-      "tmdb_id": 1204886,
-      "year": 2025,
-      "title": "The Noisy Mansion",
-      "original_title": "백수아파트"
-    },
-    {
       "tmdb_id": 1214052,
       "year": 2025,
       "title": "To a Land Unknown",
       "original_title": "Σε μια άγνωστη χώρα"
-    },
-    {
-      "tmdb_id": 1355983,
-      "year": 2025,
-      "title": "Scarecrow",
-      "original_title": "Espantaho"
-    },
-    {
-      "tmdb_id": 1125623,
-      "year": 2025,
-      "title": "Renner",
-      "original_title": "Renner"
     },
     {
       "tmdb_id": 1119534,
@@ -1373,12 +827,6 @@
       "original_title": "El hilo rojo"
     },
     {
-      "tmdb_id": 949716,
-      "year": 2025,
-      "title": "Vidaamuyarchi",
-      "original_title": "விடாமுயற்சி"
-    },
-    {
       "tmdb_id": 1403843,
       "year": 2025,
       "title": "Fiume o morte!",
@@ -1391,34 +839,16 @@
       "original_title": "Kärlek fårever"
     },
     {
-      "tmdb_id": 1425200,
-      "year": 2025,
-      "title": "Umjolo: There Is No Cure",
-      "original_title": "Umjolo: There Is No Cure"
-    },
-    {
       "tmdb_id": 1001435,
       "year": 2025,
       "title": "The Future Awaits",
       "original_title": "La Vie devant moi"
     },
     {
-      "tmdb_id": 1150370,
-      "year": 2025,
-      "title": "Cold Wallet",
-      "original_title": "Cold Wallet"
-    },
-    {
       "tmdb_id": 1316070,
       "year": 2025,
       "title": "Gangstas",
       "original_title": "Patsers"
-    },
-    {
-      "tmdb_id": 1208735,
-      "year": 2025,
-      "title": "Thandel",
-      "original_title": "తండేల్"
     },
     {
       "tmdb_id": 1225582,
@@ -1431,12 +861,6 @@
       "year": 2025,
       "title": "Before What Comes After",
       "original_title": "Le Dernier souffle"
-    },
-    {
-      "tmdb_id": 1078812,
-      "year": 2025,
-      "title": "Lifeline",
-      "original_title": "Lifeline"
     },
     {
       "tmdb_id": 1414157,
@@ -1487,22 +911,10 @@
       "original_title": "The Wish Swap"
     },
     {
-      "tmdb_id": 1429299,
-      "year": 2025,
-      "title": "With You in the Future",
-      "original_title": "Contigo en el futuro"
-    },
-    {
       "tmdb_id": 1442033,
       "year": 2025,
       "title": "Catalyst",
       "original_title": "Catalyst"
-    },
-    {
-      "tmdb_id": 1212337,
-      "year": 2025,
-      "title": "September Says",
-      "original_title": "September Says"
     },
     {
       "tmdb_id": 1414166,
@@ -1515,12 +927,6 @@
       "year": 2025,
       "title": "SHOWTIME 7",
       "original_title": "ショウタイムセブン"
-    },
-    {
-      "tmdb_id": 1426142,
-      "year": 2025,
-      "title": "Sosyal Climbers",
-      "original_title": "Sosyal Climbers"
     },
     {
       "tmdb_id": 1339775,
@@ -1553,22 +959,10 @@
       "original_title": "Crazxy"
     },
     {
-      "tmdb_id": 1287842,
-      "year": 2025,
-      "title": "The Dead Thing",
-      "original_title": "The Dead Thing"
-    },
-    {
       "tmdb_id": 1327145,
       "year": 2025,
       "title": "Graduation Heist",
       "original_title": "100 dni do matury"
-    },
-    {
-      "tmdb_id": 1196942,
-      "year": 2025,
-      "title": "Mere Husband Ki Biwi",
-      "original_title": "मेरे हज़्बन्ड की बीवी"
     },
     {
       "tmdb_id": 1358082,
@@ -1589,120 +983,6 @@
       "original_title": "Amichemai"
     },
     {
-      "tmdb_id": 950387,
-      "year": 2025,
-      "title": "A Minecraft Movie",
-      "original_title": "A Minecraft Movie"
-    },
-    {
-      "tmdb_id": 1197306,
-      "year": 2025,
-      "title": "A Working Man",
-      "original_title": "A Working Man"
-    },
-    {
-      "tmdb_id": 1284120,
-      "year": 2025,
-      "title": "The Ugly Stepsister",
-      "original_title": "Den stygge stesøsteren"
-    },
-    {
-      "tmdb_id": 1153714,
-      "year": 2025,
-      "title": "Death of a Unicorn",
-      "original_title": "Death of a Unicorn"
-    },
-    {
-      "tmdb_id": 1233575,
-      "year": 2025,
-      "title": "Black Bag",
-      "original_title": "Black Bag"
-    },
-    {
-      "tmdb_id": 1195506,
-      "year": 2025,
-      "title": "Novocaine",
-      "original_title": "Novocaine"
-    },
-    {
-      "tmdb_id": 974573,
-      "year": 2025,
-      "title": "Another Simple Favor",
-      "original_title": "Another Simple Favor"
-    },
-    {
-      "tmdb_id": 1326106,
-      "year": 2025,
-      "title": "Kaiju No. 8: Mission Recon",
-      "original_title": "怪獣８号 第1期総集編／同時上映「保科の休日」"
-    },
-    {
-      "tmdb_id": 1104845,
-      "year": 2025,
-      "title": "Plankton: The Movie",
-      "original_title": "Plankton: The Movie"
-    },
-    {
-      "tmdb_id": 1254786,
-      "year": 2025,
-      "title": "The Life List",
-      "original_title": "The Life List"
-    },
-    {
-      "tmdb_id": 1186563,
-      "year": 2025,
-      "title": "The Friend",
-      "original_title": "The Friend"
-    },
-    {
-      "tmdb_id": 1297763,
-      "year": 2025,
-      "title": "Batman Ninja vs. Yakuza League",
-      "original_title": "ニンジャバットマン対ヤクザリーグ"
-    },
-    {
-      "tmdb_id": 1244944,
-      "year": 2025,
-      "title": "The Woman in the Yard",
-      "original_title": "The Woman in the Yard"
-    },
-    {
-      "tmdb_id": 1083968,
-      "year": 2025,
-      "title": "Locked",
-      "original_title": "Locked"
-    },
-    {
-      "tmdb_id": 1202479,
-      "year": 2025,
-      "title": "Opus",
-      "original_title": "Opus"
-    },
-    {
-      "tmdb_id": 1145725,
-      "year": 2025,
-      "title": "Tyler Perry's Duplicity",
-      "original_title": "Tyler Perry's Duplicity"
-    },
-    {
-      "tmdb_id": 1013601,
-      "year": 2025,
-      "title": "The Alto Knights",
-      "original_title": "The Alto Knights"
-    },
-    {
-      "tmdb_id": 931349,
-      "year": 2025,
-      "title": "Ash",
-      "original_title": "Ash"
-    },
-    {
-      "tmdb_id": 1353117,
-      "year": 2025,
-      "title": "Home Sweet Home: Rebirth",
-      "original_title": "Home Sweet Home: Rebirth"
-    },
-    {
       "tmdb_id": 1426297,
       "year": 2025,
       "title": "Play Dead",
@@ -1713,42 +993,6 @@
       "year": 2025,
       "title": "Snow White and the 7 Dwarfs",
       "original_title": "Snow White and the 7 Dwarfs"
-    },
-    {
-      "tmdb_id": 1256408,
-      "year": 2025,
-      "title": "Manas",
-      "original_title": "Manas"
-    },
-    {
-      "tmdb_id": 1317088,
-      "year": 2025,
-      "title": "The Assessment",
-      "original_title": "The Assessment"
-    },
-    {
-      "tmdb_id": 1149167,
-      "year": 2025,
-      "title": "High Rollers",
-      "original_title": "High Rollers"
-    },
-    {
-      "tmdb_id": 1424217,
-      "year": 2025,
-      "title": "Court: State vs. A Nobody",
-      "original_title": "కోర్ట్: State vs. A Nobody"
-    },
-    {
-      "tmdb_id": 1443260,
-      "year": 2025,
-      "title": "Rob1n",
-      "original_title": "Rob1n"
-    },
-    {
-      "tmdb_id": 257094,
-      "year": 2025,
-      "title": "Holland",
-      "original_title": "Holland"
     },
     {
       "tmdb_id": 1049082,
@@ -1763,12 +1007,6 @@
       "original_title": "Una ballena"
     },
     {
-      "tmdb_id": 1169789,
-      "year": 2025,
-      "title": "Bob Trevino Likes It",
-      "original_title": "Bob Trevino Likes It"
-    },
-    {
       "tmdb_id": 1043808,
       "year": 2025,
       "title": "Vitória",
@@ -1779,30 +1017,6 @@
       "year": 2025,
       "title": "Sugar Mill",
       "original_title": "Pabrik Gula"
-    },
-    {
-      "tmdb_id": 1144932,
-      "year": 2025,
-      "title": "Queen of the Ring",
-      "original_title": "Queen of the Ring"
-    },
-    {
-      "tmdb_id": 1210938,
-      "year": 2025,
-      "title": "Revelations",
-      "original_title": "계시록"
-    },
-    {
-      "tmdb_id": 774100,
-      "year": 2025,
-      "title": "Alexander and the Terrible, Horrible, No Good, Very Bad Road Trip",
-      "original_title": "Alexander and the Terrible, Horrible, No Good, Very Bad Road Trip"
-    },
-    {
-      "tmdb_id": 1212742,
-      "year": 2025,
-      "title": "The Rule of Jenny Pen",
-      "original_title": "The Rule of Jenny Pen"
     },
     {
       "tmdb_id": 1317938,
@@ -9659,12 +8873,6 @@
       "original_title": "Gondola"
     },
     {
-      "tmdb_id": 586378,
-      "year": 2024,
-      "title": "Identity",
-      "original_title": "Идентификация"
-    },
-    {
       "tmdb_id": 1051023,
       "year": 2024,
       "title": "Murder Mubarak",
@@ -11507,12 +10715,6 @@
       "original_title": "Backspot"
     },
     {
-      "tmdb_id": 1059010,
-      "year": 2024,
-      "title": "The Damned",
-      "original_title": "I dannati"
-    },
-    {
       "tmdb_id": 1217328,
       "year": 2024,
       "title": "Missing",
@@ -12423,12 +11625,6 @@
       "year": 2024,
       "title": "Outstanding: A Comedy Revolution",
       "original_title": "Outstanding: A Comedy Revolution"
-    },
-    {
-      "tmdb_id": 1279433,
-      "year": 2024,
-      "title": "Inheritance",
-      "original_title": "Spadek"
     },
     {
       "tmdb_id": 1197830,
