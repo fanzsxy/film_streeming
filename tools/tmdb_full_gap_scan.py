@@ -11,12 +11,44 @@ import unicodedata
 import time
 from datetime import date, timedelta, datetime, timezone
 from pathlib import Path
-from tools.enrich_tmdb import tmdb_get
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 CATALOG = Path("assets/catalog/filmstream_catalog.json")
 REPORT = Path("crawler/data/lk21_year_tmdb_report.json")
 PROGRESS = Path("crawler/data/tmdb_gap_progress")
 TMDB_CACHE = Path("assets/catalog/tmdb_cache.jsonl")
+
+
+def tmdb_get(endpoint, params, credential):
+    """Accept v3 API keys and v4 read-access tokens without logging secrets."""
+    key = credential.strip()
+    is_v3 = bool(re.fullmatch(r"[a-fA-F0-9]{32}", key))
+    query = dict(params)
+    headers = {"Accept": "application/json", "User-Agent": "FilmStreamLocal/1.0"}
+    if is_v3:
+        query["api_key"] = key
+    else:
+        headers["Authorization"] = "Bearer " + key
+    url = "https://api.themoviedb.org/3/" + endpoint + "?" + urlencode(query)
+    request = Request(url, headers=headers)
+    try:
+        with urlopen(request, timeout=25) as response:
+            return json.load(response)
+    except HTTPError as exc:
+        # Do not leak the v3 query-string API key through urllib's exception URL.
+        if exc.code == 401:
+            raise RuntimeError("TMDB menolak kredensial (401). Periksa API key v3 atau Read Access Token v4.") from None
+        raise RuntimeError(f"TMDB HTTP {exc.code} pada {endpoint}; coba lagi nanti.") from None
+    except URLError as exc:
+        raise RuntimeError(f"Koneksi ke TMDB gagal: {exc.reason}") from None
+
+
+def check_tmdb_auth(credential):
+    """Fail once before running all 11 years if credentials are invalid."""
+    tmdb_get("configuration", {}, credential)
+    print("Autentikasi TMDB berhasil.", flush=True)
 
 
 def identity(title, year):
@@ -185,6 +217,10 @@ def main():
     token = os.getenv("TMDB_TOKEN", "").strip()
     if not token:
         parser.error("TMDB_TOKEN is missing")
+    try:
+        check_tmdb_auth(token)
+    except RuntimeError as exc:
+        raise SystemExit(str(exc)) from None
     catalog = json.loads(CATALOG.read_text(encoding="utf-8-sig"))
     items = catalog.get("items")
     if not isinstance(items, list) or not items:
