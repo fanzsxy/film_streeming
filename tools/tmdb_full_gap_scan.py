@@ -33,16 +33,22 @@ def tmdb_get(endpoint, params, credential):
         headers["Authorization"] = "Bearer " + key
     url = "https://api.themoviedb.org/3/" + endpoint + "?" + urlencode(query)
     request = Request(url, headers=headers)
-    try:
-        with urlopen(request, timeout=25) as response:
-            return json.load(response)
-    except HTTPError as exc:
-        # Do not leak the v3 query-string API key through urllib's exception URL.
-        if exc.code == 401:
-            raise RuntimeError("TMDB menolak kredensial (401). Periksa API key v3 atau Read Access Token v4.") from None
-        raise RuntimeError(f"TMDB HTTP {exc.code} pada {endpoint}; coba lagi nanti.") from None
-    except URLError as exc:
-        raise RuntimeError(f"Koneksi ke TMDB gagal: {exc.reason}") from None
+    for attempt in range(4):
+        try:
+            with urlopen(request, timeout=25) as response:
+                return json.load(response)
+        except HTTPError as exc:
+            # Never expose the v3 API key embedded in exception URLs.
+            if exc.code == 401:
+                raise RuntimeError("TMDB menolak kredensial (401). Periksa API key v3 atau Read Access Token v4.") from None
+            if exc.code not in (429, 500, 502, 503, 504) or attempt == 3:
+                raise RuntimeError(f"TMDB HTTP {exc.code} pada {endpoint}; coba lagi nanti.") from None
+            print(f"TMDB HTTP {exc.code}; retry {attempt + 1}/3 ...", flush=True)
+        except (URLError, TimeoutError, ConnectionError, ConnectionResetError, OSError) as exc:
+            if attempt == 3:
+                raise RuntimeError(f"Koneksi ke TMDB gagal setelah 4 percobaan: {type(exc).__name__}") from None
+            print(f"Koneksi TMDB terputus; retry {attempt + 1}/3 ...", flush=True)
+        time.sleep(min(2 ** attempt * 2, 10))
 
 
 def check_tmdb_auth(credential):
