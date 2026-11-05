@@ -38,7 +38,7 @@ echo [1/2] TMDB %START_YEAR% sampai %END_YEAR% (resume per bulan)
 py -3 -m tools.tmdb_full_gap_scan --start-year %START_YEAR% --end-year %END_YEAR% --delay 0.30 --min-runtime %MIN_RUNTIME% --min-rating %MIN_RATING% --min-votes %MIN_VOTES%
 if errorlevel 1 goto failed
 echo [2/2] LK21 local, metadata only
-py -3 -m tools.local_lk21_gap_match --report crawler/data/lk21_year_tmdb_report.json --pages-per-year 20 --delay 3
+py -3 -m tools.local_lk21_gap_match --report crawler/data/lk21_year_tmdb_report.json --limit 100 --delay 3
 if errorlevel 1 goto failed
 echo Hasil: crawler\data\local_lk21_gap_candidates.json
 echo Katalog lama tidak diubah otomatis.
