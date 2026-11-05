@@ -7,6 +7,7 @@ import calendar
 import json
 import os
 import re
+import unicodedata
 import time
 from datetime import date, timedelta, datetime, timezone
 from pathlib import Path
@@ -15,22 +16,68 @@ from tools.enrich_tmdb import tmdb_get
 CATALOG = Path("assets/catalog/filmstream_catalog.json")
 REPORT = Path("crawler/data/lk21_year_tmdb_report.json")
 PROGRESS = Path("crawler/data/tmdb_gap_progress")
+TMDB_CACHE = Path("assets/catalog/tmdb_cache.jsonl")
 
 
 def identity(title, year):
-    return (re.sub(r"[^a-z0-9]", "", str(title).casefold()), str(year))
+    plain = unicodedata.normalize("NFKD", str(title).casefold())
+    plain = "".join(c for c in plain if not unicodedata.combining(c))
+    return (re.sub(r"[^a-z0-9]", "", plain), str(year))
+
+
+def known_tmdb_ids(items, cache_path=TMDB_CACHE):
+    """Use existing catalog identities AND matched TMDB cache records by source URL."""
+    urls = {str(x.get("url", "")).rstrip("/") for x in items
+            if isinstance(x, dict) and x.get("type") == "movie"}
+    ids = {int(x["tmdb_id"]) for x in items if isinstance(x, dict)
+           and x.get("type") == "movie" and str(x.get("tmdb_id") or "").isdigit()}
+    if cache_path.is_file():
+        for line in cache_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if (row.get("tmdb_type") == "movie" and row.get("match_status") == "matched"
+                    and str(row.get("source_url", "")).rstrip("/") in urls
+                    and str(row.get("tmdb_id") or "").isdigit()):
+                ids.add(int(row["tmdb_id"]))
+    return ids
+
+
+def classify_movies(movies, items, year, cache_path=TMDB_CACHE):
+    """Separate confirmed missing candidates from possible catalog aliases."""
+    known_ids = known_tmdb_ids(items, cache_path)
+    titles = set()
+    nearby = set()
+    for x in items:
+        if not isinstance(x, dict) or x.get("type") != "movie":
+            continue
+        iy = str(x.get("year", ""))
+        base = identity(x.get("title", ""), iy)[0]
+        if base:
+            titles.add((base, iy))
+            if iy.isdigit():
+                nearby.update((base, str(int(iy) + shift)) for shift in (-1, 1))
+    missing, probable, existing = [], [], []
+    for m in movies:
+        names = [identity(m.get(k, ""), year) for k in ("title", "original_title")]
+        record = {"tmdb_id": m["id"], "title": m.get("title"),
+                  "original_title": m.get("original_title"),
+                  "release_date": m.get("release_date")}
+        if m["id"] in known_ids or any(n[0] and n in titles for n in names):
+            existing.append(record)
+        elif any(n[0] and n in nearby for n in names):
+            probable.append({**record, "reason": "same title, adjacent catalog year"})
+        else:
+            missing.append(record)
+    return missing, probable, existing
 
 
 def missing_movies(movies, items, year):
-    known_ids = {int(x["tmdb_id"]) for x in items if isinstance(x, dict) and x.get("type") == "movie"
-                 and str(x.get("tmdb_id") or "").isdigit()}
-    known_titles = {identity(x.get("title", ""), x.get("year", "")) for x in items
-                    if isinstance(x, dict) and x.get("type") == "movie"}
-    return [{"tmdb_id": m["id"], "title": m.get("title"),
-             "original_title": m.get("original_title"), "release_date": m.get("release_date")}
-            for m in movies if m["id"] not in known_ids
-            and identity(m.get("title", ""), year) not in known_titles
-            and identity(m.get("original_title", ""), year) not in known_titles]
+    """Backward-compatible missing-only interface."""
+    return classify_movies(movies, items, year)[0]
 
 
 def months(year):
@@ -136,10 +183,13 @@ def main():
               "lk21_status": "local_only", "complete": False}
     for year in range(args.end_year, args.start_year - 1, -1):
         movies, complete, errors = discover_year(year, token, args.delay)
-        gaps = missing_movies(movies, items, year)
+        gaps, probable, existing_matches = classify_movies(movies, items, year)
         report["by_year"][str(year)] = {
             "tmdb_found": len(movies), "not_in_catalog": len(gaps),
             "missing_tmdb_titles": gaps, "tmdb_complete": complete,
+            "already_in_catalog": len(existing_matches),
+            "possible_catalog_aliases": probable,
+            "possible_catalog_aliases_count": len(probable),
             "tmdb_errors": errors, "lk21_observed": 0,
             "confirmed_additions": 0, "lk21_errors": ["LK21 crawling is local-only"]}
         if not complete:
@@ -147,7 +197,7 @@ def main():
         report["complete"] = not report["errors"] and len(report["by_year"]) == (
             args.end_year - args.start_year + 1)
         save(REPORT, report)
-        print(f"{year}: TMDB={len(movies)} missing={len(gaps)} complete={complete}", flush=True)
+        print(f"{year}: TMDB={len(movies)} already={len(existing_matches)} aliases={len(probable)} missing_candidates={len(gaps)} complete={complete}", flush=True)
     if not report["complete"]:
         raise SystemExit("Partial TMDB scan: use artifacts/checkpoints to resume")
     print("TMDB gap inventory done. Download report and run LK21 verification locally.")
