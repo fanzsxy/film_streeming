@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "The World of Love",
+      "year": 2015,
+      "url": "https://tv.lk21online.de/world-love-2015",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-world-love-2015-lk21.jpg.webp",
+      "rating": 8
+    },
+    {
+      "title": "The Rules",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/rules-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-rules-2026-lk21.jpg.webp",
+      "rating": 9.2
+    }
+  ]
+}
