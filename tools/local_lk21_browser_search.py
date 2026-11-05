@@ -70,7 +70,7 @@ def load_robots(page):
     return robot
 
 
-def find_candidate(page, robots, search_form, movie, delay):
+def find_candidate(page, robots, search_form, movie, delay, render_wait_ms=800):
     year = int(movie["year"])
     titles = list(dict.fromkeys(
         x.strip() for x in (movie.get("title"), movie.get("original_title"))
@@ -78,7 +78,7 @@ def find_candidate(page, robots, search_form, movie, delay):
     matches = {}
     for index, title in enumerate(titles):
         url = search_url(search_form, title)
-        html = browse(page, robots, url, render_wait_ms=400)
+        html = browse(page, robots, url, render_wait_ms=render_wait_ms)
         rows = extract_matches(html, str(year), titles, page.url)
         for row in rows:
             if validated(row["url"]):
@@ -106,7 +106,7 @@ def find_candidate(page, robots, search_form, movie, delay):
     }
 
 
-def run(limit, delay, state_path=STATE, output=OUTPUT):
+def run(limit, delay, state_path=STATE, output=OUTPUT, render_wait_ms=800):
     report = json.loads(REPORT.read_text(encoding="utf-8-sig"))
     catalog = json.loads(CATALOG.read_text(encoding="utf-8-sig"))
     queue = reconcile(report, catalog)["items"]
@@ -140,7 +140,7 @@ def run(limit, delay, state_path=STATE, output=OUTPUT):
             print("Chromium lokal terbuka. Memeriksa robots.txt...", flush=True)
             robots = load_robots(page)
             print("Membuka beranda LK21 untuk menemukan form pencarian...", flush=True)
-            search = discover_search_form(browse(page, robots, MOVIE_BASE + "/", render_wait_ms=400))
+            search = discover_search_form(browse(page, robots, MOVIE_BASE + "/", render_wait_ms=render_wait_ms))
             if not search:
                 raise RuntimeError("Search form GET not found on visible LK21 page")
             print(f"Search siap. Resume: {len(completed)} checked; {len(found)} verified.", flush=True)
@@ -151,7 +151,7 @@ def run(limit, delay, state_path=STATE, output=OUTPUT):
                 print(f"[{processed+1}/{limit if limit else 'semua'}] {movie['title']} ({movie['year']})",
                       flush=True)
                 try:
-                    status, candidate = find_candidate(page, robots, search, movie, delay)
+                    status, candidate = find_candidate(page, robots, search, movie, delay, render_wait_ms)
                 except RuntimeError as exc:
                     errors.append({"key": key, "reason": str(exc)})
                     save()
@@ -184,10 +184,12 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--limit", type=int, default=100)
     p.add_argument("--delay", type=float, default=2)
+    p.add_argument("--render-wait-ms", type=int, default=800,
+                   help="Wait for search cards to render, milliseconds (800 by default)")
     args = p.parse_args()
-    if args.limit < 0 or args.delay < 2:
-        p.error("limit >= 0 and delay >= 2")
-    run(args.limit, args.delay)
+    if args.limit < 0 or args.delay < 2 or not 300 <= args.render_wait_ms <= 5000:
+        p.error("limit >= 0, delay >= 2, render-wait-ms 300..5000")
+    run(args.limit, args.delay, render_wait_ms=args.render_wait_ms)
 
 
 if __name__ == "__main__":
