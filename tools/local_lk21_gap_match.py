@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 
 from tools.auto_discover_lk21 import MOVIE_BASE, UA, candidates
 from tools.tmdb_full_gap_scan import identity
+from tools.reconcile_tmdb_gaps import reconcile
 
 CATALOG = Path("assets/catalog/filmstream_catalog.json")
 REPORT = Path("crawler/data/lk21_year_tmdb_report.json")
@@ -218,6 +219,9 @@ def run(report_path, output, state_file, delay, limit):
     catalog = doc.get("items")
     if not isinstance(catalog, list) or not catalog:
         raise SystemExit("Invalid/empty catalog")
+    queue = reconcile(report, doc)
+    print("Cocokkan katalog -> TMDB:", queue["stats"], flush=True)
+    print("Hanya judul yang belum ada dicari di LK21:", len(queue["items"]), flush=True)
     known_urls = {str(x.get("url", "")).rstrip("/") for x in catalog if isinstance(x, dict)}
     known_ids = {str(x.get("tmdb_id")) for x in catalog
                  if isinstance(x, dict) and x.get("type") == "movie" and x.get("tmdb_id")}
@@ -249,10 +253,11 @@ def run(report_path, output, state_file, delay, limit):
     print(f"Form pencarian LK21 ditemukan. Resume: {len(completed)} judul sudah dicek, {len(found)} kandidat.", flush=True)
     manual_urls = json.loads(MANUAL_URLS.read_text(encoding="utf-8")) if MANUAL_URLS.is_file() else {}
     checked = 0
-    for year, movie in missing_list(report):
+    for movie in queue["items"]:
+        year = str(movie["year"])
         mid = str(movie["tmdb_id"])
-        key = year + ":" + mid
-        if mid in known_ids or (key in completed and completed[key] != "not_found"):
+        key = "catalog_v2:" + year + ":" + mid
+        if mid in known_ids or key in completed:
             continue
         titles = [movie.get("title"), movie.get("original_title")]
         if any(identity(t, year) in known_names for t in titles if t):
@@ -284,18 +289,27 @@ def run(report_path, output, state_file, delay, limit):
         eligible = [m for m in matches.values() if m["url"].rstrip("/") not in known_urls | seen]
         if len(eligible) == 1:
             candidate = eligible[0]
-            if not candidate.get("poster_url"):
-                try:
-                    candidate["poster_url"] = poster_from_detail(
-                        get_page(session, robots, candidate["url"]), candidate["url"])
-                except RuntimeError as exc:
-                    state.setdefault("errors", []).append({"key": key, "message": "Poster unavailable: " + str(exc)})
-            row = {"title": candidate["title"], "url": candidate["url"],
-                   "year": candidate["year"], "poster_url": candidate.get("poster_url") or "",
-                   "type": "movie", "tmdb_id": movie["tmdb_id"], "tmdb_type": "movie"}
-            found.append(row)
-            seen.add(row["url"].rstrip("/"))
-            completed[key] = "verified"
+            # Search result alone is insufficient: verify actual detail heading/year.
+            try:
+                detail_html = get_page(session, robots, candidate["url"])
+            except RuntimeError as exc:
+                state.setdefault("errors", []).append({"key": key, "message": "Detail inaccessible: " + str(exc)})
+                write_json(state_file, state)
+                print("  Detail tidak dapat diverifikasi; judul belum ditandai selesai.", flush=True)
+                break
+            observed_title, observed_year = detail_title_year(detail_html)
+            wanted_names = {identity(t, year)[0] for t in titles if t}
+            if observed_year != int(year) or identity(observed_title, year)[0] not in wanted_names:
+                completed[key] = "detail_mismatch"
+            else:
+                row = {"title": observed_title, "year": int(year),
+                       "url": candidate["url"], "type": "movie",
+                       "poster_url": poster_from_detail(detail_html, candidate["url"])
+                                     or candidate.get("poster_url") or "",
+                       "tmdb_id": movie["tmdb_id"]}
+                found.append(row)
+                seen.add(row["url"].rstrip("/"))
+                completed[key] = "verified"
         elif len(eligible) > 1:
             completed[key] = "ambiguous"
         else:
