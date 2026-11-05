@@ -21,6 +21,7 @@ CATALOG = Path("assets/catalog/filmstream_catalog.json")
 REPORT = Path("crawler/data/lk21_year_tmdb_report.json")
 OUTPUT = Path("crawler/data/local_lk21_gap_candidates.json")
 STATE = Path("crawler/data/local_lk21_title_search_progress.json")
+MANUAL_URLS = Path("crawler/data/manual_lk21_urls.json")
 BLOCK = re.compile(r"captcha|verify you are human|access denied", re.I)
 
 
@@ -117,24 +118,50 @@ def poster_from_node(image, page_url):
 
 
 def extract_matches(html, year, titles, page_url=None):
-    """Extract observed title, film URL, year, and poster from LK21 search cards."""
+    """Match real LK21 result links even when the site uses nonstandard cards.
+
+    Only accept links observed in response HTML, exact normalized titles/year,
+    and the configured LK21 hostname. Never manufacture a film URL.
+    """
     page_url = page_url or MOVIE_BASE + "/"
+    expected = {identity(t, year)[0] for t in titles if t}
     rows = candidates(html, MOVIE_BASE, "movie")
-    names = {identity(t, year) for t in titles if t}
-    wanted = {url: dict(row, poster_url=None) for url, row in rows.items()
-              if row.get("year") == int(year) and identity(row.get("title", ""), year) in names}
-    if not wanted:
-        return []
+    for row in rows.values():
+        if row.get("year") == int(year) and identity(row.get("title", ""), year)[0] in expected:
+            row["poster_url"] = None
+    matches = {url: row for url, row in rows.items()
+               if row.get("year") == int(year) and identity(row.get("title", ""), year)[0] in expected}
     soup = BeautifulSoup(html, "html.parser")
     for anchor in soup.select("a[href]"):
-        target = urljoin(MOVIE_BASE + "/", anchor.get("href", ""))
-        if target not in wanted or wanted[target]["poster_url"]:
+        href = urljoin(page_url, anchor.get("href", ""))
+        if not validated(href):
             continue
-        card = anchor.find_parent(["article", "li"]) or anchor.find_parent(
-            class_=re.compile(r"item|movie|series|poster|film", re.I)) or anchor
-        image = card.select_one("img")
-        wanted[target]["poster_url"] = poster_from_node(image, page_url)
-    return list(wanted.values())
+        parsed = urlparse(href)
+        if parsed.query or parsed.fragment:
+            continue
+        slug = parsed.path.rstrip("/").split("/")[-1]
+        suffix = re.fullmatch(r"(.+)-(19\d{2}|20\d{2})", slug)
+        if suffix is None or int(suffix.group(2)) != int(year):
+            continue
+        normalized_slug = identity(suffix.group(1).replace("-", " "), year)[0]
+        container = anchor.find_parent(["article", "li"]) or anchor.find_parent(
+            class_=re.compile(r"item|movie|poster|film|result", re.I)) or anchor
+        heading = container.select_one("h2,h3,h4,.title,.poster-title")
+        text = (heading.get_text(" ", strip=True) if heading else
+                anchor.get("title") or anchor.get_text(" ", strip=True) or "")
+        img = container.select_one("img")
+        alt = img.get("alt", "") if img else ""
+        observed_title = next((t for t in (text, alt)
+                               if identity(t, year)[0] in expected), None)
+        if normalized_slug not in expected and observed_title is None:
+            continue
+        if href not in matches:
+            matches[href] = {"title": observed_title or next(
+                (t for t in titles if identity(t, year)[0] == normalized_slug), titles[0]),
+                "year": int(year), "url": href, "type": "movie", "poster_url": None}
+        if not matches[href].get("poster_url"):
+            matches[href]["poster_url"] = poster_from_node(img, page_url)
+    return list(matches.values())
 
 
 def poster_from_detail(html, detail_url):
@@ -158,6 +185,29 @@ def poster_from_detail(html, detail_url):
             if poster:
                 return poster
     return None
+
+
+def detail_title_year(html):
+    soup = BeautifulSoup(html, "html.parser")
+    node = soup.select_one("h1")
+    title = node.get_text(" ", strip=True) if node else ""
+    match = re.search(r"\b(19\d{2}|20\d{2})\b", title)
+    if not match:
+        return None, None
+    return re.sub(r"\s*\(?" + match.group(1) + r"\)?\s*$", "", title).strip(), int(match.group(1))
+
+
+def trusted_manual_match(session, robots, title, year, manual_urls):
+    """Only check URLs explicitly supplied by the user and verify detail heading."""
+    source = manual_urls.get(f"{year}:{identity(title, year)[0]}")
+    if not source or not validated(source):
+        return None
+    html = get_page(session, robots, source)
+    observed_title, observed_year = detail_title_year(html)
+    if observed_year != int(year) or identity(observed_title, year)[0] != identity(title, year)[0]:
+        return None
+    return {"title": observed_title, "year": observed_year, "url": source,
+            "type": "movie", "poster_url": poster_from_detail(html, source)}
 
 
 def run(report_path, output, state_file, delay, limit):
@@ -197,11 +247,12 @@ def run(report_path, output, state_file, delay, limit):
         print("LK21 belum bisa digunakan: " + str(e), flush=True)
         return
     print(f"Form pencarian LK21 ditemukan. Resume: {len(completed)} judul sudah dicek, {len(found)} kandidat.", flush=True)
+    manual_urls = json.loads(MANUAL_URLS.read_text(encoding="utf-8")) if MANUAL_URLS.is_file() else {}
     checked = 0
     for year, movie in missing_list(report):
         mid = str(movie["tmdb_id"])
         key = year + ":" + mid
-        if key in completed or mid in known_ids:
+        if mid in known_ids or (key in completed and completed[key] != "not_found"):
             continue
         titles = [movie.get("title"), movie.get("original_title")]
         if any(identity(t, year) in known_names for t in titles if t):
@@ -209,9 +260,15 @@ def run(report_path, output, state_file, delay, limit):
             continue
         print(f"[{checked + 1}/{limit if limit else 'semua'}] Cari: {titles[0]} ({year})", flush=True)
         try:
-            # Search the same title only once, and use original title as fallback.
+            # User-confirmed detail URLs are checked first, rather than relying on search cards.
             matches = {}
             for title in dict.fromkeys(t for t in titles if t):
+                seeded = trusted_manual_match(session, robots, title, year, manual_urls)
+                if seeded:
+                    matches[seeded["url"]] = seeded
+                    break
+            # Search the same title only once, and use original title as fallback.
+            for title in ([] if matches else dict.fromkeys(t for t in titles if t)):
                 url = search_url(search, title)
                 html = get_page(session, robots, url)
                 for row in extract_matches(html, year, titles, url):
