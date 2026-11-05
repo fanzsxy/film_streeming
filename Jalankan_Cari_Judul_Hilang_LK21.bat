@@ -11,11 +11,15 @@ echo [1/3] Cocokkan data katalog utama dengan TMDB yang sudah tersimpan...
 py -3 -m tools.reconcile_tmdb_gaps
 if errorlevel 1 goto fail
 echo [2/3] Membuka Chromium lokal untuk mencari film yang belum ada...
-py -3 -m pip install "playwright>=1.55,<2"
-if errorlevel 1 goto fail
+py -3 -c "import playwright" >nul 2>nul
+if errorlevel 1 (
+ echo Playwright belum tersedia, memasang sekali...
+ py -3 -m pip install "playwright>=1.55,<2"
+ if errorlevel 1 goto fail
+)
 py -3 -m playwright install chromium
 if errorlevel 1 goto fail
-py -3 -m tools.local_lk21_browser_search --limit 100 --delay 3
+py -3 -m tools.local_lk21_browser_search --limit 100 --delay 2
 if errorlevel 1 goto fail
 echo [3/3] Preview kandidat yang bisa ditambahkan (tidak mengubah katalog)...
 py -3 -m tools.merge_verified_lk21
