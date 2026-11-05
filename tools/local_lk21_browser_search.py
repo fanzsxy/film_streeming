@@ -36,7 +36,7 @@ def browse(page, robots, url):
     try:
         response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(1200)  # Let the visible page render search cards.
-    except TimeoutError:
+    except BrowserTimeout:
         raise RuntimeError("Browser navigation timeout; stopped") from None
     if not validated(page.url):
         raise RuntimeError("Browser redirected away from configured LK21 host; stopped")
@@ -52,11 +52,12 @@ def browse(page, robots, url):
 
 
 def load_robots(page):
+    from playwright.sync_api import TimeoutError as BrowserTimeout
     """Read robots via the visible browser itself; never use hidden HTTP bot."""
     url = MOVIE_BASE + "/robots.txt"
     try:
         response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
-    except TimeoutError:
+    except BrowserTimeout:
         raise RuntimeError("robots.txt timeout; cannot establish policy") from None
     if response is None or response.status != 200:
         raise RuntimeError("Cannot read LK21 robots.txt; stopped")
