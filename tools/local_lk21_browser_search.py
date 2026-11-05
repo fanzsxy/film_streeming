@@ -28,11 +28,32 @@ STATE = Path("crawler/data/local_lk21_visible_browser_progress.json")
 BLOCK = re.compile(r"captcha|verify you are human|access denied", re.I)
 
 
-def browse(page, robots, url, render_wait_ms=0):
+class NavigationPacer:
+    """Enforce a minimum interval between navigation starts, not extra sleeps.
+
+    Network loading and HTML parsing count toward the delay. This keeps one
+    visible browser and the same request pacing while avoiding redundant waits.
+    """
+    def __init__(self, interval_seconds):
+        self.interval_seconds = interval_seconds
+        self.last_started = None
+
+    def before_navigation(self, page):
+        now = time.monotonic()
+        if self.last_started is not None:
+            remaining = self.interval_seconds - (now - self.last_started)
+            if remaining > 0:
+                page.wait_for_timeout(int(remaining * 1000 + 0.999))
+        self.last_started = time.monotonic()
+
+
+def browse(page, robots, url, render_wait_ms=0, pacer=None):
     if not validated(url):
         raise RuntimeError("LK21 outside configured host; stopped")
     if not robots.can_fetch(UA, url):
         raise RuntimeError("Disallowed by robots.txt; stopped")
+    if pacer is not None:
+        pacer.before_navigation(page)
     try:
         response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
         if render_wait_ms:
@@ -70,7 +91,7 @@ def load_robots(page):
     return robot
 
 
-def find_candidate(page, robots, search_form, movie, delay, render_wait_ms=800):
+def find_candidate(page, robots, search_form, movie, delay, render_wait_ms=800, pacer=None):
     year = int(movie["year"])
     titles = list(dict.fromkeys(
         x.strip() for x in (movie.get("title"), movie.get("original_title"))
@@ -78,7 +99,7 @@ def find_candidate(page, robots, search_form, movie, delay, render_wait_ms=800):
     matches = {}
     for index, title in enumerate(titles):
         url = search_url(search_form, title)
-        html = browse(page, robots, url, render_wait_ms=render_wait_ms)
+        html = browse(page, robots, url, render_wait_ms=render_wait_ms, pacer=pacer)
         rows = extract_matches(html, str(year), titles, page.url)
         for row in rows:
             if validated(row["url"]):
@@ -86,15 +107,13 @@ def find_candidate(page, robots, search_form, movie, delay, render_wait_ms=800):
         print(f"  Browser search '{title}': {len(rows)} matching link(s)", flush=True)
         if matches:
             break
-        if index < len(titles) - 1:
-            page.wait_for_timeout(int(delay * 1000))
+        # NavigationPacer enforces the interval before the next request.
     if not matches:
         return "search_no_match", None
     if len(matches) != 1:
         return "ambiguous", None
     card = next(iter(matches.values()))
-    page.wait_for_timeout(int(delay * 1000))
-    html = browse(page, robots, card["url"])
+    html = browse(page, robots, card["url"], pacer=pacer)
     title, observed_year = detail_title_year(html)
     names = {identity(t, year)[0] for t in titles}
     if observed_year != year or identity(title or "", year)[0] not in names:
@@ -143,7 +162,8 @@ def run(limit, delay, state_path=STATE, output=OUTPUT, render_wait_ms=800, year=
             print("Chromium lokal terbuka. Memeriksa robots.txt...", flush=True)
             robots = load_robots(page)
             print("Membuka beranda LK21 untuk menemukan form pencarian...", flush=True)
-            search = discover_search_form(browse(page, robots, MOVIE_BASE + "/", render_wait_ms=render_wait_ms))
+            pacer = NavigationPacer(delay)
+            search = discover_search_form(browse(page, robots, MOVIE_BASE + "/", render_wait_ms=render_wait_ms, pacer=pacer))
             if not search:
                 raise RuntimeError("Search form GET not found on visible LK21 page")
             print(f"Search siap. Resume: {len(completed)} checked; {len(found)} verified.", flush=True)
@@ -154,7 +174,7 @@ def run(limit, delay, state_path=STATE, output=OUTPUT, render_wait_ms=800, year=
                 print(f"[{processed+1}/{limit if limit else 'semua'}] {movie['title']} ({movie['year']})",
                       flush=True)
                 try:
-                    status, candidate = find_candidate(page, robots, search, movie, delay, render_wait_ms)
+                    status, candidate = find_candidate(page, robots, search, movie, delay, render_wait_ms, pacer=pacer)
                 except RuntimeError as exc:
                     errors.append({"key": key, "reason": str(exc)})
                     save()
@@ -172,7 +192,7 @@ def run(limit, delay, state_path=STATE, output=OUTPUT, render_wait_ms=800, year=
                 save()
                 if limit and processed >= limit:
                     break
-                page.wait_for_timeout(int(delay * 1000))
+                # Next navigation is paced based on elapsed time, no extra full delay.
         except RuntimeError as exc:
             errors.append({"reason": str(exc)})
             save()
