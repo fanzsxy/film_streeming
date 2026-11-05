@@ -1,0 +1,48 @@
+name: Full TMDB Gap Inventory 2015-2025 (LK21 Local)
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_year:
+        description: First year (inclusive)
+        required: true
+        type: choice
+        default: '2015'
+        options: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025']
+      end_year:
+        description: Last year (inclusive)
+        required: true
+        type: choice
+        default: '2025'
+        options: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025']
+
+permissions:
+  contents: read
+
+jobs:
+  tmdb-gaps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check token
+        run: test -n "$TMDB_TOKEN"
+      - name: Test full-range scan
+        run: python -m unittest discover -s tests -p 'test_tmdb_full_gap_scan.py' -v
+      - name: TMDB-only scan (never accesses LK21)
+        run: python -m tools.tmdb_full_gap_scan --start-year ${{ inputs.start_year }} --end-year ${{ inputs.end_year }}
+      - name: Upload report and checkpoints even if incomplete
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tmdb-full-gaps-${{ inputs.start_year }}-${{ inputs.end_year }}
+          path: |
+            crawler/data/lk21_year_tmdb_report.json
+            crawler/data/tmdb_gap_progress/*.json
+          if-no-files-found: warn
+          retention-days: 30
