@@ -5,7 +5,7 @@ import 'package:filmstream_personal/search_suggestions.dart';
 void main() {
   const entries = <CatalogEntry>[
     CatalogEntry(title: 'The Amazing Spider-Man', year: 2012, url: 'https://example.org/a', type: 'movie'),
-    CatalogEntry(title: 'Spider-Man: No Way Home', year: 2021, url: 'https://example.org/b', type: 'movie'),
+    CatalogEntry(title: 'Spider-Man: No Way Home', year: 2021, url: 'https://example.org/b', type: 'movie', posterUrl: 'https://poster.example/spider.jpg'),
     CatalogEntry(title: 'Spider-Man: Far From Home', year: 2019, url: 'https://example.org/c', type: 'movie'),
     CatalogEntry(title: 'Spider-Man: Far From Home', year: 2019, url: 'https://example.org/dup', type: 'movie'),
     CatalogEntry(title: 'Spirit', year: 2021, url: 'https://example.org/d', type: 'movie'),
@@ -18,6 +18,13 @@ void main() {
     expect(suggestions.first.title, 'Spider-Man: No Way Home');
     expect(suggestions.where((entry) => entry.title == 'Spider-Man: Far From Home').length, 1);
     expect(suggestions.any((entry) => entry.title == 'Other Movie'), isFalse);
+  });
+
+  test('cached index keeps ranking, source poster and case-insensitive matching', () {
+    final index = CatalogSuggestionIndex(entries);
+    expect(index.match('SPI').first.title, 'Spider-Man: No Way Home');
+    expect(index.match('spi').first.posterUrl, 'https://poster.example/spider.jpg');
+    expect(index.match('  doraemon  '), isEmpty);
   });
 
   test('empty query has no suggestions and count is bounded', () {
