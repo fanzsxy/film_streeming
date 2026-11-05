@@ -11,3 +11,7 @@ Peringatan: menjalankan lokal tidak menjamin LK21 mengizinkan akses; 403/429 ata
 ## Filter kualitas
 
 Scan TMDB membatasi durasi minimal **70 menit**, rating TMDB **5.0/10** atau lebih tinggi, dan minimal **10 suara**. Film dengan informasi durasi kosong tidak dijamin masuk hasil. Batas ini bisa diubah melalui opsi `--min-runtime`, `--min-rating`, `--min-votes` saat menjalankan `python -m tools.tmdb_full_gap_scan` lewat CMD. Checkpoint dipisahkan menurut nilai filter supaya hasil scan lama tanpa filter tidak tercampur. Film yang belum populer/rating belum banyak dapat terlewat; daftar ini sengaja memprioritaskan film yang lebih dikenal, bukan inventaris lengkap semua film.
+
+## Empat data film dari LK21
+
+Untuk judul yang ditemukan melalui pencarian LK21 dan cocok judul+tahunnya, hasil JSON mencatat `title`, `url`, `year`, dan `poster` (URL poster dari kartu hasil pencarian atau metadata detail LK21). Bila poster tidak tersedia atau akses detail ditolak, `poster` bernilai `null`, bukan URL buatan. Data kandidat tidak otomatis digabung ke katalog utama sampai diverifikasi.
