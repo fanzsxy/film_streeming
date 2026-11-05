@@ -140,18 +140,28 @@ def main():
     existing = document.get("items")
     if not isinstance(existing, list) or not existing:
         raise SystemExit("Invalid/empty catalog; not modifying it")
+    # TMDB analysis must be useful even if the external LK21 site is blocked.
+    report = {"checked_at": datetime.now(timezone.utc).isoformat(),
+              "years": [args.start_year, args.end_year], "by_year": {},
+              "new": [], "new_count": 0, "errors": {},
+              "lk21_status": "not_checked"}
     session = requests.Session()
     session.headers.update({"User-Agent": UA})
     robots = RobotFileParser()
+    lk21_access = True
     try:
         response = session.get(MOVIE_BASE + "/robots.txt", timeout=15)
         response.raise_for_status()
         robots.parse(response.text.splitlines())
     except requests.RequestException as exc:
-        raise SystemExit(f"LK21 robots.txt unavailable; no catalog changes: {exc}")
-    report = {"checked_at": datetime.now(timezone.utc).isoformat(),
-              "years": [args.start_year, args.end_year], "by_year": {},
-              "new": [], "errors": {}}
+        lk21_access = False
+        report["lk21_status"] = "blocked_or_unavailable"
+        report["errors"]["lk21"] = (
+            f"LK21 robots.txt unavailable: {exc}. No LK21 URLs will be guessed."
+        )
+    if lk21_access:
+        report["lk21_status"] = "robots_available"
+
     proposals = []
     for year in range(args.end_year, args.start_year - 1, -1):
         try:
@@ -160,24 +170,41 @@ def main():
             report["errors"][str(year)] = f"TMDB discovery failed: {exc}"
             break
         missing = missing_tmdb(tmdb, existing + proposals, year)
-        lk21, errors = lk21_year_entries(session, robots, year,
-                                          args.lk21_pages_per_year, args.lk21_delay)
+        # Store the missing titles regardless of LK21 access so the gap report
+        # remains useful even when LK21 blocks the GitHub Actions runner.
+        gaps = [
+            {"tmdb_id": movie["id"], "title": movie.get("title"),
+             "original_title": movie.get("original_title"),
+             "release_date": movie.get("release_date")}
+            for movie in missing
+        ]
+        lk21, errors = (lk21_year_entries(session, robots, year,
+                         args.lk21_pages_per_year, args.lk21_delay)
+                         if lk21_access else ([], ["LK21 robots.txt unavailable; verification skipped"]))
         confirmed, ambiguous = confirmed_missing(missing, lk21, year)
         proposals.extend(confirmed)
         report["by_year"][str(year)] = {
             "tmdb_found": len(tmdb), "not_in_catalog": len(missing),
+            "missing_tmdb_titles": gaps,
             "lk21_observed": len(lk21), "confirmed_additions": len(confirmed),
             "ambiguous": ambiguous, "lk21_errors": errors,
         }
-        print(f"{year}: TMDB {len(tmdb)}; missing {len(missing)}; LK21 {len(lk21)}; verified {len(confirmed)}", flush=True)
+        print(f"{year}: TMDB {len(tmdb)}; missing {len(missing)}; "
+              f"LK21 {len(lk21)}; verified {len(confirmed)}", flush=True)
     report["new"] = proposals
     report["new_count"] = len(proposals)
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    if report["errors"]:
-        raise SystemExit("TMDB incomplete: catalog unchanged; inspect report.")
+
+    if any(key != "lk21" for key in report["errors"]):
+        raise SystemExit("TMDB discovery incomplete; catalog unchanged. Download report.")
+    if not lk21_access:
+        print("TMDB-only gap report completed. LK21 returned access restriction; "
+              "no film catalog additions. Download report artifact.", flush=True)
+        return
     if not any(v["lk21_observed"] for v in report["by_year"].values()):
-        raise SystemExit("No accessible LK21 listings: catalog unchanged; inspect report.")
+        print("No accessible LK21 year cards; TMDB gap report saved, catalog unchanged.")
+        return
     if proposals:
         document["items"] = existing + proposals
         CATALOG.write_text(json.dumps(document, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
