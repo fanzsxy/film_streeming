@@ -194,7 +194,7 @@ def main():
     report["new"] = proposals
     report["new_count"] = len(proposals)
     REPORT.parent.mkdir(parents=True, exist_ok=True)
-    REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     if any(key != "lk21" for key in report["errors"]):
         raise SystemExit("TMDB discovery incomplete; catalog unchanged. Download report.")
@@ -207,7 +207,7 @@ def main():
         return
     if proposals:
         document["items"] = existing + proposals
-        CATALOG.write_text(json.dumps(document, ensure_ascii=False, separators=(",", ":")) + "\\n", encoding="utf-8")
+        CATALOG.write_text(json.dumps(document, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(f"Proposed {len(proposals)} TMDB-first, LK21-confirmed movies for review.")
 
 
