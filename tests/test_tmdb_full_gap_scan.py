@@ -29,7 +29,7 @@ class FullGapTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "cache.jsonl"
             path.write_text(json.dumps({"source_url": "https://example.com/known",
-                "tmdb_type": "movie", "match_status": "matched", "tmdb_id": 123}) + "\\n")
+                "tmdb_type": "movie", "match_status": "matched", "tmdb_id": 123}) + "\n")
             missing, aliases, known = classify_movies(movies, entries, 2025, path)
         self.assertEqual((len(missing), len(aliases), len(known)), (0, 0, 1))
 
