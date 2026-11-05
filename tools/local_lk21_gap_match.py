@@ -133,7 +133,7 @@ def extract_matches(html, year, titles, page_url=None):
         card = anchor.find_parent(["article", "li"]) or anchor.find_parent(
             class_=re.compile(r"item|movie|series|poster|film", re.I)) or anchor
         image = card.select_one("img")
-        wanted[target]["poster"] = poster_from_node(image, page_url)
+        wanted[target]["poster_url"] = poster_from_node(image, page_url)
     return list(wanted.values())
 
 
@@ -161,7 +161,9 @@ def poster_from_detail(html, detail_url):
 
 
 def run(report_path, output, state_file, delay, limit):
+    print("Membaca laporan TMDB lokal...", flush=True)
     report = json.loads(report_path.read_text(encoding="utf-8-sig"))
+    print("Membaca dan membandingkan katalog utama...", flush=True)
     doc = json.loads(CATALOG.read_text(encoding="utf-8-sig"))
     catalog = doc.get("items")
     if not isinstance(catalog, list) or not catalog:
@@ -179,19 +181,22 @@ def run(report_path, output, state_file, delay, limit):
     seen = {x["url"].rstrip("/") for x in found}
     session = requests.Session()
     session.headers.update({"User-Agent": UA})
+    print("Menghubungi LK21 robots.txt (batas tunggu 20 detik)...", flush=True)
     try:
         r = session.get(MOVIE_BASE + "/robots.txt", timeout=20, allow_redirects=False)
         if r.status_code != 200:
             raise RuntimeError(f"LK21 robots.txt HTTP {r.status_code}; stopped")
         robots = RobotFileParser()
         robots.parse(r.text.splitlines())
+        print("Membaca halaman utama LK21 untuk menemukan form pencarian (batas 25 detik)...", flush=True)
         search = discover_search_form(get_page(session, robots, MOVIE_BASE + "/"))
         if not search:
             raise RuntimeError("No supported public GET search form found. Cannot safely guess URL. Search requires configuration.")
     except (requests.RequestException, RuntimeError) as e:
         write_json(output, {"new": found, "new_count": len(found), "errors": [str(e)], "applied": False})
-        print(str(e))
+        print("LK21 belum bisa digunakan: " + str(e), flush=True)
         return
+    print(f"Form pencarian LK21 ditemukan. Resume: {len(completed)} judul sudah dicek, {len(found)} kandidat.", flush=True)
     checked = 0
     for year, movie in missing_list(report):
         mid = str(movie["tmdb_id"])
@@ -202,6 +207,7 @@ def run(report_path, output, state_file, delay, limit):
         if any(identity(t, year) in known_names for t in titles if t):
             completed[key] = "already_in_catalog"
             continue
+        print(f"[{checked + 1}/{limit if limit else 'semua'}] Cari: {titles[0]} ({year})", flush=True)
         try:
             # Search the same title only once, and use original title as fallback.
             matches = {}
@@ -228,7 +234,7 @@ def run(report_path, output, state_file, delay, limit):
                 except RuntimeError as exc:
                     state.setdefault("errors", []).append({"key": key, "message": "Poster unavailable: " + str(exc)})
             row = {"title": candidate["title"], "url": candidate["url"],
-                   "year": candidate["year"], "poster": candidate.get("poster"),
+                   "year": candidate["year"], "poster_url": candidate.get("poster_url") or "",
                    "type": "movie", "tmdb_id": movie["tmdb_id"], "tmdb_type": "movie"}
             found.append(row)
             seen.add(row["url"].rstrip("/"))
@@ -238,8 +244,7 @@ def run(report_path, output, state_file, delay, limit):
         else:
             completed[key] = "not_found"
         checked += 1
-        if checked % 10 == 0:
-            print(f"Title searches {checked}; verified {len(found)}", flush=True)
+        print(f"  Hasil: {completed[key]} | kandidat ditemukan: {len(found)}", flush=True)
         write_json(state_file, state)
         write_json(output, {"new": found, "new_count": len(found), "checked": len(completed),
                             "errors": state.get("errors", []), "applied": False})
