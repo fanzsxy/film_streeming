@@ -36,7 +36,7 @@ def browse(page, robots, url):
     try:
         response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(1200)  # Let the visible page render search cards.
-    except BrowserTimeout:
+    except TimeoutError:
         raise RuntimeError("Browser navigation timeout; stopped") from None
     if not validated(page.url):
         raise RuntimeError("Browser redirected away from configured LK21 host; stopped")
@@ -56,7 +56,7 @@ def load_robots(page):
     url = MOVIE_BASE + "/robots.txt"
     try:
         response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
-    except BrowserTimeout:
+    except TimeoutError:
         raise RuntimeError("robots.txt timeout; cannot establish policy") from None
     if response is None or response.status != 200:
         raise RuntimeError("Cannot read LK21 robots.txt; stopped")
@@ -125,6 +125,10 @@ def run(limit, delay, state_path=STATE, output=OUTPUT):
                             "applied": False, "source": "visible_chromium"})
     save()
     processed = 0
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        raise SystemExit("Playwright belum terpasang: py -3 -m pip install playwright")
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=False)
         page = browser.new_page(viewport={"width": 1280, "height": 820})
