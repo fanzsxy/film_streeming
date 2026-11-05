@@ -140,7 +140,7 @@ def extract_matches(html, year, titles, page_url=None):
         if parsed.query or parsed.fragment:
             continue
         slug = parsed.path.rstrip("/").split("/")[-1]
-        suffix = re.fullmatch(r"(.+)-(19\\d{2}|20\\d{2})", slug)
+        suffix = re.fullmatch(r"(.+)-(19\d{2}|20\d{2})", slug)
         if suffix is None or int(suffix.group(2)) != int(year):
             continue
         normalized_slug = identity(suffix.group(1).replace("-", " "), year)[0]
@@ -191,10 +191,10 @@ def detail_title_year(html):
     soup = BeautifulSoup(html, "html.parser")
     node = soup.select_one("h1")
     title = node.get_text(" ", strip=True) if node else ""
-    match = re.search(r"\\b(19\\d{2}|20\\d{2})\\b", title)
+    match = re.search(r"\b(19\d{2}|20\d{2})\b", title)
     if not match:
         return None, None
-    return re.sub(r"\\s*\\(?" + match.group(1) + r"\\)?\\s*$", "", title).strip(), int(match.group(1))
+    return re.sub(r"\s*\(?" + match.group(1) + r"\)?\s*$", "", title).strip(), int(match.group(1))
 
 
 def trusted_manual_match(session, robots, title, year, manual_urls):
