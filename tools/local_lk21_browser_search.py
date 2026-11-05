@@ -106,11 +106,14 @@ def find_candidate(page, robots, search_form, movie, delay, render_wait_ms=800):
     }
 
 
-def run(limit, delay, state_path=STATE, output=OUTPUT, render_wait_ms=800):
+def run(limit, delay, state_path=STATE, output=OUTPUT, render_wait_ms=800, year=None):
     report = json.loads(REPORT.read_text(encoding="utf-8-sig"))
     catalog = json.loads(CATALOG.read_text(encoding="utf-8-sig"))
     queue = reconcile(report, catalog)["items"]
-    print(f"Catalog -> saved TMDB: {len(queue)} title gaps queued for LK21 browser.", flush=True)
+    if year is not None:
+        queue = [movie for movie in queue if movie["year"] == year]
+    print(f"Catalog -> saved TMDB: {len(queue)} title gaps queued for LK21 browser" +
+          (f" (tahun {year})." if year is not None else "."), flush=True)
     state = {"completed": {}, "found": [], "errors": []}
     if state_path.is_file():
         state = json.loads(state_path.read_text(encoding="utf-8-sig"))
@@ -182,14 +185,17 @@ def run(limit, delay, state_path=STATE, output=OUTPUT, render_wait_ms=800):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--limit", type=int, default=100)
+    p.add_argument("--limit", type=int, default=100,
+                   help="Jumlah judul per run, 0 = semua kandidat yang belum dicek")
+    p.add_argument("--year", type=int, default=None,
+                   help="Batasi pencarian pada satu tahun, misalnya 2025")
     p.add_argument("--delay", type=float, default=2)
     p.add_argument("--render-wait-ms", type=int, default=800,
                    help="Wait for search cards to render, milliseconds (800 by default)")
     args = p.parse_args()
-    if args.limit < 0 or args.delay < 2 or not 300 <= args.render_wait_ms <= 5000:
-        p.error("limit >= 0, delay >= 2, render-wait-ms 300..5000")
-    run(args.limit, args.delay, render_wait_ms=args.render_wait_ms)
+    if args.limit < 0 or args.delay < 2 or not 300 <= args.render_wait_ms <= 5000 or (args.year is not None and not 2015 <= args.year <= 2025):
+        p.error("limit >= 0, year 2015..2025, delay >= 2, render-wait-ms 300..5000")
+    run(args.limit, args.delay, render_wait_ms=args.render_wait_ms, year=args.year)
 
 
 if __name__ == "__main__":
