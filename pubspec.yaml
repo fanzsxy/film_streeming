@@ -14,6 +14,9 @@ dependencies:
   webview_flutter: ^4.10.0
   webview_flutter_android: ^4.10.0
   webview_flutter_windows: ^1.2.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
 flutter:
   uses-material-design: true
   assets:
