@@ -1,8 +1,11 @@
 """Network-free regressions for complete TMDB month-split gap scan."""
 import unittest
+import json
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 from datetime import date
-from tools.tmdb_full_gap_scan import identity, months, missing_movies, discover_window
+from tools.tmdb_full_gap_scan import identity, months, missing_movies, discover_window, classify_movies
 
 class FullGapTests(unittest.TestCase):
     def test_year_is_all_twelve_months(self):
@@ -18,6 +21,24 @@ class FullGapTests(unittest.TestCase):
           {"id": 2, "title": "Known", "original_title": "Known"},
           {"id": 3, "title": "New", "original_title": "New"}]
         self.assertEqual([x["tmdb_id"] for x in missing_movies(incoming, known, 2020)], [3])
+
+    def test_existing_match_uses_cache_source_url(self):
+        entries = [{"type": "movie", "title": "Different Local Name", "year": 2025,
+                    "url": "https://example.com/known"}]
+        movies = [{"id": 123, "title": "TMDB Official Name", "original_title": "TMDB Official Name"}]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cache.jsonl"
+            path.write_text(json.dumps({"source_url": "https://example.com/known",
+                "tmdb_type": "movie", "match_status": "matched", "tmdb_id": 123}) + "\n")
+            missing, aliases, known = classify_movies(movies, entries, 2025, path)
+        self.assertEqual((len(missing), len(aliases), len(known)), (0, 0, 1))
+
+    def test_adjacent_year_is_review_bucket_not_new(self):
+        entries = [{"type": "movie", "title": "Same Movie", "year": 2024}]
+        movies = [{"id": 444, "title": "Same Movie", "original_title": "Same Movie"}]
+        with tempfile.TemporaryDirectory() as directory:
+            missing, aliases, known = classify_movies(movies, entries, 2025, Path(directory) / "none")
+        self.assertEqual((len(missing), len(aliases), len(known)), (0, 1, 0))
 
     @patch("tools.tmdb_full_gap_scan.time.sleep")
     @patch("tools.tmdb_full_gap_scan.tmdb_get")
