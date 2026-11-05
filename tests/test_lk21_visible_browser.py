@@ -33,6 +33,21 @@ class VisibleBrowserTests(unittest.TestCase):
 
     @patch("tools.local_lk21_browser_search.browse")
     @patch("tools.local_lk21_browser_search.extract_matches")
+    def test_no_extra_pause_after_last_unsuccessful_title(self, matches, browse):
+        browser = MagicMock()
+        browser.url = "https://tv12.lk21official.cc/search"
+        matches.return_value = []
+        browse.return_value = "<html></html>"
+        result = find_candidate(
+            browser, MagicMock(), ("https://tv12.lk21official.cc/search", "s", []),
+            {"title": "Quiet Life", "original_title": "Quiet Life",
+             "year": 2025, "tmdb_id": 23}, 2)
+        self.assertEqual(result, ("search_no_match", None))
+        browser.wait_for_timeout.assert_not_called()
+        self.assertEqual(browse.call_args.kwargs["render_wait_ms"], 800)
+
+    @patch("tools.local_lk21_browser_search.browse")
+    @patch("tools.local_lk21_browser_search.extract_matches")
     def test_unmatched_search_not_declared_missing_from_site(self, matches, browse):
         browser = MagicMock()
         browser.url = "https://tv12.lk21official.cc/search"
