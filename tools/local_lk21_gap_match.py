@@ -109,7 +109,7 @@ def poster_url(raw, page_url):
 def poster_from_node(image, page_url):
     if image is None:
         return None
-    for attr in ("data-src", "data-original", "data-lazy-src", "data-srcset", "src", "srcset"):
+    for attr in ("data-src", "data-original", "data-lazy-src", "src"):
         result = poster_url(image.get(attr), page_url)
         if result:
             return result
@@ -121,14 +121,14 @@ def extract_matches(html, year, titles, page_url=None):
     page_url = page_url or MOVIE_BASE + "/"
     rows = candidates(html, MOVIE_BASE, "movie")
     names = {identity(t, year) for t in titles if t}
-    wanted = {url: dict(row, poster=None) for url, row in rows.items()
+    wanted = {url: dict(row, poster_url=None) for url, row in rows.items()
               if row.get("year") == int(year) and identity(row.get("title", ""), year) in names}
     if not wanted:
         return []
     soup = BeautifulSoup(html, "html.parser")
     for anchor in soup.select("a[href]"):
         target = urljoin(MOVIE_BASE + "/", anchor.get("href", ""))
-        if target not in wanted or wanted[target]["poster"]:
+        if target not in wanted or wanted[target]["poster_url"]:
             continue
         card = anchor.find_parent(["article", "li"]) or anchor.find_parent(
             class_=re.compile(r"item|movie|series|poster|film", re.I)) or anchor
@@ -143,6 +143,12 @@ def poster_from_detail(html, detail_url):
     for selector, attribute in (
         ('meta[property="og:image"]', "content"),
         ('meta[name="twitter:image"]', "content"),
+        ('.poster img', "data-src"),
+        ('.poster img', "src"),
+        ('.mvic-desc img', "data-src"),
+        ('.mvic-desc img', "src"),
+        ('.info img', "data-src"),
+        ('.info img', "src"),
         ('article img', "data-src"),
         ('article img', "src"),
     ):
@@ -215,9 +221,9 @@ def run(report_path, output, state_file, delay, limit):
         eligible = [m for m in matches.values() if m["url"].rstrip("/") not in known_urls | seen]
         if len(eligible) == 1:
             candidate = eligible[0]
-            if not candidate.get("poster"):
+            if not candidate.get("poster_url"):
                 try:
-                    candidate["poster"] = poster_from_detail(
+                    candidate["poster_url"] = poster_from_detail(
                         get_page(session, robots, candidate["url"]), candidate["url"])
                 except RuntimeError as exc:
                     state.setdefault("errors", []).append({"key": key, "message": "Poster unavailable: " + str(exc)})
