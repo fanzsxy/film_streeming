@@ -1,0 +1,60 @@
+name: Fill LK21 movie catalog gaps from TMDB (2015-2025)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tmdb_pages_per_year:
+        description: TMDB discovery pages for each year (20 titles/page)
+        type: choice
+        default: '10'
+        options: ['10', '25', '50', '100', '250', '500']
+      lk21_pages_per_year:
+        description: LK21 year-listing pages to cross-check
+        type: choice
+        default: '20'
+        options: ['10', '20', '50', '100']
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: lk21-year-tmdb-discovery
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r crawler/requirements.txt
+      - name: Validate matching logic
+        run: python -m unittest discover -s tests -p 'test_lk21_year_tmdb.py' -v
+      - name: Find TMDB titles missing from catalog and locate on LK21
+        run: python -m tools.discover_lk21_years_tmdb --tmdb-pages-per-year ${{ inputs.tmdb_pages_per_year }} --lk21-pages-per-year ${{ inputs.lk21_pages_per_year }}
+      - name: Upload gap report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tmdb-lk21-catalog-gaps-2015-2025
+          path: crawler/data/lk21_year_tmdb_report.json
+          if-no-files-found: ignore
+      - name: Open review PR for confirmed missing titles
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          add-paths: assets/catalog/filmstream_catalog.json
+          branch: automation/lk21-2015-2025-movies
+          delete-branch: true
+          commit-message: 'catalog: propose missing TMDB titles confirmed on LK21'
+          title: 'Catalog: fill 2015-2025 gaps verified on LK21'
+          body: |
+            TMDB-first gap analysis: discover titles by year, remove existing catalog
+            identities, then add only those with a confirmed LK21 year-card URL.
+            Review all proposed titles before merging. Never downloads video.
