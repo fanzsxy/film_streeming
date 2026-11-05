@@ -14,4 +14,6 @@ Scan TMDB membatasi durasi minimal **70 menit**, rating TMDB **5.0/10** atau leb
 
 ## Empat data film dari LK21
 
-Untuk judul yang ditemukan melalui pencarian LK21 dan cocok judul+tahunnya, hasil JSON mencatat `title`, `url`, `year`, dan `poster` (URL poster dari kartu hasil pencarian atau metadata detail LK21). Bila poster tidak tersedia atau akses detail ditolak, `poster` bernilai `null`, bukan URL buatan. Data kandidat tidak otomatis digabung ke katalog utama sampai diverifikasi.
+Untuk judul yang ditemukan melalui pencarian LK21 dan cocok judul+tahunnya, hasil JSON mencatat `title`, `url`, `year`, dan `poster_url` (URL poster dari kartu hasil pencarian atau metadata detail LK21). Bila poster tidak tersedia atau akses detail ditolak, `poster_url` bernilai `null`, bukan URL buatan. Data kandidat tidak otomatis digabung ke katalog utama sampai diverifikasi.
+
+Format setiap kandidat mengikuti katalog aplikasi: `title` (string), `year` (integer), `url` (HTTPS film asli), `type` (`movie`), `poster_url` (URL HTTPS dari halaman sumber atau string kosong), dengan `tmdb_id` sebagai metadata tambahan. Pengayaan metadata katalog yang sudah ada memakai key `poster_url` seperti pada `tools/prepare_app_catalog.py`.
