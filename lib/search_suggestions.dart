@@ -23,12 +23,10 @@ class CatalogSuggestionIndex {
       final entry = item.entry;
       final key = '${entry.type}:${entry.year}:${item.normalized}';
       if (!seen.add(key)) continue;
-      final rank = position == 0
-          ? 0
-          : (position > 0 && !RegExp(r'[a-z0-9]').hasMatch(
-                    item.normalized[position - 1])
-              ? 1
-              : 2);
+      final previous = position > 0 ? item.normalized.codeUnitAt(position - 1) : 0;
+      final alphanumeric = (previous >= 48 && previous <= 57) ||
+          (previous >= 97 && previous <= 122);
+      final rank = position == 0 ? 0 : (alphanumeric ? 2 : 1);
       final row = _RankedTitle(item, rank);
       var insertAt = 0;
       while (insertAt < top.length && _compare(top[insertAt], row) <= 0) {
