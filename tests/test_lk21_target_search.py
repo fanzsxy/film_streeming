@@ -22,7 +22,7 @@ class TargetSearchTests(unittest.TestCase):
     def test_poster_from_search_card(self):
         html = '<article><a href="/the-batman-2022"><img data-src="https://images.example/poster.jpg" alt="The Batman"></a></article>'
         result = extract_matches(html, "2022", ["The Batman"])
-        self.assertEqual(result[0]["poster"], "https://images.example/poster.jpg")
+        self.assertEqual(result[0]["poster_url"], "https://images.example/poster.jpg")
         self.assertEqual(result[0]["title"], "The Batman")
         self.assertEqual(result[0]["year"], 2022)
 
