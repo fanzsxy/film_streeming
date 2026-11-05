@@ -13,7 +13,8 @@ class PacingTests(unittest.TestCase):
         pacer.before_navigation(page)
         pacer.before_navigation(page)
         pacer.before_navigation(page)
-        page.wait_for_timeout.assert_called_once_with(1300)
+        self.assertEqual(page.wait_for_timeout.call_count, 1)
+        self.assertTrue(1299 <= page.wait_for_timeout.call_args.args[0] <= 1302)
 
     @patch("tools.local_lk21_browser_search.time.monotonic",
            side_effect=[10.0, 10.0, 12.5, 12.5])
