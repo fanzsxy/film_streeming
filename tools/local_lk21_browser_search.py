@@ -127,8 +127,7 @@ def run(limit, delay, state_path=STATE, output=OUTPUT):
     processed = 0
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=False)
-        page = browser.new_page(viewport={"width": 1280, "height": 820},
-                                user_agent=UA)
+        page = browser.new_page(viewport={"width": 1280, "height": 820})
         try:
             print("Chromium lokal terbuka. Memeriksa robots.txt...", flush=True)
             robots = load_robots(page)
