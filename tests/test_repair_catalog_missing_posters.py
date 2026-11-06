@@ -2,6 +2,7 @@
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from tools.repair_catalog_missing_posters import (
@@ -73,6 +74,36 @@ class CatalogPosterRepairTests(unittest.TestCase):
         poster, status = extract_catalog_poster(html, HOST + "adult-film-2015", film)
         self.assertEqual(status, "found")
         self.assertEqual(poster, "https://images.example/actual-poster.jpg")
+
+    @patch("tools.repair_catalog_missing_posters.poster_from_detail", return_value=None)
+    def test_og_image_fallback_for_matching_movie(self, _parser):
+        html = """<html><head><meta property="og:image"
+          content="https://poster.assetsy.de/wp-content/uploads/2025/12/film-avatar-fire-ash-2025-lk21.jpg">
+          </head><body><h1>Avatar: Fire and Ash (2025)</h1></body></html>"""
+        row = {"title": "Avatar: Fire and Ash", "year": 2025, "type": "movie"}
+        poster, status = extract_catalog_poster(
+            html, HOST + "avatar-fire-ash-2025", row)
+        self.assertEqual(status, "found_og_image")
+        self.assertEqual(poster,
+            "https://poster.assetsy.de/wp-content/uploads/2025/12/film-avatar-fire-ash-2025-lk21.jpg")
+        self.assertEqual(extract_catalog_poster(
+            html, HOST + "avatar-fire-ash-2025",
+            {**row, "year": 2024}), (None, "year_mismatch"))
+        self.assertEqual(extract_catalog_poster(
+            html, HOST + "avatar-fire-ash-2025",
+            {**row, "title": "Unrelated"}), (None, "title_mismatch"))
+
+    @patch("tools.repair_catalog_missing_posters.poster_from_detail", return_value=None)
+    def test_og_image_rejects_logo_and_unsupported_format(self, _parser):
+        for image in ("https://images.example.com/site-logo.svg",
+                      "https://images.example.com/favicon.jpg",
+                      "https://images.example.com/other.jpg"):
+            html = ('<h1>Sample Film (2020)</h1><meta property="og:image" '
+                    'content="' + image + '">')
+            self.assertEqual(extract_catalog_poster(
+                html, HOST + "sample-film-2020",
+                {"title": "Sample Film", "year": 2020}),
+                (None, "no_detail_poster"))
 
     def test_gate_without_real_detail_heading_is_not_a_poster(self):
         html = """<html><head><meta property="og:image"
