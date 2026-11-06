@@ -26,11 +26,17 @@ STATE = Path("crawler/data/local_sitemap_detail_progress.json")
 OUTPUT = Path("crawler/data/local_sitemap_detail_results.json")
 PROVISIONAL = "sitemap_slug_unverified"
 FINAL = "sitemap_detail_verified"
+AGE = "sitemap_age_restricted"
 
 
 def detail_metadata(html, url, expected_year=None):
     """Prefer visible detail heading; do not silently use slug as verified title."""
     soup = BeautifulSoup(html, "html.parser")
+    visible = soup.get_text(" ", strip=True).casefold()
+    if (("materi khusus dewasa" in visible and
+         ("18 tahun" in visible or "konfirmasi umur" in visible))
+        or ("login gmail anda" in visible and "peringatan" in visible)):
+        return None, "age_restricted"
     heading = soup.select_one("h1")
     if heading is None:
         return None, "missing_heading"
@@ -133,11 +139,20 @@ def run(args):
         write_json(args.state, state)
         write_json(args.output, {"source": "local_sitemap_visible_chromium",
                                  "checked": len(completed),
-                                 "verified": list(results.values()),
-                                 "verified_count": len(results),
+                                 "verified": [r for r in results.values() if
+                                              r.get("metadata_status") == FINAL],
+                                 "verified_count": sum(1 for r in results.values() if
+                                                       r.get("metadata_status") == FINAL),
+                                 "age_restricted": [r for r in results.values() if
+                                                    r.get("metadata_status") == AGE],
+                                 "age_restricted_count": sum(1 for r in results.values() if
+                                                             r.get("metadata_status") == AGE),
                                  "errors": errors, "applied": False})
     save()
-    remaining = [x for x in queue if x["url"] not in completed]
+    # Older releases could misclassify age gates as year_mismatch; retry once.
+    retried = set(state.setdefault("legacy_year_mismatch_retried", []))
+    remaining = [x for x in queue if x["url"] not in completed or
+                 (completed[x["url"]] == "year_mismatch" and x["url"] not in retried)]
     if not remaining:
         print("Tidak ada URL baru untuk diperiksa. Katalog belum diubah.", flush=True)
         return
@@ -164,9 +179,18 @@ def run(args):
                     row = None
                 else:
                     row, status = detail_metadata(html, url, target["year"])
+                if status == "age_restricted":
+                    # Keep the sitemap URL without using age-gate content as metadata.
+                    candidate = parse_slug(url, args.start_year, args.end_year)
+                    if candidate and candidate["year"] == target["year"]:
+                        row = {**candidate, "metadata_status": AGE,
+                               "age_restricted": True}
                 if row is not None:
                     row["mode"] = target["mode"]
                     results[url] = row
+                if completed.get(url) == "year_mismatch":
+                    retried.add(url)
+                    state["legacy_year_mismatch_retried"] = sorted(retried)
                 completed[url] = status
                 processed += 1
                 print(f"  Status: {status} | terverifikasi: {len(results)}", flush=True)

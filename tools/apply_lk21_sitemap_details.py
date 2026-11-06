@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 
 from tools.import_local_lk21_sitemaps import CATALOG, identity
-from tools.local_lk21_sitemap_details import OUTPUT, PROVISIONAL, FINAL
+from tools.local_lk21_sitemap_details import OUTPUT, PROVISIONAL, FINAL, AGE
 from tools.local_lk21_gap_match import write_json
 
 
@@ -67,8 +67,36 @@ def plan(catalog, report):
                 continue
             additions.append(normalized)
             names.add(key)
+    # Age-restricted pages are catalogued using only sitemap URL/slug. They
+    # remain explicitly unverified and never replace an existing movie.
+    from tools.import_local_lk21_sitemaps import clean_url, parse_slug
+    for source in report.get("age_restricted", []):
+        if not isinstance(source, dict) or source.get("metadata_status") != AGE:
+            stats["invalid"] += 1
+            continue
+        url = clean_url(source.get("url"))
+        if not url or url != source.get("url") or not source.get("age_restricted"):
+            stats["invalid"] += 1
+            continue
+        parsed = parse_slug(url, 1900, 2027)
+        if not parsed or parsed["year"] != source.get("year"):
+            stats["invalid"] += 1
+            continue
+        if url in planned_urls or url in by_url:
+            stats["duplicates"] += 1
+            continue
+        key = identity(parsed["title"], parsed["year"])
+        if key in names:
+            stats["duplicates"] += 1
+            continue
+        parsed["metadata_status"] = AGE
+        parsed["age_restricted"] = True
+        additions.append(parsed)
+        planned_urls.add(url)
+        names.add(key)
     stats["updates"] = len(updates)
     stats["additions"] = len(additions)
+    stats["age_restricted_additions"] = sum(1 for r in additions if r.get("age_restricted"))
     return updates, additions, stats
 
 
