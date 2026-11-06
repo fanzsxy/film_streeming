@@ -156,8 +156,8 @@ def search_poster_from_listing(html, search_url, item):
                  img.get("alt") or anchor.get("title") or anchor.get_text(" ", strip=True))
         label = re.sub(r"\s+", " ", label or "").strip()
         # The card, NOT some unrelated search text, must establish title+year.
-        normalized_label = re.sub(r"\\s*\\(?(?:19\\d{2}|20\\d{2})\\)?\\s*$", "", label)
-        normalized_label = re.sub(r"\\s*[-|]\\s*(?:series|movie|film)\\s*$", "", normalized_label, flags=re.I)
+        normalized_label = re.sub(r"\s*[-|]\s*(?:series|movie|film)\s*$", "", label, flags=re.I)
+        normalized_label = re.sub(r"\s*\(?(?:19\d{2}|20\d{2})\)?\s*$", "", normalized_label)
         if identity(normalized_label, expected_year)[0] != expected:
             continue
         card_text = parent.get_text(" ", strip=True)
