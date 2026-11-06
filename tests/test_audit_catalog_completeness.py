@@ -1,6 +1,6 @@
 import unittest
 
-from tools.audit_catalog_completeness import audit, issues
+from tools.audit_catalog_completeness import audit, issues, good_poster
 
 
 class CatalogCompletenessTests(unittest.TestCase):
@@ -8,6 +8,19 @@ class CatalogCompletenessTests(unittest.TestCase):
         row = {"title": "A Film", "url": "https://example.com/a",
                "poster_url": "https://example.com/a.jpg", "type": "movie"}
         self.assertEqual(issues(row), [])  # synopsis intentionally missing
+
+    def test_rejects_placeholder_and_nonposter_images(self):
+        for poster in (
+            "https://example.com/img/no-poster.png",
+            "https://example.com/poster-placeholder.jpg",
+            "https://example.com/favicon.ico",
+            "https://example.com/image.svg",
+        ):
+            self.assertFalse(good_poster(poster))
+            row = {"title": "A", "url": "https://example.com/a",
+                   "poster_url": poster, "type": "movie"}
+            self.assertEqual(issues(row), ["poster"])
+        self.assertTrue(good_poster("https://example.com/posters/real-poster.jpg"))
 
     def test_identifies_movie_series_and_errors(self):
         doc = {"items": [
