@@ -22,6 +22,8 @@ from tools.repair_catalog_missing_posters import (
 SITEMAP_PROGRESS = Path("crawler/data/local_sitemap_detail_progress.json")
 STATE = Path("crawler/data/redirect_poster_recheck_progress.json")
 REPORT = Path("crawler/data/redirect_poster_recheck_report.json")
+ALL_STATE = Path("crawler/data/remaining_movie_poster_progress.json")
+ALL_REPORT = Path("crawler/data/remaining_movie_poster_report.json")
 RECHECK = {"redirect", "missing_detail_heading_or_year", "no_detail_poster"}
 RESTRICTED = ("restricted", "verification", "captcha", "403", "401", "429")
 
@@ -33,7 +35,7 @@ def eligible_status(value, recheck=RECHECK):
     return group_status(value) == "redirect" or value in recheck
 
 
-def targets(catalog, prior, recheck=RECHECK, sitemap_state=None):
+def targets(catalog, prior, recheck=RECHECK, sitemap_state=None, all_missing=False):
     sitemap_state = sitemap_state or {}
     for index, item in enumerate(catalog.get("items") or []):
         if not isinstance(item, dict) or item.get("type") != "movie":
@@ -42,6 +44,9 @@ def targets(catalog, prior, recheck=RECHECK, sitemap_state=None):
             continue
         url = str(item.get("url") or "").rstrip("/")
         if not validated(url):
+            continue
+        if all_missing:
+            yield index, item
             continue
         reason = status_for(url, prior, sitemap_state)
         # First follow the same prioritized status that triage reported.
@@ -64,9 +69,12 @@ def run(args):
     original = json.loads(args.progress.read_text(encoding="utf-8-sig"))
     sitemap = (json.loads(args.sitemap_progress.read_text(encoding="utf-8-sig"))
                if args.sitemap_progress.is_file() else {})
-    queue = list(targets(catalog, original, sitemap_state=sitemap))
-    state = (json.loads(args.state.read_text(encoding="utf-8-sig"))
-             if args.state.is_file() else {"checked": {}, "matches": {}})
+    queue = list(targets(catalog, original, sitemap_state=sitemap,
+                         all_missing=args.all_missing))
+    state_path = args.state if not args.all_missing or args.state != STATE else ALL_STATE
+    report_path = args.report if not args.all_missing or args.report != REPORT else ALL_REPORT
+    state = (json.loads(state_path.read_text(encoding="utf-8-sig"))
+             if state_path.is_file() else {"checked": {}, "matches": {}})
     checked = state.setdefault("checked", {})
     matches = state.setdefault("matches", {})
     todo = [(i, item) for i, item in queue
@@ -87,7 +95,7 @@ def run(args):
     print("Kandidat redirect/detail movie:", len(queue),
           "| diperiksa sekarang:", len(todo), flush=True)
     if todo:
-        from playwright.sync_api import sync_playwright
+        from playwright.sync_api import sync_playwright, Error as BrowserError
         with sync_playwright() as pw:
             browser = pw.chromium.launch(headless=False)
             page = browser.new_page(viewport={"width": 1280, "height": 820})
@@ -114,6 +122,20 @@ def run(args):
                             matches[url] = {"index": index, "poster_url": poster,
                                             "final_url": final_url,
                                             "title": item.get("title"), "year": item.get("year")}
+                    except BrowserError as exc:
+                        msg = str(exc).splitlines()[0][:300]
+                        if "net::ERR_ABORTED" in str(exc):
+                            status = "navigation_aborted"
+                            final_url = page.url
+                            checked[url] = {"status": status, "final_url": final_url}
+                            state.setdefault("errors", []).append({"url": url, "reason": msg})
+                            write_json(state_path, state)
+                            print("  Navigasi dibatalkan, lanjut URL berikutnya:", msg, flush=True)
+                            continue
+                        state.setdefault("errors", []).append({"url": url, "reason": msg})
+                        write_json(state_path, state)
+                        print("  Browser gagal, pemeriksaan dihentikan:", msg, flush=True)
+                        break
                     except RuntimeError as exc:
                         final_url = page.url
                         error = str(exc)
@@ -124,12 +146,12 @@ def run(args):
                             {"url": url, "final_url": final_url, "reason": error})
                         if status == "access_restricted":
                             checked[url] = {"status": status, "final_url": final_url}
-                            write_json(args.state, state)
+                            write_json(state_path, state)
                             print("  Pemeriksaan dihentikan karena pembatasan akses.", flush=True)
                             break
                     checked[url] = {"status": status, "final_url": final_url}
                     print(f"  Status: {status} | tujuan: {final_url}", flush=True)
-                    write_json(args.state, state)
+                    write_json(state_path, state)
             finally:
                 browser.close()
     applicable = []
@@ -159,10 +181,10 @@ def run(args):
               "statuses": dict(counts), "verified_poster": len(applicable),
               "applied": applied, "details": checked,
               "matches": matches}
-    write_json(args.report, report)
+    write_json(report_path, report)
     print("Poster terverifikasi dan bisa dipasang:", len(applicable))
     print("Poster dipasang:", applied)
-    print("Laporan:", args.report)
+    print("Laporan:", report_path)
     if not args.apply:
         print("DRY RUN: tidak mengubah katalog. --apply memasang hanya poster terverifikasi.")
 
@@ -177,6 +199,8 @@ def main():
     p.add_argument("--limit", type=int, default=10)
     p.add_argument("--delay", type=float, default=2.0)
     p.add_argument("--recheck", action="store_true")
+    p.add_argument("--all-missing", action="store_true",
+                   help="Inspect every missing movie poster by its catalog URL, not title search; use separate resumable checkpoint")
     p.add_argument("--apply", action="store_true")
     args = p.parse_args()
     if args.limit < 0 or args.delay < 2:
