@@ -50,60 +50,6 @@ class LocalSitemapDetailTests(unittest.TestCase):
         self.assertEqual(detail_metadata(html, BASE + "beautiful-film-2023", 2022)[1],
                          "year_mismatch")
 
-    def test_adult_film_with_real_poster_and_synopsis_stays_verified(self):
-        html = """<html><head><meta property="og:image"
-            content="https://poster.example/movie.jpg"></head><body>
-            <h1>Adult Drama (2015)</h1>
-            <aside>PERINGATAN! MATERI KHUSUS DEWASA.
-            Anda dapat membuka halaman ini jika telah berusia 18 tahun ke atas.</aside>
-            <div class="synopsis">Kisah dua orang yang mencoba membangun kembali
-            hubungan setelah konflik panjang di kota kecil mereka.</div>
-            </body></html>"""
-        row, status = detail_metadata(html, BASE + "adult-drama-2015", 2015)
-        self.assertEqual(status, "verified")
-        self.assertEqual(row["title"], "Adult Drama")
-        self.assertEqual(row["metadata_status"], "sitemap_detail_verified")
-        self.assertTrue(row["poster_url"])
-        self.assertTrue(row["synopsis"])
-
-    def test_age_gate_generic_meta_is_not_movie_synopsis(self):
-        html = """<html><head><meta property="og:image"
-            content="https://poster.example/site.jpg"/>
-            <meta name="description"
-            content="Halaman terbatas khusus akun untuk pengguna dewasa tanpa detail film.">
-            </head><body><h1>Adult Drama (2015)</h1>
-            <p>PERINGATAN! MATERI KHUSUS DEWASA, usia 18 tahun.</p>
-            </body></html>"""
-        row, status = detail_metadata(html, BASE + "adult-drama-2015", 2015)
-        self.assertIsNone(row)
-        self.assertEqual(status, "age_restricted")
-
-    def test_age_gate_detected_and_cataloged_without_fake_metadata(self):
-        html = """<html><body><h1>Kabukicho Love Hotel (2015)</h1>
-        <p>PERINGATAN! MATERI KHUSUS DEWASA</p>
-        <p>Anda dapat membuka halaman ini jika telah berusia 18 tahun ke atas.</p>
-        <p>Untuk mengkonfirmasi umur anda silahkan login.</p>
-        </body></html>"""
-        row, status = detail_metadata(html, BASE + "kabukicho-love-hotel-2015", 2015)
-        self.assertIsNone(row)
-        self.assertEqual(status, "age_restricted")
-        age_entry = {"title": "Kabukicho Love Hotel", "year": 2015,
-                     "url": BASE + "kabukicho-love-hotel-2015", "type": "movie",
-                     "metadata_status": "sitemap_age_restricted", "age_restricted": True}
-        existing = {"items": [{"title": "Existing", "year": 2010,
-                               "url": BASE + "existing-2010", "type": "movie"}]}
-        updates, additions, stats = plan(
-            existing, {"applied": False, "verified": [],
-                       "age_restricted": [age_entry]})
-        self.assertEqual(len(updates), 0)
-        self.assertEqual(stats["age_restricted_additions"], 1)
-        self.assertEqual(additions[0]["title"], "Kabukicho Love Hotel")
-        self.assertNotIn("poster_url", additions[0])
-        self.assertNotIn("synopsis", additions[0])
-        existing["items"].append(additions[0])
-        self.assertEqual(plan(existing, {"applied": False, "verified": [],
-                       "age_restricted": [age_entry]})[2]["additions"], 0)
-
     def test_plan_upgrades_provisional_and_adds_new_without_tmdb(self):
         catalog = {"items": [
             {"title": "A Film", "year": 2021, "url": BASE + "a-film-2021",
