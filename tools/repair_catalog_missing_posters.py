@@ -156,7 +156,9 @@ def search_poster_from_listing(html, search_url, item):
                  img.get("alt") or anchor.get("title") or anchor.get_text(" ", strip=True))
         label = re.sub(r"\s+", " ", label or "").strip()
         # The card, NOT some unrelated search text, must establish title+year.
-        if identity(label, expected_year)[0] != expected:
+        normalized_label = re.sub(r"\\s*\\(?(?:19\\d{2}|20\\d{2})\\)?\\s*$", "", label)
+        normalized_label = re.sub(r"\\s*[-|]\\s*(?:series|movie|film)\\s*$", "", normalized_label, flags=re.I)
+        if identity(normalized_label, expected_year)[0] != expected:
             continue
         card_text = parent.get_text(" ", strip=True)
         slug = urlparse(href).path.rstrip("/").split("/")[-1]
@@ -312,34 +314,26 @@ def run(args):
                             write_json(args.progress, state)
                             continue
                         old_reason = completed.get(url)
-                        try:
-                            if args.retry_search and old_reason in retryable:
-                                poster, status = search_redirected_poster(page, robots, pacer, item)
-                                search_checked[url] = status
-                                if status in retryable and args.search_on_redirect:
+                        if args.retry_search and old_reason in retryable:
                             try:
-                                searched, searched_status = search_redirected_poster(
-                                    page, robots, pacer, item)
-                                search_checked[url] = searched_status
-                                if searched:
-                                    poster, status = searched, searched_status
-                                else:
-                                    status = searched_status
+                                poster, status = search_redirected_poster(page, robots, pacer, item)
                             except RuntimeError as exc:
                                 state.setdefault("errors", []).append({
                                     "url": url, "reason": "search: " + str(exc)})
-                                print("Akses pencarian dihentikan:", str(exc), flush=True)
                                 write_json(args.progress, state)
+                                print("Akses pencarian dihentikan:", str(exc), flush=True)
                                 break
-                        if poster and apply_poster(catalog, idx, poster):
-                                    repaired[url] = "lk21_public_search"
-                                    counters["search_repaired"] += 1
-                                    completed[url] = "repaired"
-                                    commit()
-                                else:
-                                    counters[status] += 1
-                                    write_json(args.progress, state)
-                                continue
+                            search_checked[url] = status
+                            if poster and apply_poster(catalog, idx, poster):
+                                repaired[url] = "lk21_public_search"
+                                counters["search_repaired"] += 1
+                                completed[url] = "repaired"
+                                commit()
+                            else:
+                                counters[status] += 1
+                                write_json(args.progress, state)
+                            continue
+                        try:
                             html = browse(page, robots, url, pacer=pacer)
                         except RuntimeError as exc:
                             state.setdefault("errors", []).append({"url": url, "reason": str(exc)})
@@ -350,8 +344,23 @@ def run(args):
                             poster, status = None, "redirect"
                         else:
                             poster, status = extract_catalog_poster(html, url, item)
+                        if status in retryable and args.search_on_redirect:
+                            try:
+                                searched, search_status = search_redirected_poster(
+                                    page, robots, pacer, item)
+                            except RuntimeError as exc:
+                                state.setdefault("errors", []).append({
+                                    "url": url, "reason": "search: " + str(exc)})
+                                write_json(args.progress, state)
+                                print("Akses pencarian dihentikan:", str(exc), flush=True)
+                                break
+                            search_checked[url] = search_status
+                            if searched:
+                                poster, status = searched, search_status
+                            else:
+                                status = search_status
                         if poster and apply_poster(catalog, idx, poster):
-                            repaired[url] = "chromium_detail"
+                            repaired[url] = "lk21_public_search" if status == "search_verified" else "chromium_detail"
                             counters["browser_repaired"] += 1
                             completed[url] = "repaired"
                             commit()
