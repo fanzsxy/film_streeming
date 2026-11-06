@@ -18,22 +18,25 @@ from tools.repair_catalog_missing_posters import (
     CATALOG, PROGRESS, extract_catalog_poster, save_catalog, write_json,
 )
 
+SITEMAP_PROGRESS = Path("crawler/data/local_sitemap_detail_progress.json")
 STATE = Path("crawler/data/redirect_poster_recheck_progress.json")
 REPORT = Path("crawler/data/redirect_poster_recheck_report.json")
 RECHECK = {"redirect", "missing_detail_heading_or_year", "no_detail_poster"}
 RESTRICTED = ("restricted", "verification", "captcha", "403", "401", "429")
 
 
-def targets(catalog, prior, recheck=RECHECK):
+def targets(catalog, prior, recheck=RECHECK, sitemap_state=None):
     checked = prior.get("checked") or {}
     search_checked = prior.get("search_checked") or {}
+    sitemap_checked = (sitemap_state or {}).get("completed") or {}
     for index, item in enumerate(catalog.get("items") or []):
         if not isinstance(item, dict) or item.get("type") != "movie":
             continue
         if good_poster(item.get("poster_url")):
             continue
         url = str(item.get("url") or "").rstrip("/")
-        if (checked.get(url) in recheck or search_checked.get(url) in recheck) and validated(url):
+        if (checked.get(url) in recheck or search_checked.get(url) in recheck or
+                sitemap_checked.get(url) in recheck) and validated(url):
             yield index, item
 
 
@@ -47,7 +50,9 @@ def classify(html, final_url, item):
 def run(args):
     catalog = json.loads(args.catalog.read_text(encoding="utf-8-sig"))
     original = json.loads(args.progress.read_text(encoding="utf-8-sig"))
-    queue = list(targets(catalog, original))
+    sitemap = (json.loads(args.sitemap_progress.read_text(encoding="utf-8-sig"))
+               if args.sitemap_progress.is_file() else {})
+    queue = list(targets(catalog, original, sitemap_state=sitemap))
     state = (json.loads(args.state.read_text(encoding="utf-8-sig"))
              if args.state.is_file() else {"checked": {}, "matches": {}})
     checked = state.setdefault("checked", {})
@@ -58,6 +63,11 @@ def run(args):
         todo = todo[:args.limit]
     poster_checked = original.get("checked") or {}
     search_checked = original.get("search_checked") or {}
+    sitemap_checked = sitemap.get("completed") or {}
+    print("Status dari sitemap:", sum(
+        sitemap_checked.get(str(item["url"]).rstrip("/")) in RECHECK
+        for _, item in queue
+    ), flush=True)
     print("Status dari detail:", sum(
         poster_checked.get(str(item["url"]).rstrip("/")) in RECHECK
         for _, item in queue
@@ -152,6 +162,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--catalog", type=Path, default=CATALOG)
     p.add_argument("--progress", type=Path, default=PROGRESS)
+    p.add_argument("--sitemap-progress", type=Path, default=SITEMAP_PROGRESS)
     p.add_argument("--state", type=Path, default=STATE)
     p.add_argument("--report", type=Path, default=REPORT)
     p.add_argument("--limit", type=int, default=10)
