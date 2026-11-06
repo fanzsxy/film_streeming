@@ -1,9 +1,18 @@
 import unittest
 
 from tools.apply_observed_movie_posters import OBSERVED, proposed_updates
+from tools.audit_catalog_completeness import good_poster
 
 
 class ObservedMoviePosterTests(unittest.TestCase):
+    def test_real_avatar_movie_posters_are_valid(self):
+        for _url, (_title, _year, poster) in OBSERVED.items():
+            self.assertTrue(good_poster(poster), poster)
+        self.assertFalse(good_poster("https://example.org/avatars/user.png"))
+        self.assertFalse(good_poster("https://example.org/img/default-avatar.jpg"))
+        self.assertFalse(good_poster("https://example.org/img/placeholder.png"))
+        self.assertFalse(good_poster("https://example.org/img/favicon.ico"))
+
     def test_five_exact_urls_are_eligible(self):
         rows = [
             {"url": url, "title": title, "year": year,
