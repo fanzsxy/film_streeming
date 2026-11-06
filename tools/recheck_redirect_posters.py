@@ -81,9 +81,9 @@ def source_metadata(html, final_url):
     if not heading_text:
         return None, "missing_detail_heading"
     # Strip a trailing release year for clean display; do not compare years.
-    title = re.sub(r"\\s*\\((?:19|20)\\d{2}\\)\\s*$", "", heading_text).strip()
+    title = re.sub(r"\s*\((?:19|20)\d{2}\)\s*$", "", heading_text).strip()
     if title == heading_text:
-        title = re.sub(r"\\s+(?:19|20)\\d{2}\\s*$", "", heading_text).strip()
+        title = re.sub(r"\s+(?:19|20)\d{2}\s*$", "", heading_text).strip()
     if len(title) < 2 or title.casefold() in {
             "home", "movies", "movie", "watch online", "lk21"}:
         return None, "generic_heading"
@@ -162,7 +162,7 @@ def run(args):
                                 matches[url] = {"index": index, "poster_url": poster,
                                                 "final_url": final_url,
                                                 "original_title": item.get("title"),
-                                                "observed_title": extracted["observed_title"],
+                                                "observed_title": extracted["observed_title"]}
                         else:
                             status, poster = classify(html, final_url, item)
                             if poster:
