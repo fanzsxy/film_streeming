@@ -7,7 +7,7 @@ reported for review, never silently discarded.
 """
 import argparse
 import json
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
@@ -35,6 +35,28 @@ def slug(row):
         return None
 
 
+def meaningful(value):
+    return value not in (None, "", [], {})
+
+
+def reconcile_metadata(kept, removed):
+    """Preserve useful data instead of treating missing metadata as conflict."""
+    updates, conflicts = {}, []
+    for key in sorted((set(kept) | set(removed)) - FIELDS):
+        old, new = kept.get(key), removed.get(key)
+        if meaningful(new) and not meaningful(old):
+            updates[key] = new
+        elif meaningful(new) and meaningful(old) and new != old:
+            conflicts.append(key)
+    old_poster, new_poster = kept.get("poster_url"), removed.get("poster_url")
+    if not good_poster(old_poster) and good_poster(new_poster):
+        updates["poster_url"] = new_poster
+    elif (good_poster(old_poster) and good_poster(new_poster)
+          and old_poster != new_poster):
+        conflicts.append("poster_url")
+    return updates, conflicts
+
+
 def plan(document):
     items = document.get("items")
     if not isinstance(items, list):
@@ -58,36 +80,27 @@ def plan(document):
         indices.sort(key=lambda i: (KEEP_ORDER[urlparse(items[i]["url"]).hostname],
                                     -len(str(items[i].get("title") or "")), i))
         keep = indices[0]
-        for drop in indices[1:]:
-            a, b = items[keep], items[drop]
-            same_poster = a.get("poster_url") == b.get("poster_url")
-            poster_disagreement = (not same_poster and
-                                   good_poster(a.get("poster_url")) and
-                                   good_poster(b.get("poster_url")))
-            extra = sorted(k for k in (set(a) | set(b)) - FIELDS
-                           if b.get(k) not in (None, "", [], {})
-                           and b.get(k) != a.get(k))
-            rec = {"keep_index": keep, "remove_index": drop,
-                   "keep_title": a.get("title"), "remove_title": b.get("title"),
-                   "keep_url": a.get("url"), "remove_url": b.get("url"),
-                   "year": year, "slug": path,
-                   "keep_poster": a.get("poster_url"),
-                   "remove_poster": b.get("poster_url"),
-                   "reason": "same_url_path_and_year"}
-            if poster_disagreement:
-                rec["reason"] = "poster_conflict_same_url_path"
-                review.append(rec)
-            elif extra:
-                rec["reason"] = "metadata_conflict_same_url_path"
-                rec["conflict_fields"] = extra
-                review.append(rec)
-            elif not same_poster and good_poster(b.get("poster_url")):
-                # The discarded row has artwork the retained row lacks.
-                # Do not throw away the only usable poster.
-                rec["reason"] = "poster_only_on_removed_row"
-                review.append(rec)
-            else:
-                safe.append(rec)
+        if len(indices) > 2:
+            review.append({"reason": "three_or_more_rows_same_path",
+                           "slug": path, "year": year, "indices": indices})
+            continue
+        drop = indices[1]
+        a, b = items[keep], items[drop]
+        updates, conflict_fields = reconcile_metadata(a, b)
+        rec = {"keep_index": keep, "remove_index": drop,
+               "keep_title": a.get("title"), "remove_title": b.get("title"),
+               "keep_url": a.get("url"), "remove_url": b.get("url"),
+               "year": year, "slug": path,
+               "keep_poster": a.get("poster_url"),
+               "remove_poster": b.get("poster_url"),
+               "updates": updates,
+               "reason": "same_url_path_and_year"}
+        if conflict_fields:
+            rec["reason"] = "metadata_conflict_same_url_path"
+            rec["conflict_fields"] = conflict_fields
+            review.append(rec)
+        else:
+            safe.append(rec)
     return {"total": len(items), "safe_remove_count": len(safe),
             "review_count": len(review), "safe_removals": safe,
             "needs_review": review}
@@ -100,6 +113,13 @@ def run(args):
     print("DUPLIKAT AMAN (path URL dan tahun sama):",
           result["safe_remove_count"])
     print("PERLU REVIEW (path sama, metadata berbeda):", result["review_count"])
+    print("DUPLIKAT AMAN DENGAN METADATA DIPERTAHANKAN:",
+          sum(bool(row["updates"]) for row in result["safe_removals"]))
+    reasons = Counter(row["reason"] for row in result["needs_review"])
+    print("ALASAN REVIEW:", dict(reasons))
+    fields = Counter(field for row in result["needs_review"]
+                     for field in row.get("conflict_fields", []))
+    print("FIELD METADATA BENTROK:", dict(fields.most_common()))
     for row in result["safe_removals"][:15]:
         print("  GABUNG:", row["remove_title"], "=>", row["keep_title"],
               "|", row["slug"])
@@ -113,6 +133,8 @@ def run(args):
                 datetime.now().strftime("%Y%m%d_%H%M%S_%f") + args.catalog.suffix)
             backup.write_bytes(args.catalog.read_bytes())
             remove_indices = {x["remove_index"] for x in removals}
+            for entry in removals:
+                document["items"][entry["keep_index"]].update(entry["updates"])
             document["items"] = [row for i, row in enumerate(document["items"])
                                  if i not in remove_indices]
             save_catalog(args.catalog, document)
