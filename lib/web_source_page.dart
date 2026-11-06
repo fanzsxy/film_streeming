@@ -884,14 +884,19 @@ class _WebSourcePageState extends State<WebSourcePage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(
               onPressed: _external,
               icon: const Icon(Icons.open_in_browser, size: 18),
-              label: const Text('Buka situs / verifikasi usia 18+'),
+              label: const Text('Buka situs / verifikasi 18+'),
+            )),
+            const SizedBox(width: 6),
+            IconButton(
+              tooltip: 'Muat ulang player',
+              onPressed: () => _controller.reload(),
+              icon: const Icon(Icons.refresh),
             ),
-          ),
+          ]),
           const Text(
             'Jika situs meminta login Google, lakukan verifikasi di browser '
             'sesuai ketentuan situs. Setelah kembali, muat ulang player. '
