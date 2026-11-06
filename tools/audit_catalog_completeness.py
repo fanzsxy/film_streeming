@@ -36,9 +36,23 @@ def good_poster(value):
     path = urlparse(value).path.lower()
     if path.endswith((".svg", ".gif", ".ico")):
         return False
-    return not any(token in path for token in (
-        "placeholder", "no-image", "no-poster", "favicon", "avatar"
-    ))
+    # Substrings such as "avatar" also occur in legitimate movie titles
+    # (Avatar, Mahavatar Narsimha). Reject generic avatar/profile assets,
+    # not film posters containing the same letters in their filenames.
+    if any(token in path for token in (
+        "placeholder", "no-image", "no-poster", "favicon"
+    )):
+        return False
+    filename = path.rsplit("/", 1)[-1]
+    if "/avatars/" in path or "/profile/" in path:
+        return False
+    if filename in (
+        "avatar", "avatar.jpg", "avatar.jpeg", "avatar.png", "avatar.webp",
+        "default-avatar.jpg", "default-avatar.png", "default-avatar.webp",
+        "user-avatar.jpg", "user-avatar.png", "user-avatar.webp",
+    ):
+        return False
+    return True
 
 
 def issues(row):
