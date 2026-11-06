@@ -50,6 +50,32 @@ class LocalSitemapDetailTests(unittest.TestCase):
         self.assertEqual(detail_metadata(html, BASE + "beautiful-film-2023", 2022)[1],
                          "year_mismatch")
 
+    def test_age_gate_detected_and_cataloged_without_fake_metadata(self):
+        html = """<html><body><h1>Kabukicho Love Hotel (2015)</h1>
+        <p>PERINGATAN! MATERI KHUSUS DEWASA</p>
+        <p>Anda dapat membuka halaman ini jika telah berusia 18 tahun ke atas.</p>
+        <p>Untuk mengkonfirmasi umur anda silahkan login.</p>
+        </body></html>"""
+        row, status = detail_metadata(html, BASE + "kabukicho-love-hotel-2015", 2015)
+        self.assertIsNone(row)
+        self.assertEqual(status, "age_restricted")
+        age_entry = {"title": "Kabukicho Love Hotel", "year": 2015,
+                     "url": BASE + "kabukicho-love-hotel-2015", "type": "movie",
+                     "metadata_status": "sitemap_age_restricted", "age_restricted": True}
+        existing = {"items": [{"title": "Existing", "year": 2010,
+                               "url": BASE + "existing-2010", "type": "movie"}]}
+        updates, additions, stats = plan(
+            existing, {"applied": False, "verified": [],
+                       "age_restricted": [age_entry]})
+        self.assertEqual(len(updates), 0)
+        self.assertEqual(stats["age_restricted_additions"], 1)
+        self.assertEqual(additions[0]["title"], "Kabukicho Love Hotel")
+        self.assertNotIn("poster_url", additions[0])
+        self.assertNotIn("synopsis", additions[0])
+        existing["items"].append(additions[0])
+        self.assertEqual(plan(existing, {"applied": False, "verified": [],
+                       "age_restricted": [age_entry]})[2]["additions"], 0)
+
     def test_plan_upgrades_provisional_and_adds_new_without_tmdb(self):
         catalog = {"items": [
             {"title": "A Film", "year": 2021, "url": BASE + "a-film-2021",
