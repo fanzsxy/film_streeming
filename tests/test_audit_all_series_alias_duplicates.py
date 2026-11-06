@@ -39,7 +39,7 @@ class AllSeriesAliasDuplicateTests(unittest.TestCase):
         ]
         result = plan({"items": items})
         self.assertEqual(result["safe_remove_count"], 0)
-        self.assertEqual(result["needs_review"][0]["reason"], "metadata_conflict")
+        self.assertEqual(result["needs_review"][0]["reason"], "metadata_conflict_same_url_path")
 
     def test_same_slug_same_year_with_empty_poster_can_merge(self):
         items = [
@@ -57,6 +57,30 @@ class AllSeriesAliasDuplicateTests(unittest.TestCase):
         items[1]["year"] = 2025
         result = plan({"items": items})
         self.assertEqual(result["safe_remove_count"], 0)
+
+    def test_complementary_metadata_is_preserved(self):
+        items = [
+            self.entry("A", "tv9.nontondrama.my", "same-2026",
+                       synopsis="Detail sumber lama"),
+            self.entry("B", "tv.nontondrama.vip", "same-2026",
+                       tmdb_id=123, rating=8.2),
+        ]
+        result = plan({"items": items})
+        self.assertEqual(result["safe_remove_count"], 1)
+        self.assertEqual(result["safe_removals"][0]["updates"],
+                         {"rating": 8.2, "tmdb_id": 123})
+        self.assertEqual(items[0].get("tmdb_id"), None)
+
+    def test_poster_only_on_alias_can_be_preserved(self):
+        items = [
+            self.entry("A", "tv9.nontondrama.my", "same-2026", poster=""),
+            self.entry("B", "tv.nontondrama.vip", "same-2026",
+                       poster="https://images.example.org/valid.jpg"),
+        ]
+        result = plan({"items": items})
+        self.assertEqual(result["safe_remove_count"], 1)
+        self.assertEqual(result["safe_removals"][0]["updates"]["poster_url"],
+                         "https://images.example.org/valid.jpg")
 
     def test_movie_entries_never_auto_merged(self):
         x = self.entry("Some Movie", "tv.nontondrama.vip", "same-2026")
