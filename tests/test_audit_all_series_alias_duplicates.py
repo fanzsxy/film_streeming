@@ -82,6 +82,20 @@ class AllSeriesAliasDuplicateTests(unittest.TestCase):
         self.assertEqual(result["safe_removals"][0]["updates"]["poster_url"],
                          "https://images.example.org/valid.jpg")
 
+    def test_combined_poster_and_metadata_conflict_is_general_conflict(self):
+        items = [
+            self.entry("A", "tv9.nontondrama.my", "same-2026",
+                       poster="https://images.example.org/a.jpg", tmdb_id=1),
+            self.entry("B", "tv.nontondrama.vip", "same-2026",
+                       poster="https://images.example.org/b.jpg", tmdb_id=2),
+        ]
+        result = plan({"items": items})
+        self.assertEqual(result["safe_remove_count"], 0)
+        self.assertEqual(result["needs_review"][0]["reason"],
+                         "metadata_conflict_same_url_path")
+        self.assertEqual(result["needs_review"][0]["conflict_fields"],
+                         ["poster_url", "tmdb_id"])
+
     def test_movie_entries_never_auto_merged(self):
         x = self.entry("Some Movie", "tv.nontondrama.vip", "same-2026")
         x["type"] = "movie"
