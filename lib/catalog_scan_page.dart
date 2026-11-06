@@ -63,10 +63,15 @@ class _CatalogScanPageState extends State<CatalogScanPage> {
         throw StateError('Server mengembalikan HTTP ${response.statusCode}. Pastikan endpoint telah dideploy dan kunci disetel.');
       }
       final result=jsonDecode(response.body) as Map<String,dynamic>;
+      if(result['status']=='already_known'){
+        if(mounted)setState(()=>status='Tidak membuat PR baru: ${result['skipped']} URL sudah ada di katalog atau PR yang masih terbuka.');
+        return;
+      }
       final link=Uri.tryParse((result['pull_request_url']??'').toString());
       if(link==null||link.scheme!='https'||link.host!='github.com')throw StateError('Respons PR tidak valid');
       if(mounted){
-        setState(()=>status='Berhasil mengajukan ${result['submitted']} judul. Periksa PR di GitHub sebelum merge.');
+        final skipped=result['skipped']??0;
+        setState(()=>status='Berhasil mengajukan ${result['submitted']} URL baru; $skipped sudah ada/menunggu review.');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:const Text('Pull Request katalog dibuat.'),action:SnackBarAction(label:'Buka PR',onPressed:()=>launchUrl(link,mode:LaunchMode.externalApplication))));
       }
     }catch(e){
