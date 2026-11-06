@@ -1,6 +1,6 @@
 import unittest
 
-from tools.repair_misclassified_series import series_card_matches, candidates, allowed_series_url, series_search_form, make_series_search_url
+from tools.repair_misclassified_series import series_card_matches, candidates, allowed_series_url, series_search_form, make_series_search_url, diagnose_series_results
 
 BASE = "https://tv.nontondrama.vip/search?s=true+blood"
 POSTER = "https://img.example.com/true-blood.jpg"
@@ -42,6 +42,13 @@ class SeriesTypeCorrectionTests(unittest.TestCase):
                                   {"tv.nontondrama.vip"})
         self.assertEqual(make_series_search_url(form, "True Blood"),
                          "https://tv.nontondrama.vip/search?s=True+Blood")
+
+    def test_search_diagnostic_returns_actual_card_sample(self):
+        result = diagnose_series_results(card(), BASE,
+                 {"title": "True Blood", "year": 2008}, {"tv.nontondrama.vip"})
+        self.assertEqual(result["requested_title"], "True Blood")
+        self.assertEqual(len(result["cards_sample"]), 1)
+        self.assertIn("true-blood-2008", result["cards_sample"][0]["url"])
 
     def test_only_problematic_movie_rows_are_checked(self):
         doc = {"items": [
