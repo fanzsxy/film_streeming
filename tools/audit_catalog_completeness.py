@@ -26,6 +26,21 @@ def valid_url(value):
         return False
 
 
+def good_poster(value):
+    """Same structural poster check used by the offline repair and triage tools.
+
+    This is an offline URL/filename check, not an HTTP/image verification.
+    """
+    if not valid_url(value):
+        return False
+    path = urlparse(value).path.lower()
+    if path.endswith((".svg", ".gif", ".ico")):
+        return False
+    return not any(token in path for token in (
+        "placeholder", "no-image", "no-poster", "favicon", "avatar"
+    ))
+
+
 def issues(row):
     if not isinstance(row, dict):
         return ["invalid_record"]
@@ -34,7 +49,7 @@ def issues(row):
         failed.append("title")
     if not valid_url(row.get("url")):
         failed.append("url")
-    if not valid_url(row.get("poster_url")):
+    if not good_poster(row.get("poster_url")):
         failed.append("poster")
     if row.get("type") not in TYPES:
         failed.append("type")
