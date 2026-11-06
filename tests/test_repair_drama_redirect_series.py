@@ -2,11 +2,20 @@ import unittest
 from unittest.mock import patch
 
 from tools.repair_drama_redirect_series import (
-    drama_slug, candidate_rows, verify_series_detail,
+    drama_slug, candidate_rows, verify_series_detail, navigation_failure,
 )
 
 
 class DramaRedirectSeriesTests(unittest.TestCase):
+    def test_navigation_abort_is_skippable_not_access_bypass(self):
+        self.assertEqual(
+            navigation_failure(Exception(
+                "Page.goto: net::ERR_ABORTED at https://tv12.lk21official.cc/a"
+            )), "navigation_aborted"
+        )
+        self.assertIsNone(navigation_failure(Exception("Browser closed")))
+        self.assertIsNone(navigation_failure(Exception("403 access denied")))
+
     def test_only_explicit_drama_redirect(self):
         self.assertEqual(drama_slug(
             "https://tv12.lk21official.cc/nontondrama?page=game-of-thrones-2011"),
