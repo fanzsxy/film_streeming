@@ -8,6 +8,8 @@ Never replace a valid poster, title, URL, synopsis, or movie/series type.
 import argparse
 import json
 import os
+import time
+import tempfile
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -201,26 +203,42 @@ def search_redirected_poster(page, robots, pacer, item):
     return search_poster_from_listing(html, page.url, item)
 
 
-def write_json(path, payload):
+def atomic_write_text(path, content, attempts=12, sleep_seconds=0.5):
+    """Write a unique staging file; retry Windows sharing violations safely.
+
+    On an exhausted lock, retain the staging file for manual recovery rather
+    than deleting the most recent checkpoint. Never overwrite the destination
+    non-atomically: interruption must not corrupt the last valid JSON.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    temp = path.with_name(path.name + ".repair.tmp")
-    try:
-        temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        os.replace(temp, path)
-    finally:
-        if temp.exists():
-            temp.unlink()
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", dir=path.parent,
+        prefix=path.name + ".", suffix=".pending", delete=False
+    ) as stream:
+        temp = Path(stream.name)
+        stream.write(content)
+    for attempt in range(attempts):
+        try:
+            os.replace(temp, path)
+            return
+        except PermissionError as exc:
+            if attempt + 1 == attempts:
+                raise PermissionError(
+                    f"Gagal menyimpan {path} karena sedang dikunci/akses ditolak. "
+                    f"Checkpoint terakhir tetap aman. Salinan terbaru: {temp}. "
+                    "Tutup aplikasi yang memakai file lalu jalankan ulang."
+                ) from exc
+            time.sleep(sleep_seconds)
+
+
+def write_json(path, payload):
+    atomic_write_text(
+        path, json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
 
 
 def save_catalog(path, catalog):
-    temp = path.with_name(path.name + ".poster_update.tmp")
-    try:
-        temp.write_text(json.dumps(catalog, ensure_ascii=False, separators=(",", ":")) + "\n",
-                        encoding="utf-8")
-        os.replace(temp, path)
-    finally:
-        if temp.exists():
-            temp.unlink()
+    atomic_write_text(
+        path, json.dumps(catalog, ensure_ascii=False, separators=(",", ":")) + "\n")
 
 
 def apply_poster(catalog, index, poster):
