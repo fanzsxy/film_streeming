@@ -1,8 +1,9 @@
 """Recheck only catalog movies with recorded redirect/missing-detail poster failures.
 
 Visible Chromium, public LK21 pages, robots.txt and browser pacing. Logs the
-observed redirect destination; accepts a poster only if the final public page
-has exactly the same movie title AND year. Never changes type or source URL.
+observed redirect destination; by default accepts a poster only for matching movie title/year. Optional
+--source-metadata accepts an exact source URL page, its title and poster,
+without comparing the old catalog title/year. Never changes type or source URL.
 Does not attempt age verification or circumvent access restrictions.
 """
 import argparse
@@ -10,10 +11,13 @@ import json
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
+
+from bs4 import BeautifulSoup
 
 from tools.audit_catalog_completeness import good_poster
 from tools.local_lk21_browser_search import browse, load_robots, NavigationPacer
-from tools.local_lk21_gap_match import validated
+from tools.local_lk21_gap_match import validated, detail_title_year, poster_from_detail
 from tools.triage_missing_catalog_posters import status_for, group_status
 from tools.repair_catalog_missing_posters import (
     CATALOG, PROGRESS, extract_catalog_poster, save_catalog, write_json,
@@ -24,6 +28,8 @@ STATE = Path("crawler/data/redirect_poster_recheck_progress.json")
 REPORT = Path("crawler/data/redirect_poster_recheck_report.json")
 ALL_STATE = Path("crawler/data/remaining_movie_poster_progress.json")
 ALL_REPORT = Path("crawler/data/remaining_movie_poster_report.json")
+SOURCE_STATE = Path("crawler/data/source_movie_metadata_progress.json")
+SOURCE_REPORT = Path("crawler/data/source_movie_metadata_report.json")
 RECHECK = {"redirect", "missing_detail_heading_or_year", "no_detail_poster"}
 RESTRICTED = ("restricted", "verification", "captcha", "403", "401", "429")
 
@@ -64,6 +70,28 @@ def classify(html, final_url, item):
     return detail_status, None
 
 
+def source_metadata(html, final_url):
+    """Read the linked movie detail itself, not a search result or old title.
+
+    The caller must confirm the browser stayed at the exact catalog URL.
+    """
+    title, year = detail_title_year(html)
+    if not title or year is None:
+        return None, "missing_detail_heading_or_year"
+    soup = BeautifulSoup(html, "html.parser")
+    heading = soup.select_one("h1")
+    if not heading or not heading.get_text(" ", strip=True):
+        return None, "missing_detail_heading_or_year"
+    poster = poster_from_detail(html, final_url)
+    if not good_poster(poster):
+        return None, "no_detail_poster"
+    # Avoid replacing catalog movie metadata with placeholder or generic headers.
+    if len(title) < 2 or title.casefold() in {"home", "movies", "movie", "watch online"}:
+        return None, "generic_heading"
+    return {"observed_title": title, "observed_year": year,
+            "poster_url": poster}, "verified_source_metadata"
+
+
 def run(args):
     catalog = json.loads(args.catalog.read_text(encoding="utf-8-sig"))
     original = json.loads(args.progress.read_text(encoding="utf-8-sig"))
@@ -71,8 +99,12 @@ def run(args):
                if args.sitemap_progress.is_file() else {})
     queue = list(targets(catalog, original, sitemap_state=sitemap,
                          all_missing=args.all_missing))
-    state_path = args.state if not args.all_missing or args.state != STATE else ALL_STATE
-    report_path = args.report if not args.all_missing or args.report != REPORT else ALL_REPORT
+    if args.source_metadata:
+        state_path = args.state if args.state != STATE else SOURCE_STATE
+        report_path = args.report if args.report != REPORT else SOURCE_REPORT
+    else:
+        state_path = args.state if not args.all_missing or args.state != STATE else ALL_STATE
+        report_path = args.report if not args.all_missing or args.report != REPORT else ALL_REPORT
     state = (json.loads(state_path.read_text(encoding="utf-8-sig"))
              if state_path.is_file() else {"checked": {}, "matches": {}})
     checked = state.setdefault("checked", {})
@@ -118,14 +150,26 @@ def run(args):
                         from tools.repair_drama_redirect_series import drama_slug
                         if drama_slug(final_url):
                             status, poster = "drama_redirect", None
-                        elif final_url != url and not validated(final_url):
-                            status, poster = "outside_movie_domain", None
+                        elif final_url != url:
+                            # Never associate a different page's artwork with
+                            # the catalog URL, even for same-host redirects.
+                            status, poster = "redirected_elsewhere", None
+                        elif args.source_metadata:
+                            extracted, status = source_metadata(html, final_url)
+                            poster = extracted["poster_url"] if extracted else None
+                            if extracted:
+                                matches[url] = {"index": index, "poster_url": poster,
+                                                "final_url": final_url,
+                                                "original_title": item.get("title"),
+                                                "observed_title": extracted["observed_title"],
+                                                "observed_year": extracted["observed_year"]}
                         else:
                             status, poster = classify(html, final_url, item)
-                        if poster:
-                            matches[url] = {"index": index, "poster_url": poster,
-                                            "final_url": final_url,
-                                            "title": item.get("title"), "year": item.get("year")}
+                            if poster:
+                                matches[url] = {"index": index, "poster_url": poster,
+                                                "final_url": final_url,
+                                                "title": item.get("title"),
+                                                "year": item.get("year")}
                     except BrowserError as exc:
                         msg = str(exc).splitlines()[0][:300]
                         if "net::ERR_ABORTED" in str(exc):
@@ -159,24 +203,35 @@ def run(args):
             finally:
                 browser.close()
     applicable = []
+    url_counts = Counter(str(r.get("url") or "").rstrip("/")
+                         for r in catalog["items"] if isinstance(r, dict))
     for url, found in matches.items():
         index = found.get("index")
         if not isinstance(index, int) or index < 0 or index >= len(catalog["items"]):
             continue
         item = catalog["items"][index]
-        if (str(item.get("url") or "").rstrip("/") == url and
-                item.get("title") == found.get("title") and
-                item.get("year") == found.get("year") and
-                item.get("type") == "movie" and not good_poster(item.get("poster_url")) and
-                good_poster(found.get("poster_url"))):
-            applicable.append((index, found["poster_url"]))
+        if (url_counts[url] != 1 or
+                str(item.get("url") or "").rstrip("/") != url or
+                item.get("type") != "movie" or good_poster(item.get("poster_url")) or
+                not good_poster(found.get("poster_url"))):
+            continue
+        if args.source_metadata:
+            title = found.get("observed_title")
+            if (found.get("final_url") != url or
+                    not isinstance(title, str) or not title.strip()):
+                continue
+            applicable.append((index, found["poster_url"], title))
+        elif item.get("title") == found.get("title") and item.get("year") == found.get("year"):
+            applicable.append((index, found["poster_url"], None))
     applied = 0
     if args.apply and applicable:
         backup = args.catalog.with_name(args.catalog.stem + ".backup_" +
                   datetime.now().strftime("%Y%m%d_%H%M%S_%f") + args.catalog.suffix)
         backup.write_bytes(args.catalog.read_bytes())
-        for index, poster in applicable:
+        for index, poster, observed_title in applicable:
             catalog["items"][index]["poster_url"] = poster
+            if args.source_metadata:
+                catalog["items"][index]["title"] = observed_title
             applied += 1
         save_catalog(args.catalog, catalog)
         print("Backup:", backup, flush=True)
@@ -205,12 +260,16 @@ def main():
     p.add_argument("--recheck", action="store_true")
     p.add_argument("--retry-status", action="append", default=[],
                    help="Reinspect only completed rows with a given saved status (repeatable)")
+    p.add_argument("--source-metadata", action="store_true",
+                   help="Use exact catalog URL to collect its own H1 title and poster, without comparing old title/year; separate checkpoint")
     p.add_argument("--all-missing", action="store_true",
                    help="Inspect every missing movie poster by its catalog URL, not title search; use separate resumable checkpoint")
     p.add_argument("--apply", action="store_true")
     args = p.parse_args()
     if args.limit < 0 or args.delay < 2:
         p.error("limit must be >= 0 and delay >= 2")
+    if args.source_metadata and not args.all_missing:
+        p.error("--source-metadata requires --all-missing")
     run(args)
 
 
