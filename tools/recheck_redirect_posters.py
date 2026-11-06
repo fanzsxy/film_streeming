@@ -78,7 +78,11 @@ def run(args):
     checked = state.setdefault("checked", {})
     matches = state.setdefault("matches", {})
     todo = [(i, item) for i, item in queue
-            if args.recheck or str(item["url"]).rstrip("/") not in checked]
+            if (args.recheck or
+                (args.retry_status and
+                 (checked.get(str(item["url"]).rstrip("/")) or {}).get("status")
+                 in args.retry_status) or
+                str(item["url"]).rstrip("/") not in checked)]
     if args.limit:
         todo = todo[:args.limit]
     # Counts use the same categorization as triage, rather than exact strings.
@@ -199,6 +203,8 @@ def main():
     p.add_argument("--limit", type=int, default=10)
     p.add_argument("--delay", type=float, default=2.0)
     p.add_argument("--recheck", action="store_true")
+    p.add_argument("--retry-status", action="append", default=[],
+                   help="Reinspect only completed rows with a given saved status (repeatable)")
     p.add_argument("--all-missing", action="store_true",
                    help="Inspect every missing movie poster by its catalog URL, not title search; use separate resumable checkpoint")
     p.add_argument("--apply", action="store_true")
