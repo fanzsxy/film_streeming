@@ -1,8 +1,9 @@
 """Review series aliases across historic Nontondrama hosts in local catalog.
 
-Read-only by default. Same exact path + year + poster + type can be merged
-when removed row has no unique metadata. Different slugs sharing a poster
-are REVIEW ONLY: the artwork alone does not prove identical content.
+Read-only by default. Compare identical URL PATHS across the approved
+series hosts (rather than title or poster). Matching paths and years with
+no conflicting metadata can be merged. Poster or metadata conflicts are
+reported for review, never silently discarded.
 """
 import argparse
 import json
@@ -38,21 +39,20 @@ def plan(document):
     items = document.get("items")
     if not isinstance(items, list):
         raise ValueError("Invalid catalog items")
-    by_page, by_poster = defaultdict(list), defaultdict(list)
+    by_page = defaultdict(list)
     for index, row in enumerate(items):
         if not isinstance(row, dict) or row.get("type") != "series":
             continue
         path = slug(row)
         poster = row.get("poster_url")
-        if not path or path == "/" or not good_poster(poster):
+        if not path or path == "/":
             continue
         year = str(row.get("year") or "")
         if not year:
             continue
-        by_page[(path, year, poster)].append(index)
-        by_poster[(year, poster)].append(index)
-    safe, review, seen_review = [], [], set()
-    for (path, year, poster), indices in sorted(by_page.items()):
+        by_page[(path, year)].append(index)
+    safe, review = [], []
+    for (path, year), indices in sorted(by_page.items()):
         if len(indices) < 2:
             continue
         indices.sort(key=lambda i: (KEEP_ORDER[urlparse(items[i]["url"]).hostname],
@@ -60,33 +60,34 @@ def plan(document):
         keep = indices[0]
         for drop in indices[1:]:
             a, b = items[keep], items[drop]
+            same_poster = a.get("poster_url") == b.get("poster_url")
+            poster_disagreement = (not same_poster and
+                                   good_poster(a.get("poster_url")) and
+                                   good_poster(b.get("poster_url")))
             extra = sorted(k for k in (set(a) | set(b)) - FIELDS
                            if b.get(k) not in (None, "", [], {})
                            and b.get(k) != a.get(k))
             rec = {"keep_index": keep, "remove_index": drop,
                    "keep_title": a.get("title"), "remove_title": b.get("title"),
                    "keep_url": a.get("url"), "remove_url": b.get("url"),
-                   "year": year, "poster_url": poster, "slug": path,
-                   "reason": "same_source_path_year_poster"}
-            if extra:
-                rec["reason"] = "metadata_conflict"
+                   "year": year, "slug": path,
+                   "keep_poster": a.get("poster_url"),
+                   "remove_poster": b.get("poster_url"),
+                   "reason": "same_url_path_and_year"}
+            if poster_disagreement:
+                rec["reason"] = "poster_conflict_same_url_path"
+                review.append(rec)
+            elif extra:
+                rec["reason"] = "metadata_conflict_same_url_path"
                 rec["conflict_fields"] = extra
+                review.append(rec)
+            elif not same_poster and good_poster(b.get("poster_url")):
+                # The discarded row has artwork the retained row lacks.
+                # Do not throw away the only usable poster.
+                rec["reason"] = "poster_only_on_removed_row"
                 review.append(rec)
             else:
                 safe.append(rec)
-    for (year, poster), indices in sorted(by_poster.items()):
-        distinct_paths = {slug(items[i]) for i in indices}
-        if len(indices) < 2 or len(distinct_paths) < 2:
-            continue
-        key = (year, poster)
-        if key in seen_review:
-            continue
-        seen_review.add(key)
-        review.append({"reason": "same_poster_different_slug_review_only",
-                       "year": year, "poster_url": poster,
-                       "entries": [{"index": i, "title": items[i].get("title"),
-                                    "url": items[i].get("url")}
-                                   for i in indices]})
     return {"total": len(items), "safe_remove_count": len(safe),
             "review_count": len(review), "safe_removals": safe,
             "needs_review": review}
@@ -96,17 +97,14 @@ def run(args):
     document = json.loads(args.catalog.read_text(encoding="utf-8-sig"))
     result = plan(document)
     print("TOTAL:", result["total"])
-    print("DUPLIKAT AMAN (slug, tahun, poster identik):",
+    print("DUPLIKAT AMAN (path URL dan tahun sama):",
           result["safe_remove_count"])
-    print("PERLU REVIEW (poster sama/metadata berbeda):", result["review_count"])
+    print("PERLU REVIEW (path sama, metadata berbeda):", result["review_count"])
     for row in result["safe_removals"][:15]:
         print("  GABUNG:", row["remove_title"], "=>", row["keep_title"],
               "|", row["slug"])
     for row in result["needs_review"][:8]:
-        if "entries" in row:
-            print("  REVIEW:", " / ".join(x["title"] for x in row["entries"]))
-        else:
-            print("  REVIEW:", row["remove_title"], row["reason"])
+        print("  REVIEW:", row["remove_title"], row["reason"])
     if args.apply:
         removals = result["safe_removals"]
         if removals:
