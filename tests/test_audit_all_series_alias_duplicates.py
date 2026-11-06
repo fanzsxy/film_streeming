@@ -1,6 +1,6 @@
 import unittest
 
-from tools.audit_all_series_alias_duplicates import plan
+from tools.audit_all_series_alias_duplicates import plan, same_jpg_webp_variant
 
 
 class AllSeriesAliasDuplicateTests(unittest.TestCase):
@@ -101,6 +101,34 @@ class AllSeriesAliasDuplicateTests(unittest.TestCase):
         x["type"] = "movie"
         result = plan({"items": [x, x.copy()]})
         self.assertEqual(result["safe_remove_count"], 0)
+
+    def test_jpg_and_appended_webp_are_same_source_poster(self):
+        jpg = "https://poster.assetsy.de/wp-content/uploads/2026/11/film-remarried-empress-2026-lk21.jpg"
+        webp = jpg + ".webp"
+        self.assertTrue(same_jpg_webp_variant(jpg, webp))
+        self.assertTrue(same_jpg_webp_variant(webp, jpg))
+        items = [
+            self.entry("The Remarried Empress", "tv9.nontondrama.my",
+                       "remarried-empress-2026", poster=jpg),
+            self.entry("Remarried Empress", "tv.nontondrama.vip",
+                       "remarried-empress-2026", poster=webp),
+        ]
+        result = plan({"items": items})
+        self.assertEqual(result["safe_remove_count"], 1)
+        self.assertEqual(result["review_count"], 0)
+        self.assertNotIn("poster_url", result["safe_removals"][0]["updates"])
+        self.assertEqual(items[0]["poster_url"], jpg)
+
+    def test_different_assets_or_hosts_are_not_variants(self):
+        jpg = "https://poster.assetsy.de/poster.jpg"
+        self.assertFalse(same_jpg_webp_variant(
+            jpg, "https://other.example/poster.jpg.webp"))
+        self.assertFalse(same_jpg_webp_variant(
+            jpg, "https://poster.assetsy.de/different.jpg.webp"))
+        self.assertFalse(same_jpg_webp_variant(
+            jpg, jpg + ".webp?width=200"))
+        self.assertFalse(same_jpg_webp_variant(
+            "https://poster.assetsy.de/other.webp", jpg))
 
     def test_different_poster_is_reviewed_not_deleted(self):
         items = [
