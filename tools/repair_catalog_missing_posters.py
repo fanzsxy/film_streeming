@@ -164,8 +164,9 @@ def search_poster_from_listing(html, search_url, item):
         slug = urlparse(href).path.rstrip("/").split("/")[-1]
         year_in_slug = re.search(r"-(19\d{2}|20\d{2})$", slug)
         year_in_card = re.search(r"\b(19\d{2}|20\d{2})\b", card_text)
-        observed_year = (year_in_slug or year_in_card)
-        if not observed_year or observed_year.group(1) != expected_year:
+        if (not (year_in_slug or year_in_card) or
+                (year_in_slug and year_in_slug.group(1) != expected_year) or
+                (year_in_card and year_in_card.group(1) != expected_year)):
             continue
         kind_labels = re.findall(r"\b(series|serial|tv series|movie|film)\b",
                                  card_text, flags=re.I)
