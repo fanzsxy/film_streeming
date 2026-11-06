@@ -26,69 +26,50 @@ STATE = Path("crawler/data/local_sitemap_detail_progress.json")
 OUTPUT = Path("crawler/data/local_sitemap_detail_results.json")
 PROVISIONAL = "sitemap_slug_unverified"
 FINAL = "sitemap_detail_verified"
-AGE = "sitemap_age_restricted"
 
 
 def detail_metadata(html, url, expected_year=None):
-    """Use real film metadata even for 18+ films; never interpret an age gate as detail."""
+    """Prefer visible detail heading; do not silently use slug as verified title."""
     soup = BeautifulSoup(html, "html.parser")
-    visible = soup.get_text(" ", strip=True).casefold()
-    age_gate = (("materi khusus dewasa" in visible and
-                 ("18 tahun" in visible or "konfirmasi umur" in visible))
-                or ("login gmail anda" in visible and "peringatan" in visible))
-
-    def unavailable(reason):
-        return None, "age_restricted" if age_gate else reason
-
     heading = soup.select_one("h1")
     if heading is None:
-        return unavailable("missing_heading")
-    text = re.sub(r"\s+", " ", heading.get_text(" ", strip=True)).strip()
+        return None, "missing_heading"
+    text = heading.get_text(" ", strip=True)
+    text = re.sub(r"\s+", " ", text).strip()
     match = re.search(r"(?:\(|\b)(19\d{2}|20\d{2})(?:\)|\b)", text)
     if not match:
-        return unavailable("missing_detail_year")
+        return None, "missing_detail_year"
     year = int(match.group(1))
     if expected_year is not None and year != expected_year:
-        return unavailable("year_mismatch")
+        return None, "year_mismatch"
     title = re.sub(r"\s*\(?"+re.escape(match.group(1))+r"\)?\s*$", "", text).strip(" -|:")
-    if not title or len(title) > 180 or title.casefold() in {
-        "lk21", "layarkaca21", "home", "not found"
-    }:
-        return unavailable("invalid_title")
-
+    if not title or len(title) > 180:
+        return None, "invalid_title"
+    # Avoid cataloging a site landing page or generic error as a movie.
+    if title.casefold() in {"lk21", "layarkaca21", "home", "not found"}:
+        return None, "generic_heading"
     synopsis = ""
-    synopsis_is_film_specific = False
-    selectors = (
+    for selector in (
         ".mvic-desc .desc", ".mvic-desc p", ".desc .entry-content",
         ".description p", ".synopsis", ".sinopsis", ".wp-content p",
         ".entry-content p", 'meta[name="description"]',
         'meta[property="og:description"]',
-    )
-    for selector in selectors:
+    ):
         node = soup.select_one(selector)
         if node is None:
             continue
         value = node.get("content", "") if node.name == "meta" else node.get_text(" ", strip=True)
         value = re.sub(r"\s+", " ", value).strip()
-        lower = value.casefold()
-        # A lengthy login/age-warning text is not a film synopsis.
-        if (len(value) < 35 or "materi khusus dewasa" in lower
-                or "login gmail anda" in lower or "konfirmasi umur" in lower):
-            continue
-        synopsis = value[:3000]
-        synopsis_is_film_specific = node.name != "meta"
-        break
+        if len(value) >= 35:
+            synopsis = value[:3000]
+            break
     poster = poster_from_detail(html, url) or ""
     if not poster or not synopsis:
-        return unavailable("missing_poster_or_synopsis")
-    # The 18+ warning sometimes appears as a banner on a valid detail page.
-    # Require actual page-specific description text in that case, not just
-    # generic social metadata that could belong to the login notice.
-    if age_gate and not synopsis_is_film_specific:
-        return None, "age_restricted"
+        return None, "missing_poster_or_synopsis"
     return {"title": title, "year": year, "url": url, "type": "movie",
             "poster_url": poster, "synopsis": synopsis,
             "metadata_status": FINAL}, "verified"
+
 
 def queue_from_sitemaps(catalog, files, start_year, end_year):
     items = catalog.get("items")
@@ -152,20 +133,11 @@ def run(args):
         write_json(args.state, state)
         write_json(args.output, {"source": "local_sitemap_visible_chromium",
                                  "checked": len(completed),
-                                 "verified": [r for r in results.values() if
-                                              r.get("metadata_status") == FINAL],
-                                 "verified_count": sum(1 for r in results.values() if
-                                                       r.get("metadata_status") == FINAL),
-                                 "age_restricted": [r for r in results.values() if
-                                                    r.get("metadata_status") == AGE],
-                                 "age_restricted_count": sum(1 for r in results.values() if
-                                                             r.get("metadata_status") == AGE),
+                                 "verified": list(results.values()),
+                                 "verified_count": len(results),
                                  "errors": errors, "applied": False})
     save()
-    # Older releases could misclassify age gates as year_mismatch; retry once.
-    retried = set(state.setdefault("legacy_year_mismatch_retried", []))
-    remaining = [x for x in queue if x["url"] not in completed or
-                 (completed[x["url"]] == "year_mismatch" and x["url"] not in retried)]
+    remaining = [x for x in queue if x["url"] not in completed]
     if not remaining:
         print("Tidak ada URL baru untuk diperiksa. Katalog belum diubah.", flush=True)
         return
@@ -192,18 +164,9 @@ def run(args):
                     row = None
                 else:
                     row, status = detail_metadata(html, url, target["year"])
-                if status == "age_restricted":
-                    # Keep the sitemap URL without using age-gate content as metadata.
-                    candidate = parse_slug(url, args.start_year, args.end_year)
-                    if candidate and candidate["year"] == target["year"]:
-                        row = {**candidate, "metadata_status": AGE,
-                               "age_restricted": True}
                 if row is not None:
                     row["mode"] = target["mode"]
                     results[url] = row
-                if completed.get(url) == "year_mismatch":
-                    retried.add(url)
-                    state["legacy_year_mismatch_retried"] = sorted(retried)
                 completed[url] = status
                 processed += 1
                 print(f"  Status: {status} | terverifikasi: {len(results)}", flush=True)
