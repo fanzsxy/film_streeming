@@ -31,6 +31,13 @@ FINAL = "sitemap_detail_verified"
 def detail_metadata(html, url, expected_year=None):
     """Prefer visible detail heading; do not silently use slug as verified title."""
     soup = BeautifulSoup(html, "html.parser")
+    # A restricted-access notice is not a movie detail page. Never try to
+    # authenticate, bypass the age gate, or infer metadata from its heading.
+    visible_text = soup.get_text(" ", strip=True).casefold()
+    if (("materi khusus dewasa" in visible_text and
+         ("konfirmasi umur" in visible_text or "18 tahun" in visible_text))
+        or ("peringatan" in visible_text and "login gmail anda" in visible_text)):
+        return None, "age_restricted"
     heading = soup.select_one("h1")
     if heading is None:
         return None, "missing_heading"
