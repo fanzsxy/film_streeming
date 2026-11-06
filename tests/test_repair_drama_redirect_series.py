@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 
 from tools.repair_drama_redirect_series import (
-    drama_slug, candidate_rows, verify_series_detail, series_title_evidence,
+    drama_slug, candidate_rows, verify_series_detail,
 )
 
 
@@ -45,7 +45,7 @@ class DramaRedirectSeriesTests(unittest.TestCase):
 
     @patch("tools.repair_drama_redirect_series.poster_from_detail",
            return_value="https://img.example.org/poster.jpg")
-    def test_accepts_exact_observed_alternate_name_only(self, poster):
+    def test_uses_observed_url_not_exact_catalog_title(self, poster):
         html = """<html><head><meta property="og:title"
                     content="Alternate Display Name (2021)"></head>
                     <h1>Alternate Display Name (2021)</h1>
@@ -59,8 +59,8 @@ class DramaRedirectSeriesTests(unittest.TestCase):
         match, status = verify_series_detail(
             html, "https://tv.nontondrama.vip/source-catalog-title-2021",
             {"title": "Unrelated Title", "year": 2021})
-        self.assertIsNone(match)
-        self.assertEqual(status, "title_mismatch")
+        self.assertEqual(status, "verified_series")
+        self.assertEqual(match["observed_title"], "Alternate Display Name")
 
     @patch("tools.repair_drama_redirect_series.poster_from_detail",
            return_value="https://img.example.org/something.jpg")
