@@ -133,8 +133,8 @@ def extract_catalog_poster(html, url, item):
 def search_poster_from_listing(html, search_url, item):
     """Find a uniquely matched public search-result poster for the requested title/year.
 
-    Use visible result cards only. Series/movie clues must be explicit. Never
-    treat an unrelated card, a different year, or a generic site image as a poster.
+    Use visible result cards only. A series label is required for series, but
+    ordinary movie cards may have no Movie badge. Never use unmatched cards.
     """
     soup = BeautifulSoup(html, "html.parser")
     expected = identity(item.get("title") or "", item.get("year") or "")[0]
@@ -180,8 +180,10 @@ def search_poster_from_listing(html, search_url, item):
             mismatched_types.add(observed_kind)
             continue
         if observed_kind is None:
-            # Search cards cannot prove kind without a distinct label.
-            continue
+            # LK21 often omits a "Movie" badge on ordinary movie cards.
+            # A series still needs an explicit series label; never guess it.
+            if expected_kind != "movie":
+                continue
         poster = poster_from_node(img, search_url)
         if good_poster(poster):
             found[href] = poster
@@ -304,11 +306,14 @@ def run(args):
         from playwright.sync_api import sync_playwright
         retryable = {"redirect", "year_mismatch", "title_mismatch",
                      "missing_detail_heading_or_year", "no_detail_poster"}
+        if args.retry_unmatched:
+            retryable.add("search_no_verified_match")
         targets = [idx for idx in browser_queue if
                    str(items[idx].get("url") or "") not in completed or (
                        args.retry_search and
                        completed.get(str(items[idx].get("url") or "")) in retryable and
-                       str(items[idx].get("url") or "") not in search_checked)]
+                       (args.retry_unmatched or
+                        str(items[idx].get("url") or "") not in search_checked))]
         if args.limit:
             targets = targets[:args.limit]
         if targets:
@@ -405,6 +410,8 @@ def main():
     p.add_argument("--cache", type=Path, default=TMDB_CACHE)
     p.add_argument("--progress", type=Path, default=PROGRESS)
     p.add_argument("--report", type=Path, default=REPORT)
+    p.add_argument("--retry-unmatched", action="store_true",
+                   help="Retry previous search_no_verified_match after parser improvement")
     p.add_argument("--retry-search", action="store_true",
                    help="Retry prior redirects/year mismatches via public LK21 search cards")
     p.add_argument("--search-on-redirect", action="store_true",
