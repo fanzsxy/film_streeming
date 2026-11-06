@@ -30,6 +30,24 @@ class DramaRedirectSeriesTests(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(catalog["items"][0]["type"], "movie")
 
+    def test_sitemap_redirect_status_and_observed_redirect(self):
+        url = "https://tv12.lk21official.cc/gen-v-2023"
+        row = {"title": "Gen V", "year": 2023, "type": "movie",
+               "url": url, "poster_url": ""}
+        with patch("tools.repair_drama_redirect_series.validated", return_value=True):
+            found = list(candidate_rows(
+                {"items": [row]},
+                {"search_checked": {url: "search_no_verified_match"}},
+                {"completed": {url: "redirect_to_series"}},
+                {}))
+            self.assertEqual(len(found), 1)
+            found = list(candidate_rows(
+                {"items": [row]}, {}, {},
+                {"checked": {url: {"status": "drama_redirect",
+                                  "final_url": "https://tv12.lk21official.cc/nontondrama?page=gen-v-2023"}}}))
+            self.assertEqual(len(found), 1)
+            self.assertEqual(len(list(candidate_rows({"items": [row]}, {}, {}, {}))), 0)
+
     @patch("tools.repair_drama_redirect_series.poster_from_detail",
            return_value="https://img.example.org/game.jpg")
     def test_verified_real_series_page(self, poster):
