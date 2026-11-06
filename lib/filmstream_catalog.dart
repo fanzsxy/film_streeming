@@ -249,32 +249,44 @@ List<CatalogEntry> consolidateCatalogEntries(Iterable<CatalogEntry> entries) {
     return candidate.title.length > current.title.length;
   }
 
-  void rebuildKeys() {
-    byUrl.clear();
-    byTitleYear.clear();
-    byPosterAlias.clear();
-    for (var i = 0; i < result.length; i++) {
-      final e = result[i];
-      byUrl[normalizedUrl(e.url)] = i;
-      byTitleYear['${e.year}:${keyTitle(e.title)}'] = i;
-      if (e.posterUrl.startsWith('https://')) {
-        byPosterAlias['${e.type}:${e.year}:${e.posterUrl}:${keyAlias(e.title)}'] = i;
-      }
+  String titleIdentity(CatalogEntry e) =>
+      '${e.year}:${keyTitle(e.title)}';
+  String? aliasIdentity(CatalogEntry e) =>
+      e.posterUrl.startsWith('https://')
+          ? '${e.type}:${e.year}:${e.posterUrl}:${keyAlias(e.title)}'
+          : null;
+
+  void indexEntry(CatalogEntry e, int index) {
+    byUrl[normalizedUrl(e.url)] = index;
+    byTitleYear[titleIdentity(e)] = index;
+    final alias = aliasIdentity(e);
+    if (alias != null) byPosterAlias[alias] = index;
+  }
+
+  void unindexEntry(CatalogEntry e, int index) {
+    final url = normalizedUrl(e.url);
+    if (byUrl[url] == index) byUrl.remove(url);
+    final title = titleIdentity(e);
+    if (byTitleYear[title] == index) byTitleYear.remove(title);
+    final alias = aliasIdentity(e);
+    if (alias != null && byPosterAlias[alias] == index) {
+      byPosterAlias.remove(alias);
     }
   }
 
   for (final entry in entries) {
-    final urlKey = normalizedUrl(entry.url);
-    final titleKey = '${entry.year}:${keyTitle(entry.title)}';
-    final aliasKey = '${entry.type}:${entry.year}:${entry.posterUrl}:${keyAlias(entry.title)}';
-    final duplicate = byUrl[urlKey] ?? byTitleYear[titleKey] ??
-        (entry.posterUrl.startsWith('https://') ? byPosterAlias[aliasKey] : null);
+    final alias = aliasIdentity(entry);
+    final duplicate = byUrl[normalizedUrl(entry.url)] ??
+        byTitleYear[titleIdentity(entry)] ??
+        (alias == null ? null : byPosterAlias[alias]);
     if (duplicate == null) {
+      final index = result.length;
       result.add(entry);
-      rebuildKeys();
+      indexEntry(entry, index);
     } else if (better(entry, result[duplicate])) {
+      unindexEntry(result[duplicate], duplicate);
       result[duplicate] = entry;
-      rebuildKeys();
+      indexEntry(entry, duplicate);
     }
   }
   return result;
