@@ -229,7 +229,7 @@ List<CatalogEntry> consolidateCatalogEntries(Iterable<CatalogEntry> entries) {
   String keyTitle(String title) => title.toLowerCase().replaceAll(
       RegExp(r'[^a-z0-9]'), '');
   String keyAlias(String title) => title.toLowerCase()
-      .replaceAll(RegExp(r'\\b(of|the)\\b'), '')
+      .replaceAll(RegExp(r'\b(of|the)\b'), '')
       .replaceAll(RegExp(r'[^a-z0-9]'), '');
   String normalizedUrl(String url) => url.trim().replaceFirst(RegExp(r'/+$'), '');
 
