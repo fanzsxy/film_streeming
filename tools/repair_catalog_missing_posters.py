@@ -20,6 +20,7 @@ from tools.repair_local_sitemap_posters import extract_detail_poster
 
 CATALOG = Path("assets/catalog/filmstream_catalog.json")
 RESULTS = Path("crawler/data/local_sitemap_detail_results.json")
+TMDB_CACHE = Path("assets/catalog/tmdb_cache.jsonl")
 PROGRESS = Path("crawler/data/catalog_poster_repair_progress.json")
 REPORT = Path("crawler/data/catalog_poster_repair_report.json")
 VALID_TYPES = {"movie", "series", "tv"}
@@ -54,12 +55,36 @@ def poster_candidates(catalog, results):
     return by_url, by_name
 
 
+def cache_posters(path):
+    """Reuse old matched cache rows only; do not call TMDB or scan titles."""
+    found = defaultdict(set)
+    if not path.is_file():
+        return found
+    for line in path.open(encoding="utf-8-sig"):
+        try:
+            row = json.loads(line)
+        except (ValueError, TypeError):
+            continue
+        if (not isinstance(row, dict) or row.get("match_status") != "matched"
+                or not valid_url(row.get("source_url"))):
+            continue
+        raw = row.get("tmdb_poster_path") or row.get("poster_path") or ""
+        if isinstance(raw, str) and raw.startswith("/") and not raw.startswith("//"):
+            poster = "https://image.tmdb.org/t/p/w500" + raw
+        else:
+            poster = raw
+        if good_poster(poster):
+            kind = "series" if row.get("tmdb_type") == "tv" else "movie"
+            found[(kind, row["source_url"].rstrip("/").casefold())].add(poster)
+    return found
+
+
 def catalog_missing(catalog):
     return [(index, item) for index, item in enumerate(catalog.get("items", []))
             if isinstance(item, dict) and not valid_url(item.get("poster_url"))]
 
 
-def match_offline(item, by_url, by_name):
+def match_offline(item, by_url, by_name, cached=None):
     url = str(item.get("url") or "").strip().rstrip("/").casefold()
     matches = by_url.get(url, set())
     if len(matches) == 1:
@@ -67,6 +92,11 @@ def match_offline(item, by_url, by_name):
     if len(matches) > 1:
         return None, "ambiguous_url_posters"
     kind = "series" if item.get("type") in ("series", "tv") else "movie"
+    cached_matches = (cached or {}).get((kind, url), set())
+    if len(cached_matches) == 1:
+        return next(iter(cached_matches)), "matched_tmdb_cache"
+    if len(cached_matches) > 1:
+        return None, "ambiguous_tmdb_cache"
     key = (kind, identity(item.get("title") or "", item.get("year") or ""))
     matches = by_name.get(key, set())
     if len(matches) == 1:
@@ -113,9 +143,10 @@ def run(args):
                if args.results.is_file() else {})
     missing = catalog_missing(catalog)
     by_url, by_name = poster_candidates(catalog, results)
+    cached = cache_posters(args.cache)
     offline, browser_queue, reasons = [], [], Counter()
     for idx, item in missing:
-        poster, source = match_offline(item, by_url, by_name)
+        poster, source = match_offline(item, by_url, by_name, cached)
         if poster:
             offline.append((idx, poster, source))
         else:
@@ -175,6 +206,11 @@ def run(args):
                             write_json(args.progress, state)
                             continue
                         print(f"[{n}/{len(targets)}] {item.get('title')} ({item.get('year')})", flush=True)
+                        if urlparse(url).hostname != "tv12.lk21official.cc":
+                            completed[url] = "unsupported_browser_host"
+                            counters["skipped"] += 1
+                            write_json(args.progress, state)
+                            continue
                         try:
                             html = browse(page, robots, url, pacer=pacer)
                         except RuntimeError as exc:
@@ -210,6 +246,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--catalog", type=Path, default=CATALOG)
     p.add_argument("--results", type=Path, default=RESULTS)
+    p.add_argument("--cache", type=Path, default=TMDB_CACHE)
     p.add_argument("--progress", type=Path, default=PROGRESS)
     p.add_argument("--report", type=Path, default=REPORT)
     p.add_argument("--browser", action="store_true",
