@@ -873,6 +873,42 @@ class _WebSourcePageState extends State<WebSourcePage> {
     if (current.scheme == 'https') await launchUrl(current, mode: LaunchMode.externalApplication);
   }
 
+  // Third-party age verification belongs to the source website. Google sign-in
+  // and cross-site player cookies may be restricted in an embedded WebView.
+  // Open the original HTTPS page in the user's normal browser instead of
+  // attempting to bypass the gate, intercept credentials, or copy cookies.
+  Widget _externalAgeVerificationAction() {
+    if (!_focused) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(
+              onPressed: _external,
+              icon: const Icon(Icons.open_in_browser, size: 18),
+              label: const Text('Buka situs / verifikasi 18+'),
+            )),
+            const SizedBox(width: 6),
+            IconButton(
+              tooltip: 'Muat ulang player',
+              onPressed: () => _controller.reload(),
+              icon: const Icon(Icons.refresh),
+            ),
+          ]),
+          const Text(
+            'Jika situs meminta login Google, lakukan verifikasi di browser '
+            'sesuai ketentuan situs. Setelah kembali, muat ulang player. '
+            'Login browser belum tentu berlaku di pemutar aplikasi.',
+            style: TextStyle(fontSize: 11, color: Colors.white70),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _notifyPlayTap() async {
     if (_playIntentNotified || !mounted || !_revealed || _search || _error != null || widget.onPlayIntent == null) return;
     _playIntentNotified = true;
@@ -933,7 +969,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [AspectRatio(aspectRatio: 16 / 9, child: _playerBody()), _flutterServers(), _flutterSourceDetails()]));
+    if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [AspectRatio(aspectRatio: 16 / 9, child: _playerBody()), _flutterServers(), _externalAgeVerificationAction(), _flutterSourceDetails()]));
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) { if (!didPop) _back(); },
