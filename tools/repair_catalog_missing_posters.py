@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 from tools.audit_catalog_completeness import valid_url
 from tools.import_local_lk21_sitemaps import identity
 from tools.local_lk21_browser_search import NavigationPacer, browse, load_robots
-from tools.repair_local_sitemap_posters import extract_detail_poster
+from tools.local_lk21_gap_match import detail_title_year, poster_from_detail, validated
 
 CATALOG = Path("assets/catalog/filmstream_catalog.json")
 RESULTS = Path("crawler/data/local_sitemap_detail_results.json")
@@ -102,6 +102,28 @@ def match_offline(item, by_url, by_name, cached=None):
     if len(matches) == 1:
         return next(iter(matches)), "saved_title_year"
     return None, "ambiguous_title_year" if len(matches) > 1 else "not_found_offline"
+
+
+def extract_catalog_poster(html, url, item):
+    """Reuse the original sitemap crawler's detail metadata and poster parser.
+
+    An age-related phrase in body copy alone is NOT a reason to skip a film.
+    Require actual detail heading/title/year before accepting a poster.
+    """
+    title, year = detail_title_year(html)
+    if not title or year is None:
+        return None, "missing_detail_heading_or_year"
+    expected_year = str(item.get("year") or "").strip()
+    if expected_year.isdigit() and year != int(expected_year):
+        return None, "year_mismatch"
+    catalog_title = identity(item.get("title") or "", year)[0]
+    observed_title = identity(title, year)[0]
+    if not catalog_title or catalog_title != observed_title:
+        return None, "title_mismatch"
+    poster = poster_from_detail(html, url)
+    if poster and good_poster(poster):
+        return poster, "found"
+    return None, "no_detail_poster"
 
 
 def write_json(path, payload):
@@ -206,7 +228,7 @@ def run(args):
                             write_json(args.progress, state)
                             continue
                         print(f"[{n}/{len(targets)}] {item.get('title')} ({item.get('year')})", flush=True)
-                        if urlparse(url).hostname != "tv12.lk21official.cc":
+                        if not validated(url):
                             completed[url] = "unsupported_browser_host"
                             counters["skipped"] += 1
                             write_json(args.progress, state)
@@ -221,7 +243,7 @@ def run(args):
                         if page.url.rstrip("/") != url:
                             poster, status = None, "redirect"
                         else:
-                            poster, status = extract_detail_poster(html, url, item)
+                            poster, status = extract_catalog_poster(html, url, item)
                         if poster and apply_poster(catalog, idx, poster):
                             repaired[url] = "chromium_detail"
                             counters["browser_repaired"] += 1
