@@ -39,6 +39,26 @@ def meaningful(value):
     return value not in (None, "", [], {})
 
 
+def same_jpg_webp_variant(first, second):
+    """A .jpg.webp image variant counts as the same poster asset path.
+
+    Only accept the exact same https host, filename and URL except for the
+    appended .webp suffix. Other poster differences remain conflicts.
+    """
+    if not good_poster(first) or not good_poster(second):
+        return False
+    try:
+        a, b = urlparse(first), urlparse(second)
+        if (a.scheme != "https" or b.scheme != "https" or
+                a.hostname != b.hostname or a.netloc != b.netloc or
+                a.query or b.query or a.fragment or b.fragment):
+            return False
+        return (a.path.lower().endswith(".jpg") and b.path == a.path + ".webp"
+                or b.path.lower().endswith(".jpg") and a.path == b.path + ".webp")
+    except (ValueError, TypeError):
+        return False
+
+
 def reconcile_metadata(kept, removed):
     """Preserve useful data instead of treating missing metadata as conflict."""
     updates, conflicts = {}, []
@@ -52,7 +72,8 @@ def reconcile_metadata(kept, removed):
     if not good_poster(old_poster) and good_poster(new_poster):
         updates["poster_url"] = new_poster
     elif (good_poster(old_poster) and good_poster(new_poster)
-          and old_poster != new_poster):
+          and old_poster != new_poster
+          and not same_jpg_webp_variant(old_poster, new_poster)):
         conflicts.append("poster_url")
     return updates, conflicts
 
