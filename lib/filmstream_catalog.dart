@@ -109,7 +109,8 @@ class FilmStreamCatalog {
         final uri = Uri.tryParse(entry.url);
         if (uri == null || uri.scheme != 'https' || uri.userInfo.isNotEmpty ||
             uri.hasPort || !{
-              'tv12.lk21official.cc', 'tv.lk21online.de'
+              'tv12.lk21official.cc', 'tv.lk21online.de',
+              'tv.nontondrama.vip', 'tv9.nontondrama.my'
             }.contains(uri.host)) continue;
         final urlKey = '${entry.type}:${_normalUrl(entry.url)}';
         final titleKey =
@@ -169,7 +170,10 @@ class FilmStreamCatalog {
             entry.year > DateTime.now().year + 2) continue;
         final uri = Uri.tryParse(entry.url);
         if (uri == null || uri.scheme != 'https' || uri.userInfo.isNotEmpty ||
-            uri.hasPort || !{'tv12.lk21official.cc', 'tv.lk21online.de'}.contains(uri.host)) {
+            uri.hasPort || !{
+          'tv12.lk21official.cc', 'tv.lk21online.de',
+          'tv.nontondrama.vip', 'tv9.nontondrama.my'
+        }.contains(uri.host)) {
           continue;
         }
         final urlKey = '${entry.type}:${_normalUrl(entry.url)}';
