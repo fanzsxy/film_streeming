@@ -35,6 +35,36 @@ class DramaRedirectSeriesTests(unittest.TestCase):
             SimpleNamespace(recheck=False, retry_navigation_errors=False,
                             retry_mismatches=False)))
 
+    def test_recent_source_checkpoint_picks_up_last_two_redirects(self):
+        chosen = "https://tv12.lk21official.cc/chosen-2022"
+        royal = "https://tv12.lk21official.cc/royal-family-2025"
+        checkpoint = {"checked": {
+            chosen: {"status": "drama_redirect",
+                     "final_url": "https://tv12.lk21official.cc/nontondrama?page=chosen-2022"},
+            royal: {"status": "drama_redirect",
+                    "final_url": "https://tv12.lk21official.cc/nontondrama?page=passing-reins-2025"},
+        }}
+        rows = [{"type": "movie", "poster_url": "", "url": url,
+                 "title": name, "year": year}
+                for url, name, year in [
+                    (chosen, "Chosen", 2022),
+                    (royal, "Royal Family", 2025)]]
+        with patch("tools.repair_drama_redirect_series.validated", return_value=True):
+            matches = list(candidate_rows(
+                {"items": rows}, {}, {}, {}, {}, checkpoint))
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(
+            latest_drama_target(royal, checkpoint),
+            checkpoint["checked"][royal]["final_url"])
+
+    def test_unobserved_alias_is_never_used(self):
+        url = "https://tv12.lk21official.cc/royal-family-2025"
+        redirect = "https://tv12.lk21official.cc/nontondrama?page=passing-reins-2025"
+        checkpoint = {"checked": {url: {"status": "not_drama_redirect",
+                                       "final_url": redirect}}}
+        self.assertEqual(latest_drama_target(url, checkpoint), "")
+        self.assertEqual(latest_drama_target(url, {}), "")
+
     def test_rejects_unrelated_redirect_target(self):
         url = "https://tv12.lk21official.cc/original-movie-2020"
         observed = {"checked": {url: {"status": "drama_redirect",
