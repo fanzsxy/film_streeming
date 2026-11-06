@@ -1,18 +1,18 @@
 {
   "summary": {
     "movie_total": 29449,
-    "series_total": 5937,
+    "series_total": 5195,
     "movie_incomplete": 3,
     "missing_poster": 3,
     "movie_missing_poster": 3,
-    "total": 35386,
+    "total": 34644,
     "incomplete": 3,
-    "complete": 35383,
+    "complete": 34641,
     "duplicate_url": 0
   },
   "incomplete": [
     {
-      "index": 31156,
+      "index": 31149,
       "title": "X Night Vengeance",
       "year": 2010,
       "type": "movie",
@@ -23,7 +23,7 @@
       ]
     },
     {
-      "index": 34509,
+      "index": 34475,
       "title": "Chosen",
       "year": 2022,
       "type": "movie",
@@ -34,7 +34,7 @@
       ]
     },
     {
-      "index": 34662,
+      "index": 34565,
       "title": "Royal Family",
       "year": 2025,
       "type": "movie",

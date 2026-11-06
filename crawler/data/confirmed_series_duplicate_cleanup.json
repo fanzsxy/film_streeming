@@ -1,0 +1,21 @@
+{
+  "total_before": 35386,
+  "remove_count": 0,
+  "removals": [],
+  "errors": [
+    {
+      "slug": "25-years-you-2026",
+      "reason": "non_identity_metadata_conflict",
+      "fields": [
+        "metadata_status"
+      ]
+    },
+    {
+      "slug": "100-days-lies-2026",
+      "reason": "non_identity_metadata_conflict",
+      "fields": [
+        "metadata_status"
+      ]
+    }
+  ]
+}
