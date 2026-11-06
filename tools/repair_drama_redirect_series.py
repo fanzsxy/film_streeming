@@ -29,6 +29,7 @@ from tools.repair_misclassified_series import (
 
 REDIRECT_PROGRESS = Path("crawler/data/redirect_poster_recheck_progress.json")
 REMAINING_MOVIE_PROGRESS = Path("crawler/data/remaining_movie_poster_progress.json")
+SOURCE_MOVIE_PROGRESS = Path("crawler/data/source_movie_metadata_progress.json")
 STATE = Path("crawler/data/drama_redirect_series_progress.json")
 REPORT = Path("crawler/data/drama_redirect_series_report.json")
 DRAMA_PATH = "/nontondrama"
@@ -52,11 +53,12 @@ def drama_slug(redirect_url):
 
 
 def candidate_rows(catalog, poster_progress, sitemap_state=None, redirect_state=None,
-                   remaining_state=None):
+                   remaining_state=None, source_state=None):
     """Pick missing movie posters using triage status or an observed drama redirect."""
     sitemap_state = sitemap_state or {}
     redirect_state = redirect_state or {}
     remaining_state = remaining_state or {}
+    source_state = source_state or {}
     for index, item in enumerate(catalog.get("items") or []):
         if not isinstance(item, dict) or item.get("type") != "movie":
             continue
@@ -66,7 +68,7 @@ def candidate_rows(catalog, poster_progress, sitemap_state=None, redirect_state=
         if not validated(url):
             continue
         reason = status_for(url, poster_progress, sitemap_state)
-        observed = latest_drama_target(url, remaining_state, redirect_state)
+        observed = latest_drama_target(url, source_state, remaining_state, redirect_state)
         if reason["category"] == "redirect" or observed:
             yield index, item
 
@@ -82,8 +84,17 @@ def latest_drama_target(url, *checkpoints):
     """Use only an actually observed referral for this exact catalog URL."""
     original_slug = urlparse(url).path.rstrip("/").split("/")[-1].lower()
     for checkpoint in checkpoints:
-        found = observed_target(checkpoint, url)
-        if drama_slug(found) == original_slug:
+        entry = (checkpoint.get("checked") or {}).get(url)
+        if not isinstance(entry, dict):
+            continue
+        found = entry.get("final_url", "")
+        slug = drama_slug(found)
+        if not slug:
+            continue
+        # A direct page navigation can establish an alias redirect to a
+        # different series slug (e.g. Royal Family -> Passing Reins).
+        # Unlike older indirect checkpoints, require explicit status for it.
+        if slug == original_slug or entry.get("status") == "drama_redirect":
             return found
     return ""
 
@@ -180,6 +191,8 @@ def report_state(args, state, catalog, candidates):
             row["type"] = "series"
             row["url"] = match["url"]
             row["poster_url"] = match["poster_url"]
+            if match.get("rename_title") and match.get("observed_title"):
+                row["title"] = match["observed_title"]
             applied += 1
         save_catalog(args.catalog, catalog)
         print("Backup:", backup)
@@ -211,6 +224,8 @@ def run(args):
                       if args.redirect_progress.is_file() else {})
     remaining_state = (json.loads(args.remaining_movie_progress.read_text(encoding="utf-8-sig"))
                        if args.remaining_movie_progress.is_file() else {})
+    source_state = (json.loads(args.source_movie_progress.read_text(encoding="utf-8-sig"))
+                    if args.source_movie_progress.is_file() else {})
     sitemap_state = (json.loads(args.sitemap_progress.read_text(encoding="utf-8-sig"))
                      if args.sitemap_progress.is_file() else {})
     state = (json.loads(args.state.read_text(encoding="utf-8-sig"))
@@ -218,18 +233,19 @@ def run(args):
     checked = state.setdefault("checked", {})
     matches = state.setdefault("matches", {})
     queue = list(candidate_rows(
-        catalog, previous, sitemap_state, redirect_state, remaining_state))
+        catalog, previous, sitemap_state, redirect_state, remaining_state,
+        source_state))
     todo = [(i, row) for i, row in queue
             if should_visit_series(
                 str(row.get("url") or "").rstrip("/"), checked,
                 latest_drama_target(str(row.get("url") or "").rstrip("/"),
-                                    remaining_state, redirect_state),
+                                    source_state, remaining_state, redirect_state),
                 args)]
     if args.limit:
         todo = todo[:args.limit]
     observed_count = sum(bool(latest_drama_target(
-        str(row.get("url") or "").rstrip("/"), remaining_state,
-        redirect_state)) for _, row in queue)
+        str(row.get("url") or "").rstrip("/"), source_state,
+        remaining_state, redirect_state)) for _, row in queue)
     print("Redirect drama sudah diamati:", observed_count, flush=True)
     print("Kandidat movie gagal poster dengan redirect:", len(queue),
           "| diperiksa sekarang:", len(todo), flush=True)
@@ -251,7 +267,7 @@ def run(args):
                     print(f"[{n}/{len(todo)}] {item.get('title')} ({item.get('year')})",
                           flush=True)
                     destination = latest_drama_target(
-                        url, remaining_state, redirect_state)
+                        url, source_state, remaining_state, redirect_state)
                     try:
                         if not destination:
                             browse(movie_page, movie_robots, url, pacer=pacer)
@@ -277,7 +293,11 @@ def run(args):
                             if candidate:
                                 matches[url] = {
                                     "index": index, "title": item.get("title"),
-                                    "year": item.get("year"), **candidate}
+                                    "year": item.get("year"),
+                                    "rename_title": (
+                                        slug != urlparse(url).path.rstrip("/").split("/")[-1].lower()
+                                    ),
+                                    **candidate}
                         checked[url] = result
                         print("  ", result["status"], "|", result["final_url"],
                               "| series:", result.get("series_url", ""), flush=True)
@@ -316,6 +336,8 @@ def main():
     p.add_argument("--redirect-progress", type=Path, default=REDIRECT_PROGRESS)
     p.add_argument("--remaining-movie-progress", type=Path,
                    default=REMAINING_MOVIE_PROGRESS)
+    p.add_argument("--source-movie-progress", type=Path,
+                   default=SOURCE_MOVIE_PROGRESS)
     p.add_argument("--sitemap-progress", type=Path, default=SITEMAP_PROGRESS)
     p.add_argument("--state", type=Path, default=STATE)
     p.add_argument("--report", type=Path, default=REPORT)
