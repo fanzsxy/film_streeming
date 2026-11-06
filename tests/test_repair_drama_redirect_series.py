@@ -3,10 +3,44 @@ from unittest.mock import patch
 
 from tools.repair_drama_redirect_series import (
     drama_slug, candidate_rows, verify_series_detail, navigation_failure,
+    latest_drama_target, should_visit_series,
 )
 
 
 class DramaRedirectSeriesTests(unittest.TestCase):
+    def test_remaining_movie_progress_is_reused(self):
+        from types import SimpleNamespace
+        url = "https://tv12.lk21official.cc/new-stanford-prison-experiment-2026"
+        redirect = ("https://tv12.lk21official.cc/nontondrama?"
+                    "page=new-stanford-prison-experiment-2026")
+        row = {"title": "New Stanford Prison Experiment", "year": 2026,
+               "type": "movie", "poster_url": "", "url": url}
+        remaining = {"checked": {url: {"status": "drama_redirect",
+                                      "final_url": redirect}}}
+        old = {"checked": {url: {"status": "not_drama_redirect",
+                                "final_url": url}}}
+        with patch("tools.repair_drama_redirect_series.validated",
+                   return_value=True):
+            self.assertEqual(len(list(candidate_rows(
+                {"items": [row]}, {}, {}, {}, remaining))), 1)
+        self.assertEqual(latest_drama_target(url, remaining, old), redirect)
+        self.assertTrue(should_visit_series(
+            url, old["checked"], redirect,
+            SimpleNamespace(recheck=False, retry_navigation_errors=False,
+                            retry_mismatches=False)))
+        old["checked"][url] = {"status": "verified_series",
+                               "final_url": redirect}
+        self.assertFalse(should_visit_series(
+            url, old["checked"], redirect,
+            SimpleNamespace(recheck=False, retry_navigation_errors=False,
+                            retry_mismatches=False)))
+
+    def test_rejects_unrelated_redirect_target(self):
+        url = "https://tv12.lk21official.cc/original-movie-2020"
+        observed = {"checked": {url: {"status": "drama_redirect",
+                         "final_url": "https://tv12.lk21official.cc/nontondrama?page=another-series-2020"}}}
+        self.assertEqual(latest_drama_target(url, observed), "")
+
     def test_navigation_abort_is_skippable_not_access_bypass(self):
         self.assertEqual(
             navigation_failure(Exception(
