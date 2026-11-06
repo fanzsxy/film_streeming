@@ -40,11 +40,24 @@ class CatalogEntry {
     final releaseYear = json['type'] == 'series' && slugYear != null
         ? int.tryParse(slugYear.group(0)!.replaceAll(RegExp(r'[^0-9]'), '')) ?? originalYear
         : originalYear;
+    final host = Uri.tryParse(url)?.host.toLowerCase() ?? '';
+    final originalType = (json['type'] ?? '').toString();
+    final resolvedType = host == 'tv12.lk21official.cc'
+        ? 'movie'
+        : const {
+            'tv.nontondrama.vip',
+            'tv9.nontondrama.my',
+            'tv.lk21online.de',
+          }.contains(host)
+            ? 'tv'
+            : (originalType == 'series' || originalType == 'tv')
+                ? 'tv'
+                : 'movie';
     return CatalogEntry(
       title: (json['title'] ?? '').toString(),
       year: releaseYear,
       url: url,
-      type: (json['type'] ?? '') == 'series' ? 'tv' : 'movie',
+      type: resolvedType,
       posterUrl: (json['poster_url'] ?? '').toString(),
       synopsis: (json['synopsis'] ?? '').toString(),
       activeSourceUrl: (json['active_source_url'] ?? '').toString(),
@@ -169,7 +182,7 @@ class FilmStreamCatalog {
         // Invalid local entries must not affect the bundled catalog.
       }
     }
-    return List<CatalogEntry>.unmodifiable(merged);
+    return List<CatalogEntry>.unmodifiable(consolidateCatalogEntries(merged));
   }
 
   static Future<List<CatalogEntry>> find(String query, {String? type, int limit = 100}) async {
@@ -187,10 +200,78 @@ List<CatalogEntry> _parseCatalog(String raw) {
   final decoded = jsonDecode(raw) as Map<String, dynamic>;
   final items = decoded['items'] as List<dynamic>? ?? const [];
   return List<CatalogEntry>.unmodifiable(
-    items.whereType<Map<String, dynamic>>().map(CatalogEntry.fromJson).where(
-      (entry) => entry.title.trim().isNotEmpty &&
-          entry.url.startsWith('https://') &&
-          (entry.type == 'movie' || entry.type == 'tv'),
+    consolidateCatalogEntries(
+      items.whereType<Map<String, dynamic>>().map(CatalogEntry.fromJson).where(
+        (entry) => entry.title.trim().isNotEmpty &&
+            entry.url.startsWith('https://') &&
+            (entry.type == 'movie' || entry.type == 'tv'),
+      ),
     ),
   );
+}
+
+
+/// Consolidate catalog *display entries* without deleting source records.
+///
+/// Exact same title/year across movie and series is displayed once, preferring
+/// the series record when a known series-domain permalink exists. Titles with
+/// minor wording differences require matching poster URLs as extra evidence.
+List<CatalogEntry> consolidateCatalogEntries(Iterable<CatalogEntry> entries) {
+  final result = <CatalogEntry>[];
+  final byUrl = <String, int>{};
+  final byTitleYear = <String, int>{};
+  final byPosterAlias = <String, int>{};
+
+  String keyTitle(String title) => title.toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]'), '');
+  String keyAlias(String title) => title.toLowerCase()
+      .replaceAll(RegExp(r'\\b(of|the)\\b'), '')
+      .replaceAll(RegExp(r'[^a-z0-9]'), '');
+  String normalizedUrl(String url) => url.trim().replaceFirst(RegExp(r'/+$'), '');
+
+  bool better(CatalogEntry candidate, CatalogEntry current) {
+    final candidateSeries = candidate.type == 'tv' &&
+        const {'tv.nontondrama.vip', 'tv9.nontondrama.my',
+          'tv.lk21online.de'}.contains(Uri.tryParse(candidate.url)?.host);
+    final currentSeries = current.type == 'tv' &&
+        const {'tv.nontondrama.vip', 'tv9.nontondrama.my',
+          'tv.lk21online.de'}.contains(Uri.tryParse(current.url)?.host);
+    if (candidateSeries != currentSeries) return candidateSeries;
+    final candidatePoster = candidate.posterUrl.startsWith('https://');
+    final currentPoster = current.posterUrl.startsWith('https://');
+    if (candidatePoster != currentPoster) return candidatePoster;
+    if (candidate.tmdbId != null && current.tmdbId == null) return true;
+    if (candidate.tmdbId == null && current.tmdbId != null) return false;
+    return candidate.title.length > current.title.length;
+  }
+
+  void rebuildKeys() {
+    byUrl.clear();
+    byTitleYear.clear();
+    byPosterAlias.clear();
+    for (var i = 0; i < result.length; i++) {
+      final e = result[i];
+      byUrl[normalizedUrl(e.url)] = i;
+      byTitleYear['${e.year}:${keyTitle(e.title)}'] = i;
+      if (e.posterUrl.startsWith('https://')) {
+        byPosterAlias['${e.type}:${e.year}:${e.posterUrl}:${keyAlias(e.title)}'] = i;
+      }
+    }
+  }
+
+  for (final entry in entries) {
+    final urlKey = normalizedUrl(entry.url);
+    final titleKey = '${entry.year}:${keyTitle(entry.title)}';
+    final aliasKey = '${entry.type}:${entry.year}:${entry.posterUrl}:${keyAlias(entry.title)}';
+    final duplicate = byUrl[urlKey] ?? byTitleYear[titleKey] ??
+        (entry.posterUrl.startsWith('https://') ? byPosterAlias[aliasKey] : null);
+    if (duplicate == null) {
+      result.add(entry);
+      rebuildKeys();
+    } else if (better(entry, result[duplicate])) {
+      result[duplicate] = entry;
+      rebuildKeys();
+    }
+  }
+  return result;
 }
