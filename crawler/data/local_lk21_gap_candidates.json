@@ -14615,10 +14615,42 @@
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/03/film-the-macaluso-sisters-2020-lk21-d21.jpg",
       "tmdb_id": 606865
+    },
+    {
+      "title": "A Feral World",
+      "year": 2020,
+      "url": "https://tv12.lk21official.cc/a-feral-world-2020",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2020/09/film-a-feral-world-2020-lk21.jpg",
+      "tmdb_id": 680295
+    },
+    {
+      "title": "Max and Me",
+      "year": 2020,
+      "url": "https://tv12.lk21official.cc/max-and-me-2020",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2020/10/film-max-and-me-2020-lk21.jpg",
+      "tmdb_id": 747827
+    },
+    {
+      "title": "The Craft: Legacy",
+      "year": 2020,
+      "url": "https://tv12.lk21official.cc/the-craft-legacy-2020",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2020/10/film-the-craft-legacy-2020-lk21.jpg",
+      "tmdb_id": 590995
+    },
+    {
+      "title": "His House",
+      "year": 2020,
+      "url": "https://tv12.lk21official.cc/his-house-2020",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2020/11/film-his-house-2020-lk21.jpg",
+      "tmdb_id": 575774
     }
   ],
-  "new_count": 1827,
-  "checked": 9395,
+  "new_count": 1831,
+  "checked": 9456,
   "errors": [],
   "applied": false,
   "source": "visible_chromium"
