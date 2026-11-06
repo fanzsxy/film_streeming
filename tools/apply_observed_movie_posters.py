@@ -3,7 +3,7 @@
 The URLs were recorded from a headed Chromium detail-page inspection and
 supplied by the user. No title search or browser is needed here.
 Default dry-run. --apply makes a timestamped backup first and changes only
-poster_url on exactly matching movie URL/title/year rows.
+poster_url on movie rows matched by their exact existing source URL.
 """
 import argparse
 import json
@@ -41,17 +41,26 @@ OBSERVED = {
 def proposed_updates(catalog):
     pending, rejected = [], []
     seen = set()
+    url_counts = {}
+    for row in catalog.get("items") or []:
+        if isinstance(row, dict):
+            source = str(row.get("url") or "").strip().rstrip("/")
+            if source in OBSERVED:
+                url_counts[source] = url_counts.get(source, 0) + 1
     for index, row in enumerate(catalog.get("items") or []):
         if not isinstance(row, dict):
             continue
         url = str(row.get("url") or "").strip().rstrip("/")
         if url not in OBSERVED:
             continue
-        name, year, poster = OBSERVED[url]
+        _observed_title, _observed_year, poster = OBSERVED[url]
         seen.add(url)
-        if (row.get("type") != "movie" or row.get("title") != name
-                or str(row.get("year")) != str(year) or not good_poster(poster)):
-            rejected.append((index, url, "title/year/type mismatch"))
+        if url_counts[url] != 1:
+            rejected.append((index, url, "duplicate source URL"))
+        elif row.get("type") != "movie":
+            rejected.append((index, url, "not a movie"))
+        elif not good_poster(poster):
+            rejected.append((index, url, "invalid observed poster URL"))
         elif good_poster(row.get("poster_url")):
             rejected.append((index, url, "already has valid poster"))
         else:
