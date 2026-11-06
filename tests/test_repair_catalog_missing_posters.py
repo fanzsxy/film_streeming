@@ -6,7 +6,7 @@ from pathlib import Path
 
 from tools.repair_catalog_missing_posters import (
     apply_poster, cache_posters, catalog_missing, good_poster,
-    match_offline, poster_candidates,
+    match_offline, poster_candidates, extract_catalog_poster,
 )
 
 HOST = "https://tv12.lk21official.cc/"
@@ -64,6 +64,24 @@ class CatalogPosterRepairTests(unittest.TestCase):
             poster, source = match_offline(row, {}, {}, cache)
             self.assertEqual(source, "matched_tmdb_cache")
             self.assertEqual(poster, "https://image.tmdb.org/t/p/w500/abc.jpg")
+
+    def test_adult_words_do_not_hide_valid_detail_poster(self):
+        html = """<html><head><meta property="og:image"
+          content="https://images.example/actual-poster.jpg"></head><body>
+          <h1>Adult Film (2015)</h1><p>materi khusus dewasa</p></body></html>"""
+        film = {"title": "Adult Film", "year": 2015, "type": "movie"}
+        poster, status = extract_catalog_poster(html, HOST + "adult-film-2015", film)
+        self.assertEqual(status, "found")
+        self.assertEqual(poster, "https://images.example/actual-poster.jpg")
+
+    def test_gate_without_real_detail_heading_is_not_a_poster(self):
+        html = """<html><head><meta property="og:image"
+        content="https://images.example/site-logo.jpg"></head>
+        <body><h1>Login Gmail Anda</h1></body></html>"""
+        poster, status = extract_catalog_poster(
+            html, HOST + "adult-film-2015", {"title": "Adult Film", "year": 2015})
+        self.assertIsNone(poster)
+        self.assertEqual(status, "missing_detail_heading_or_year")
 
     def test_never_fill_placeholder(self):
         self.assertFalse(good_poster("https://img.example/no-poster.png"))
