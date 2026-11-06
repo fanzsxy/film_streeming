@@ -96,7 +96,9 @@ def plan(document):
                "updates": updates,
                "reason": "same_url_path_and_year"}
         if conflict_fields:
-            rec["reason"] = "metadata_conflict_same_url_path"
+            rec["reason"] = ("poster_conflict_same_url_path"
+                             if conflict_fields == ["poster_url"]
+                             else "metadata_conflict_same_url_path")
             rec["conflict_fields"] = conflict_fields
             review.append(rec)
         else:
