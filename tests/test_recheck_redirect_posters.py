@@ -39,6 +39,26 @@ class RedirectPosterRecheckTests(unittest.TestCase):
             found = list(targets({"items": [item]}, progress, sitemap_state=sitemap))
         self.assertEqual(len(found), 1)
 
+    def test_compound_redirect_agrees_with_triage(self):
+        item = {"title": "Example", "year": 2020, "type": "movie",
+                "url": "https://tv12.lk21official.cc/example-2020",
+                "poster_url": ""}
+        from tools.triage_missing_catalog_posters import status_for
+        # The old equality check rejected these statuses even though
+        # triage classified both as redirect.
+        for source in ("checked", "search_checked"):
+            progress = {source: {item["url"]: "redirect_to_home"}}
+            self.assertEqual(
+                status_for(item["url"], progress, {})["category"], "redirect"
+            )
+            with patch("tools.recheck_redirect_posters.validated", return_value=True):
+                self.assertEqual(len(list(targets({"items": [item]}, progress))), 1)
+        sitemap = {"completed": {item["url"]: "redirected_to_listing"}}
+        self.assertEqual(status_for(item["url"], {}, sitemap)["category"], "redirect")
+        with patch("tools.recheck_redirect_posters.validated", return_value=True):
+            self.assertEqual(len(list(targets(
+                {"items": [item]}, {}, sitemap_state=sitemap))), 1)
+
     @patch("tools.recheck_redirect_posters.extract_catalog_poster")
     def test_accepts_only_verified_matching_poster(self, extract):
         extract.return_value = ("https://images.example/poster.jpg", "found")
