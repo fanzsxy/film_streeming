@@ -59,6 +59,22 @@ class RedirectPosterRecheckTests(unittest.TestCase):
             self.assertEqual(len(list(targets(
                 {"items": [item]}, {}, sitemap_state=sitemap))), 1)
 
+    def test_all_missing_includes_search_failures_and_unchecked(self):
+        rows = [
+            {"title": "Movie A", "year": 2020, "type": "movie",
+             "url": "https://tv12.lk21official.cc/movie-a-2020", "poster_url": ""},
+            {"title": "Movie B", "year": 2021, "type": "movie",
+             "url": "https://tv12.lk21official.cc/movie-b-2021", "poster_url": ""},
+            {"title": "Already Complete", "year": 2022, "type": "movie",
+             "url": "https://tv12.lk21official.cc/complete-2022",
+             "poster_url": "https://img.example.org/poster.jpg"},
+        ]
+        prior = {"search_checked": {rows[0]["url"]: "search_no_verified_match"}}
+        with patch("tools.recheck_redirect_posters.validated", return_value=True):
+            self.assertEqual(len(list(targets({"items": rows}, prior))), 0)
+            actual = list(targets({"items": rows}, prior, all_missing=True))
+        self.assertEqual([index for index, _ in actual], [0, 1])
+
     @patch("tools.recheck_redirect_posters.extract_catalog_poster")
     def test_accepts_only_verified_matching_poster(self, extract):
         extract.return_value = ("https://images.example/poster.jpg", "found")
