@@ -105,6 +105,43 @@ def make_series_search_url(form, title):
 
 
 
+def diagnose_series_results(html, page_url, row, hosts=None):
+    """Inspect small samples of visible search cards without editing catalog."""
+    hosts = hosts or series_hosts()
+    soup = BeautifulSoup(html, "html.parser")
+    rows = []
+    seen = set()
+    for anchor in soup.select("a[href]"):
+        href = urljoin(page_url, anchor.get("href", ""))
+        if not allowed_series_url(href, hosts) or href in seen:
+            continue
+        parent = anchor.find_parent(["article", "li"]) or anchor.find_parent(
+            class_=re.compile(r"item|movie|series|poster|film|result", re.I))
+        if parent is None:
+            continue
+        img = parent.select_one("img")
+        heading = parent.select_one("h2,h3,h4,.title,.poster-title")
+        if img is None and heading is None:
+            continue
+        seen.add(href)
+        rows.append({
+            "url": href[:300],
+            "title": (heading.get_text(" ", strip=True) if heading else
+                      img.get("alt", "") if img else "")[:150],
+            "text": parent.get_text(" ", strip=True)[:220],
+            "images": {k: str(img.get(k))[:250] for k in
+                       ("src", "data-src", "data-original", "data-lazy-src")
+                       if img is not None and img.get(k)}
+        })
+        if len(rows) >= 5:
+            break
+    return {"requested_title": row.get("title"),
+            "requested_year": row.get("year"),
+            "page_title": (soup.title.get_text(" ", strip=True)
+                           if soup.title else "")[:150],
+            "cards_sample": rows}
+
+
 def series_card_matches(html, page_url, row, hosts=None):
     expected = identity(row.get("title"), row.get("year"))[0]
     year = str(row.get("year", ""))
@@ -172,10 +209,11 @@ def run(args):
         "checked": {}, "matches": {}, "errors": []}
     checked = saved.setdefault("checked", {})
     matches = saved.setdefault("matches", {})
-    pending = [(i, r) for i, r in queue if r["url"].rstrip("/") not in checked]
+    pending = [(i, r) for i, r in queue if args.recheck or r["url"].rstrip("/") not in checked]
     if args.limit:
         pending = pending[:args.limit]
     print("Kandidat movie yang diduga series:", len(queue), "| belum dicek:", len(pending), flush=True)
+    diagnostics = []
     if pending:
         from playwright.sync_api import sync_playwright
         hosts = series_hosts(args.domains)
@@ -203,6 +241,12 @@ def run(args):
                         print("Pencarian dihentikan:", exc, flush=True)
                         break
                     found = series_card_matches(html, page.url, row, hosts)
+                    if args.diagnose and len(diagnostics) < args.diagnose:
+                        sample = diagnose_series_results(html, page.url, row, hosts)
+                        sample["matches"] = len(found)
+                        diagnostics.append(sample)
+                        print("  Diagnostik:", json.dumps(sample, ensure_ascii=False),
+                              flush=True)
                     if len(found) == 1:
                         matches[original] = {
                             "index": index, "title": row["title"], "year": row["year"],
@@ -249,6 +293,7 @@ def run(args):
                 applied += 1
             save_catalog(args.catalog, catalog)
     report = {"candidates": len(queue), "checked": len(checked),
+              "diagnostics": diagnostics,
               "verified_series": len(matches), "applied": applied,
               "matches": list(matches.values()),
               "statuses": dict(Counter(checked.values()))}
@@ -267,11 +312,15 @@ def main():
     parser.add_argument("--report", type=Path, default=REPORT)
     parser.add_argument("--series-base", default=SERIES_BASE)
     parser.add_argument("--domains", type=Path, default=DOMAINS)
+    parser.add_argument("--recheck", action="store_true",
+                        help="Inspect already checked rows again; use with --limit")
+    parser.add_argument("--diagnose", type=int, default=0,
+                        help="Print sample search cards for N titles")
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--delay", type=float, default=2)
     parser.add_argument("--apply", action="store_true")
     args = parser.parse_args()
-    if args.limit < 0 or args.delay < 2:
+    if args.limit < 0 or args.delay < 2 or args.diagnose < 0:
         parser.error("limit >= 0 and delay >= 2 required")
     run(args)
 
