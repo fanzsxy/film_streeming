@@ -114,8 +114,16 @@ def extract_catalog_poster(html, url, item):
         return None, "year_mismatch"
     catalog_title = identity(item.get("title") or "", year)[0]
     observed_title = identity(title, year)[0]
-    if not catalog_title or catalog_title != observed_title:
+    if not catalog_title:
         return None, "title_mismatch"
+    if catalog_title != observed_title:
+        # LK21 headings sometimes append one parenthesized alternate title,
+        # e.g. "Gangnam Blues (Gangnam 1970) (2015)".
+        # Accept only if the entire main title before that suffix is
+        # identical to the catalog title; never use loose substring matching.
+        main_title = re.sub(r"\\s+\\([^()]+\\)\\s*$", "", title).strip()
+        if main_title == title or identity(main_title, year)[0] != catalog_title:
+            return None, "title_mismatch"
     poster = poster_from_detail(html, url)
     if poster and good_poster(poster):
         return poster, "found"
