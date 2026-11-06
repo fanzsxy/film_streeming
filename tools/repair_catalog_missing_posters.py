@@ -11,12 +11,14 @@ import os
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlencode, urljoin
+import re
+from bs4 import BeautifulSoup
 
 from tools.audit_catalog_completeness import valid_url
 from tools.import_local_lk21_sitemaps import identity
 from tools.local_lk21_browser_search import NavigationPacer, browse, load_robots
-from tools.local_lk21_gap_match import detail_title_year, poster_from_detail, validated
+from tools.local_lk21_gap_match import detail_title_year, poster_from_detail, poster_from_node, validated
 
 CATALOG = Path("assets/catalog/filmstream_catalog.json")
 RESULTS = Path("crawler/data/local_sitemap_detail_results.json")
@@ -126,6 +128,76 @@ def extract_catalog_poster(html, url, item):
     return None, "no_detail_poster"
 
 
+def search_poster_from_listing(html, search_url, item):
+    """Find a uniquely matched public search-result poster for the requested title/year.
+
+    Use visible result cards only. Series/movie clues must be explicit. Never
+    treat an unrelated card, a different year, or a generic site image as a poster.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    expected = identity(item.get("title") or "", item.get("year") or "")[0]
+    expected_year = str(item.get("year") or "")
+    expected_kind = "series" if item.get("type") in ("series", "tv") else "movie"
+    found = {}
+    mismatched_types = set()
+    for anchor in soup.select("a[href]"):
+        href = urljoin(search_url, anchor.get("href") or "")
+        if not validated(href):
+            continue
+        parent = anchor.find_parent(["article", "li"]) or anchor.find_parent(
+            class_=re.compile(r"item|movie|series|poster|film|result", re.I))
+        if parent is None:
+            continue
+        heading = parent.select_one("h2,h3,h4,.title,.poster-title")
+        img = parent.select_one("img")
+        if img is None:
+            continue
+        label = (heading.get_text(" ", strip=True) if heading else
+                 img.get("alt") or anchor.get("title") or anchor.get_text(" ", strip=True))
+        label = re.sub(r"\s+", " ", label or "").strip()
+        # The card, NOT some unrelated search text, must establish title+year.
+        if identity(label, expected_year)[0] != expected:
+            continue
+        card_text = parent.get_text(" ", strip=True)
+        slug = urlparse(href).path.rstrip("/").split("/")[-1]
+        year_in_slug = re.search(r"-(19\d{2}|20\d{2})$", slug)
+        year_in_card = re.search(r"\b(19\d{2}|20\d{2})\b", card_text)
+        observed_year = (year_in_slug or year_in_card)
+        if not observed_year or observed_year.group(1) != expected_year:
+            continue
+        kind_labels = re.findall(r"\b(series|serial|tv series|movie|film)\b",
+                                 card_text, flags=re.I)
+        has_series = any(x.lower() in ("series", "serial", "tv series") for x in kind_labels)
+        has_movie = any(x.lower() in ("movie", "film") for x in kind_labels)
+        observed_kind = "series" if has_series and not has_movie else (
+            "movie" if has_movie and not has_series else None)
+        if observed_kind and observed_kind != expected_kind:
+            mismatched_types.add(observed_kind)
+            continue
+        if observed_kind is None:
+            # Search cards cannot prove kind without a distinct label.
+            continue
+        poster = poster_from_node(img, search_url)
+        if good_poster(poster):
+            found[href] = poster
+    posters = set(found.values())
+    if len(posters) == 1 and len(found) == 1:
+        return next(iter(posters)), "search_verified"
+    if len(found) > 1:
+        return None, "ambiguous_search_results"
+    if mismatched_types:
+        return None, "catalog_type_mismatch_" + "_".join(sorted(mismatched_types))
+    return None, "search_no_verified_match"
+
+
+def search_redirected_poster(page, robots, pacer, item):
+    """Search only public cards for matching title/year/kind on observed LK21 search."""
+    from tools.auto_discover_lk21 import MOVIE_BASE
+    lookup = MOVIE_BASE + "/search?" + urlencode({"s": item["title"]})
+    html = browse(page, robots, lookup, pacer=pacer)
+    return search_poster_from_listing(html, page.url, item)
+
+
 def write_json(path, payload):
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_name(path.name + ".repair.tmp")
@@ -191,6 +263,7 @@ def run(args):
     if args.progress.is_file():
         state = json.loads(args.progress.read_text(encoding="utf-8-sig"))
     completed = state.setdefault("checked", {})
+    search_checked = state.setdefault("search_checked", {})
     repaired = state.setdefault("repaired", {})
     def commit():
         save_catalog(args.catalog, catalog)
@@ -208,8 +281,13 @@ def run(args):
 
     if args.browser and browser_queue:
         from playwright.sync_api import sync_playwright
+        retryable = {"redirect", "year_mismatch", "title_mismatch",
+                     "missing_detail_heading_or_year", "no_detail_poster"}
         targets = [idx for idx in browser_queue if
-                   str(items[idx].get("url") or "") not in completed]
+                   str(items[idx].get("url") or "") not in completed or (
+                       args.retry_search and
+                       completed.get(str(items[idx].get("url") or "")) in retryable and
+                       str(items[idx].get("url") or "") not in search_checked)]
         if args.limit:
             targets = targets[:args.limit]
         if targets:
@@ -233,7 +311,35 @@ def run(args):
                             counters["skipped"] += 1
                             write_json(args.progress, state)
                             continue
+                        old_reason = completed.get(url)
                         try:
+                            if args.retry_search and old_reason in retryable:
+                                poster, status = search_redirected_poster(page, robots, pacer, item)
+                                search_checked[url] = status
+                                if status in retryable and args.search_on_redirect:
+                            try:
+                                searched, searched_status = search_redirected_poster(
+                                    page, robots, pacer, item)
+                                search_checked[url] = searched_status
+                                if searched:
+                                    poster, status = searched, searched_status
+                                else:
+                                    status = searched_status
+                            except RuntimeError as exc:
+                                state.setdefault("errors", []).append({
+                                    "url": url, "reason": "search: " + str(exc)})
+                                print("Akses pencarian dihentikan:", str(exc), flush=True)
+                                write_json(args.progress, state)
+                                break
+                        if poster and apply_poster(catalog, idx, poster):
+                                    repaired[url] = "lk21_public_search"
+                                    counters["search_repaired"] += 1
+                                    completed[url] = "repaired"
+                                    commit()
+                                else:
+                                    counters[status] += 1
+                                    write_json(args.progress, state)
+                                continue
                             html = browse(page, robots, url, pacer=pacer)
                         except RuntimeError as exc:
                             state.setdefault("errors", []).append({"url": url, "reason": str(exc)})
@@ -271,6 +377,10 @@ def main():
     p.add_argument("--cache", type=Path, default=TMDB_CACHE)
     p.add_argument("--progress", type=Path, default=PROGRESS)
     p.add_argument("--report", type=Path, default=REPORT)
+    p.add_argument("--retry-search", action="store_true",
+                   help="Retry prior redirects/year mismatches via public LK21 search cards")
+    p.add_argument("--search-on-redirect", action="store_true",
+                   help="Search public cards after redirects/detail mismatch")
     p.add_argument("--browser", action="store_true",
                    help="Use headed Chromium for unresolved URL details; no title searches")
     p.add_argument("--limit", type=int, default=0, help="Max browser URLs in this run; 0=all")
