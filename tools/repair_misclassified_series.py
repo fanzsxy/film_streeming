@@ -11,31 +11,111 @@ import re
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import urlencode, urljoin, urlparse
+from urllib.parse import urlencode, urljoin, urlparse, urlunparse, parse_qsl
+from urllib.robotparser import RobotFileParser
 
 from bs4 import BeautifulSoup
 
 from tools.import_local_lk21_sitemaps import identity
-from tools.local_lk21_browser_search import NavigationPacer, browse, load_robots
-from tools.local_lk21_gap_match import poster_from_node, validated
+from tools.local_lk21_browser_search import NavigationPacer
+from tools.local_lk21_gap_match import poster_from_node
 from tools.repair_catalog_missing_posters import (
     CATALOG, PROGRESS, good_poster, save_catalog, write_json,
 )
 
 REPORT = Path("crawler/data/misclassified_series_report.json")
 STATE = Path("crawler/data/misclassified_series_progress.json")
+DOMAINS = Path("config/source_domains.json")
+SERIES_BASE = "https://tv.nontondrama.vip"
+UA = "FilmStreamPublicCatalogUpdater/1.0"
+BLOCK = re.compile(r"captcha|verify you are human|access denied", re.I)
 
 
-def series_card_matches(html, page_url, row):
+def allowed_series_url(url, hosts):
+    parsed = urlparse(url)
+    return (parsed.scheme == "https" and parsed.hostname in hosts and
+            parsed.port is None and not parsed.username and not parsed.password)
+
+
+def series_hosts(config_path=DOMAINS):
+    data = json.loads(config_path.read_text(encoding="utf-8"))
+    return set(data["series"]["allowed_hosts"])
+
+
+def series_browse(page, robots, url, hosts, pacer):
+    if not allowed_series_url(url, hosts):
+        raise RuntimeError("URL outside configured series domains")
+    if not robots.can_fetch(UA, url):
+        raise RuntimeError("Series robots.txt disallows URL")
+    pacer.before_navigation(page)
+    response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
+    if response is None or response.status in (401, 403, 429):
+        raise RuntimeError("Series site access restricted")
+    if response.status >= 400:
+        raise RuntimeError("Series site HTTP " + str(response.status))
+    if not allowed_series_url(page.url, hosts):
+        raise RuntimeError("Series page redirected outside allowed domains")
+    html = page.content()
+    if BLOCK.search(html):
+        raise RuntimeError("Series site verification challenge")
+    return html
+
+
+def series_robots(page, base):
+    url = base.rstrip("/") + "/robots.txt"
+    response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
+    if response is None or response.status != 200:
+        raise RuntimeError("Cannot verify series robots.txt")
+    body = page.locator("body").inner_text(timeout=10000)
+    if "<html" in body.lower():
+        raise RuntimeError("Series robots.txt returned HTML")
+    robots = RobotFileParser()
+    robots.parse(body.splitlines())
+    return robots
+
+
+def series_search_form(html, base, hosts):
+    """Discover actual search endpoint from public series homepage."""
+    soup = BeautifulSoup(html, "html.parser")
+    for form in soup.select("form"):
+        if form.get("method", "get").lower() != "get":
+            continue
+        inputs = form.select("input[name]")
+        for field in inputs:
+            key = field.get("name", "")
+            if key.lower() not in ("s", "q", "query", "search", "keyword", "judul"):
+                continue
+            action = urljoin(base + "/", form.get("action") or base + "/")
+            if not allowed_series_url(action, hosts):
+                continue
+            fixed = [(entry.get("name"), entry.get("value", "")) for entry in inputs
+                     if entry.get("name") and entry.get("name") != key
+                     and entry.get("type", "").lower() == "hidden"]
+            return action, key, fixed
+    return None
+
+
+def make_series_search_url(form, title):
+    action, key, fixed = form
+    parsed = urlparse(action)
+    query = parse_qsl(parsed.query, keep_blank_values=True)
+    query.extend(fixed)
+    query.append((key, title))
+    return urlunparse(parsed._replace(query=urlencode(query)))
+
+
+
+def series_card_matches(html, page_url, row, hosts=None):
     expected = identity(row.get("title"), row.get("year"))[0]
     year = str(row.get("year", ""))
     if not expected or not re.fullmatch(r"(19|20)\d{2}", year):
         return []
     soup = BeautifulSoup(html, "html.parser")
+    hosts = hosts or series_hosts()
     matches = {}
     for anchor in soup.select("a[href]"):
         href = urljoin(page_url, anchor["href"])
-        if not validated(href):
+        if not allowed_series_url(href, hosts):
             continue
         parent = anchor.find_parent(["article", "li"]) or anchor.find_parent(
             class_=re.compile(r"item|movie|series|poster|film|result", re.I))
@@ -58,9 +138,7 @@ def series_card_matches(html, page_url, row):
             continue
         if any(x and x.group(1) != year for x in (slug_year, card_year)):
             continue
-        if not re.search(r"\b(?:series|serial|tv series)\b", text, re.I):
-            continue
-        # Actual series badge/text is required; never infer from redirects.
+        # Dedicated series-domain search results do not require a Series label.
         poster = poster_from_node(img, page_url)
         if not good_poster(poster):
             continue
@@ -100,25 +178,31 @@ def run(args):
     print("Kandidat movie yang diduga series:", len(queue), "| belum dicek:", len(pending), flush=True)
     if pending:
         from playwright.sync_api import sync_playwright
-        from tools.auto_discover_lk21 import MOVIE_BASE
+        hosts = series_hosts(args.domains)
+        if urlparse(args.series_base).hostname not in hosts:
+            raise SystemExit("Series base URL not allowed by config/source_domains.json")
         with sync_playwright() as pw:
             browser = pw.chromium.launch(headless=False)
             page = browser.new_page(viewport={"width": 1280, "height": 820})
             try:
-                robots = load_robots(page)
+                robots = series_robots(page, args.series_base)
                 pacer = NavigationPacer(args.delay)
+                homepage = series_browse(page, robots, args.series_base.rstrip("/") + "/", hosts, pacer)
+                form = series_search_form(homepage, args.series_base, hosts)
+                if form is None:
+                    raise RuntimeError("Series homepage has no supported GET search form")
                 for n, (index, row) in enumerate(pending, 1):
                     original = row["url"].rstrip("/")
-                    search_url = MOVIE_BASE + "/search?" + urlencode({"s": row["title"]})
+                    search_url = make_series_search_url(form, row["title"])
                     print(f"[{n}/{len(pending)}] {row['title']} ({row.get('year')})", flush=True)
                     try:
-                        html = browse(page, robots, search_url, pacer=pacer)
+                        html = series_browse(page, robots, search_url, hosts, pacer)
                     except RuntimeError as exc:
                         saved["errors"].append({"url": original, "error": str(exc)})
                         write_json(args.state, saved)
                         print("Pencarian dihentikan:", exc, flush=True)
                         break
-                    found = series_card_matches(html, page.url, row)
+                    found = series_card_matches(html, page.url, row, hosts)
                     if len(found) == 1:
                         matches[original] = {
                             "index": index, "title": row["title"], "year": row["year"],
@@ -149,7 +233,7 @@ def run(args):
             other = known_urls.get(new_url)
             if other is not None and other != index:
                 continue
-            if not good_poster(match["poster_url"]) or not validated(new_url):
+            if not good_poster(match["poster_url"]) or not allowed_series_url(new_url, series_hosts(args.domains)):
                 continue
             changes.append((index, match))
         if changes:
@@ -181,6 +265,8 @@ def main():
     parser.add_argument("--poster-progress", type=Path, default=PROGRESS)
     parser.add_argument("--state", type=Path, default=STATE)
     parser.add_argument("--report", type=Path, default=REPORT)
+    parser.add_argument("--series-base", default=SERIES_BASE)
+    parser.add_argument("--domains", type=Path, default=DOMAINS)
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--delay", type=float, default=2)
     parser.add_argument("--apply", action="store_true")
