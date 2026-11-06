@@ -8,6 +8,7 @@ Does not attempt age verification or circumvent access restrictions.
 """
 import argparse
 import json
+import re
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -17,7 +18,7 @@ from bs4 import BeautifulSoup
 
 from tools.audit_catalog_completeness import good_poster
 from tools.local_lk21_browser_search import browse, load_robots, NavigationPacer
-from tools.local_lk21_gap_match import validated, detail_title_year, poster_from_detail
+from tools.local_lk21_gap_match import validated, poster_from_detail
 from tools.triage_missing_catalog_posters import status_for, group_status
 from tools.repair_catalog_missing_posters import (
     CATALOG, PROGRESS, extract_catalog_poster, save_catalog, write_json,
@@ -71,25 +72,25 @@ def classify(html, final_url, item):
 
 
 def source_metadata(html, final_url):
-    """Read the linked movie detail itself, not a search result or old title.
-
-    The caller must confirm the browser stayed at the exact catalog URL.
-    """
-    title, year = detail_title_year(html)
-    if not title or year is None:
-        return None, "missing_detail_heading_or_year"
+    """Extract displayed film title and poster on the existing catalog URL."""
     soup = BeautifulSoup(html, "html.parser")
     heading = soup.select_one("h1")
-    if not heading or not heading.get_text(" ", strip=True):
-        return None, "missing_detail_heading_or_year"
+    if heading is None:
+        return None, "missing_detail_heading"
+    heading_text = heading.get_text(" ", strip=True)
+    if not heading_text:
+        return None, "missing_detail_heading"
+    # Strip a trailing release year for clean display; do not compare years.
+    title = re.sub(r"\\s*\\((?:19|20)\\d{2}\\)\\s*$", "", heading_text).strip()
+    if title == heading_text:
+        title = re.sub(r"\\s+(?:19|20)\\d{2}\\s*$", "", heading_text).strip()
+    if len(title) < 2 or title.casefold() in {
+            "home", "movies", "movie", "watch online", "lk21"}:
+        return None, "generic_heading"
     poster = poster_from_detail(html, final_url)
     if not good_poster(poster):
         return None, "no_detail_poster"
-    # Avoid replacing catalog movie metadata with placeholder or generic headers.
-    if len(title) < 2 or title.casefold() in {"home", "movies", "movie", "watch online"}:
-        return None, "generic_heading"
-    return {"observed_title": title, "observed_year": year,
-            "poster_url": poster}, "verified_source_metadata"
+    return {"observed_title": title, "poster_url": poster}, "verified_source_metadata"
 
 
 def run(args):
@@ -162,7 +163,6 @@ def run(args):
                                                 "final_url": final_url,
                                                 "original_title": item.get("title"),
                                                 "observed_title": extracted["observed_title"],
-                                                "observed_year": extracted["observed_year"]}
                         else:
                             status, poster = classify(html, final_url, item)
                             if poster:
