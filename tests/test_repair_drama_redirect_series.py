@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 
 from tools.repair_drama_redirect_series import (
-    drama_slug, candidate_rows, verify_series_detail,
+    drama_slug, candidate_rows, verify_series_detail, series_title_evidence,
 )
 
 
@@ -42,6 +42,25 @@ class DramaRedirectSeriesTests(unittest.TestCase):
         self.assertEqual(status, "verified_series")
         self.assertEqual(match["type"], "series")
         self.assertEqual(match["poster_url"], "https://img.example.org/game.jpg")
+
+    @patch("tools.repair_drama_redirect_series.poster_from_detail",
+           return_value="https://img.example.org/poster.jpg")
+    def test_accepts_exact_observed_alternate_name_only(self, poster):
+        html = """<html><head><meta property="og:title"
+                    content="Alternate Display Name (2021)"></head>
+                    <h1>Alternate Display Name (2021)</h1>
+                    <div class="original-title">Source Catalog Title (2021)</div>
+                    <p>Series Season 1 Episode 1</p></html>"""
+        match, status = verify_series_detail(
+            html, "https://tv.nontondrama.vip/source-catalog-title-2021",
+            {"title": "Source Catalog Title", "year": 2021})
+        self.assertEqual(status, "verified_series")
+        self.assertEqual(match["type"], "series")
+        match, status = verify_series_detail(
+            html, "https://tv.nontondrama.vip/source-catalog-title-2021",
+            {"title": "Unrelated Title", "year": 2021})
+        self.assertIsNone(match)
+        self.assertEqual(status, "title_mismatch")
 
     @patch("tools.repair_drama_redirect_series.poster_from_detail",
            return_value="https://img.example.org/something.jpg")
