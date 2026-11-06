@@ -28,6 +28,17 @@ class RedirectPosterRecheckTests(unittest.TestCase):
             found = list(targets({"items": [item]}, progress))
         self.assertEqual(len(found), 1)
 
+    def test_sitemap_checkpoint_redirect_is_included(self):
+        item = {"title": "Sample Film", "year": 2020, "type": "movie",
+                "url": "https://tv12.lk21official.cc/sample-film-2020",
+                "poster_url": ""}
+        progress = {"checked": {item["url"]: "year_mismatch"},
+                    "search_checked": {item["url"]: "search_no_verified_match"}}
+        sitemap = {"completed": {item["url"]: "redirect"}}
+        with patch("tools.recheck_redirect_posters.validated", return_value=True):
+            found = list(targets({"items": [item]}, progress, sitemap_state=sitemap))
+        self.assertEqual(len(found), 1)
+
     @patch("tools.recheck_redirect_posters.extract_catalog_poster")
     def test_accepts_only_verified_matching_poster(self, extract):
         extract.return_value = ("https://images.example/poster.jpg", "found")
