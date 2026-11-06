@@ -44,6 +44,25 @@ class DramaRedirectSeriesTests(unittest.TestCase):
         self.assertEqual(match["poster_url"], "https://img.example.org/game.jpg")
 
     @patch("tools.repair_drama_redirect_series.poster_from_detail",
+           return_value="https://img.example.org/poster.jpg")
+    def test_uses_observed_url_not_exact_catalog_title(self, poster):
+        html = """<html><head><meta property="og:title"
+                    content="Alternate Display Name (2021)"></head>
+                    <h1>Alternate Display Name (2021)</h1>
+                    <div class="original-title">Source Catalog Title (2021)</div>
+                    <p>Series Season 1 Episode 1</p></html>"""
+        match, status = verify_series_detail(
+            html, "https://tv.nontondrama.vip/source-catalog-title-2021",
+            {"title": "Source Catalog Title", "year": 2021})
+        self.assertEqual(status, "verified_series")
+        self.assertEqual(match["type"], "series")
+        match, status = verify_series_detail(
+            html, "https://tv.nontondrama.vip/source-catalog-title-2021",
+            {"title": "Unrelated Title", "year": 2021})
+        self.assertEqual(status, "verified_series")
+        self.assertEqual(match["observed_title"], "Alternate Display Name")
+
+    @patch("tools.repair_drama_redirect_series.poster_from_detail",
            return_value="https://img.example.org/something.jpg")
     def test_rejects_wrong_title_or_missing_series_evidence(self, poster):
         match, status = verify_series_detail(

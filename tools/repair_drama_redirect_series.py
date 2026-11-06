@@ -74,8 +74,8 @@ def observed_target(redirect_state, url):
 def verify_series_detail(html, page_url, item):
     """Do not trust a page solely because its URL slug looks plausible.
 
-    Require matching heading title/year, series-specific episode indicators,
-    a valid poster and a final URL on the configured series site.
+    The source URL (not an exact display-title match) identifies the record.
+    Require source year, series episode evidence and a non-placeholder poster.
     """
     soup = BeautifulSoup(html, "html.parser")
     heading = soup.select_one("h1")
@@ -90,9 +90,11 @@ def verify_series_detail(html, page_url, item):
         return None, "missing_series_year"
     if year_string not in year_matches:
         return None, "year_mismatch"
-    title = re.sub(r"\s*\(?" + re.escape(year_string) + r"\)?\s*$", "", heading_text).strip()
-    if identity(title, year_string)[0] != identity(item.get("title") or "", year_string)[0]:
-        return None, "title_mismatch"
+    # The movie site's /nontondrama?page=... redirect provides the mapping.
+    # An alternate display/translated title must not discard that mapping.
+    observed_title = re.sub(
+        r"\s*\(?" + re.escape(year_string) + r"\)?\s*$", "", heading_text
+    ).strip()
     # Require real series identity, not a generic movie listing with a matching slug.
     page_text = soup.get_text(" ", strip=True)
     if not (EPISODES.search(page_text) and
@@ -107,7 +109,7 @@ def verify_series_detail(html, page_url, item):
     if not good_poster(poster):
         return None, "missing_series_poster"
     return {"type": "series", "url": page_url.rstrip("/"),
-            "poster_url": poster}, "verified_series"
+            "poster_url": poster, "observed_title": observed_title}, "verified_series"
 
 
 def report_state(args, state, catalog, candidates):
@@ -171,7 +173,11 @@ def run(args):
     matches = state.setdefault("matches", {})
     queue = list(candidate_rows(catalog, previous))
     todo = [(i, row) for i, row in queue
-            if args.recheck or str(row.get("url") or "").rstrip("/") not in checked]
+            if (args.recheck or
+                (args.retry_mismatches and
+                 (checked.get(str(row.get("url") or "").rstrip("/")) or {}).get("status")
+                 == "title_mismatch") or
+                str(row.get("url") or "").rstrip("/") not in checked)]
     if args.limit:
         todo = todo[:args.limit]
     print("Kandidat movie gagal poster dengan redirect:", len(queue),
@@ -210,9 +216,13 @@ def run(args):
                             final_url = series_page.url
                             if not allowed_series_url(final_url, hosts):
                                 raise RuntimeError("Unexpected series-domain redirect")
+                            if urlparse(final_url).path.rstrip("/") != "/" + slug:
+                                raise RuntimeError("Series URL unexpectedly redirected to another title")
                             candidate, status = verify_series_detail(html, final_url, item)
                             result = {"status": status, "final_url": destination,
                                       "series_url": final_url}
+                            if candidate:
+                                result["observed_title"] = candidate.get("observed_title")
                             if candidate:
                                 matches[url] = {
                                     "index": index, "title": item.get("title"),
@@ -246,6 +256,8 @@ def main():
     p.add_argument("--limit", type=int, default=10)
     p.add_argument("--delay", type=float, default=2.0)
     p.add_argument("--recheck", action="store_true")
+    p.add_argument("--retry-mismatches", action="store_true",
+                   help="Revisit previous title_mismatch entries using source URL mapping")
     p.add_argument("--apply", action="store_true")
     args = p.parse_args()
     if args.limit < 0 or args.delay < 2:
