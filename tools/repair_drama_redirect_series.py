@@ -71,6 +71,34 @@ def observed_target(redirect_state, url):
     return ""
 
 
+def series_title_evidence(soup, heading_text):
+    """Visible page-provided alternative names; never invent aliases."""
+    names = [heading_text]
+    for node in soup.select(
+        'meta[property="og:title"],meta[name="twitter:title"],'
+        'meta[itemprop="name"],[itemprop="alternateName"],'
+        '.original-title,.alternative-title,.alternate-title,.other-title'
+    ):
+        value = node.get("content") if node.name == "meta" else node.get_text(" ", strip=True)
+        if value and len(value) <= 300:
+            names.append(value.strip())
+    return list(dict.fromkeys(names))
+
+
+def normalize_series_title(text, year):
+    value = str(text or "").strip()
+    value = re.sub(r"\s*[-|]\s*(?:series|tv series|drama)\s*$", "", value, flags=re.I)
+    value = re.sub(r"\s*\(?" + re.escape(str(year)) + r"\)?\s*$", "", value)
+    return identity(value.strip(), year)[0]
+
+
+def inspect_title_match(soup, heading_text, item, year):
+    expected = normalize_series_title(item.get("title", ""), year)
+    observed = series_title_evidence(soup, heading_text)
+    matching = [name for name in observed if normalize_series_title(name, year) == expected]
+    return bool(expected and matching), observed[:8]
+
+
 def verify_series_detail(html, page_url, item):
     """Do not trust a page solely because its URL slug looks plausible.
 
@@ -91,7 +119,8 @@ def verify_series_detail(html, page_url, item):
     if year_string not in year_matches:
         return None, "year_mismatch"
     title = re.sub(r"\s*\(?" + re.escape(year_string) + r"\)?\s*$", "", heading_text).strip()
-    if identity(title, year_string)[0] != identity(item.get("title") or "", year_string)[0]:
+    title_matches, observed_titles = inspect_title_match(soup, heading_text, item, year_string)
+    if not title_matches:
         return None, "title_mismatch"
     # Require real series identity, not a generic movie listing with a matching slug.
     page_text = soup.get_text(" ", strip=True)
@@ -171,7 +200,11 @@ def run(args):
     matches = state.setdefault("matches", {})
     queue = list(candidate_rows(catalog, previous))
     todo = [(i, row) for i, row in queue
-            if args.recheck or str(row.get("url") or "").rstrip("/") not in checked]
+            if (args.recheck or
+                (args.retry_mismatches and
+                 (checked.get(str(row.get("url") or "").rstrip("/")) or {}).get("status")
+                 == "title_mismatch") or
+                str(row.get("url") or "").rstrip("/") not in checked)]
     if args.limit:
         todo = todo[:args.limit]
     print("Kandidat movie gagal poster dengan redirect:", len(queue),
@@ -213,6 +246,13 @@ def run(args):
                             candidate, status = verify_series_detail(html, final_url, item)
                             result = {"status": status, "final_url": destination,
                                       "series_url": final_url}
+                            if status == "title_mismatch":
+                                soup = BeautifulSoup(html, "html.parser")
+                                heading = soup.select_one("h1")
+                                result["observed_titles"] = series_title_evidence(
+                                    soup, heading.get_text(" ", strip=True) if heading else ""
+                                )[:8]
+                                result["expected_title"] = item.get("title")
                             if candidate:
                                 matches[url] = {
                                     "index": index, "title": item.get("title"),
@@ -246,6 +286,8 @@ def main():
     p.add_argument("--limit", type=int, default=10)
     p.add_argument("--delay", type=float, default=2.0)
     p.add_argument("--recheck", action="store_true")
+    p.add_argument("--retry-mismatches", action="store_true",
+                   help="Retry only title_mismatch records plus unchecked records")
     p.add_argument("--apply", action="store_true")
     args = p.parse_args()
     if args.limit < 0 or args.delay < 2:
