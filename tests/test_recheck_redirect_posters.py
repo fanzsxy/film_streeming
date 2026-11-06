@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from tools.recheck_redirect_posters import targets, classify
+from tools.recheck_redirect_posters import targets, classify, source_metadata
 
 
 class RedirectPosterRecheckTests(unittest.TestCase):
@@ -74,6 +74,27 @@ class RedirectPosterRecheckTests(unittest.TestCase):
             self.assertEqual(len(list(targets({"items": rows}, prior))), 0)
             actual = list(targets({"items": rows}, prior, all_missing=True))
         self.assertEqual([index for index, _ in actual], [0, 1])
+
+    def test_source_metadata_ignores_old_catalog_title_year(self):
+        html = """<h1>Gangnam Blues (Gangnam 1970) (2015)</h1>
+        <meta property="og:image" content="https://poster.assetsy.de/wp-content/uploads/2015/12/film-gangnam-blues-2015.jpg">"""
+        result, status = source_metadata(
+            html, "https://tv12.lk21official.cc/gangnam-blues-2015")
+        self.assertEqual(status, "verified_source_metadata")
+        self.assertEqual(result["observed_title"], "Gangnam Blues (Gangnam 1970)")
+        self.assertEqual(result["poster_url"],
+            "https://poster.assetsy.de/wp-content/uploads/2015/12/film-gangnam-blues-2015.jpg")
+
+    def test_source_metadata_requires_heading_and_real_poster(self):
+        url = "https://tv12.lk21official.cc/movie-2020"
+        self.assertEqual(source_metadata(
+            '<meta property="og:image" content="https://example.org/a.jpg">', url),
+            (None, "missing_detail_heading"))
+        self.assertEqual(source_metadata("<h1>Movie Example (2020)</h1>", url),
+                         (None, "no_detail_poster"))
+        self.assertEqual(source_metadata(
+            '<h1>Home</h1><meta property="og:image" content="https://example.org/a.jpg">', url),
+            (None, "generic_heading"))
 
     @patch("tools.recheck_redirect_posters.extract_catalog_poster")
     def test_accepts_only_verified_matching_poster(self, extract):
