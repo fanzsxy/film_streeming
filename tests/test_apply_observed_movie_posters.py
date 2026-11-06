@@ -15,11 +15,28 @@ class ObservedMoviePosterTests(unittest.TestCase):
         self.assertEqual(rejected, [])
         self.assertEqual(missing, [])
 
-    def test_mismatched_identity_and_existing_poster_are_never_overwritten(self):
+    def test_catalog_display_title_and_year_do_not_block_exact_url(self):
+        url, (title, year, poster) = next(iter(OBSERVED.items()))
+        catalog = {"items": [{"url": url, "title": title + " (local name)",
+                              "year": str(year) + " (catalog variant)",
+                              "type": "movie", "poster_url": ""}]}
+        updates, rejected, missing = proposed_updates(catalog)
+        self.assertEqual(updates, [(0, url, poster)])
+        self.assertEqual(rejected, [])
+
+    def test_duplicate_url_is_not_modified(self):
+        url, (title, year, poster) = next(iter(OBSERVED.items()))
+        row = {"url": url, "title": title, "year": year,
+               "type": "movie", "poster_url": ""}
+        updates, rejected, missing = proposed_updates({"items": [row, dict(row)]})
+        self.assertEqual(updates, [])
+        self.assertEqual(len(rejected), 2)
+
+    def test_non_movie_and_existing_poster_are_never_overwritten(self):
         url, (title, year, _) = next(iter(OBSERVED.items()))
         catalog = {"items": [
             {"url": url, "title": "Wrong title", "year": year,
-             "type": "movie", "poster_url": ""},
+             "type": "series", "poster_url": ""},
             {"url": url, "title": title, "year": year,
              "type": "movie", "poster_url": "https://image.example.org/already.jpg"},
         ]}
