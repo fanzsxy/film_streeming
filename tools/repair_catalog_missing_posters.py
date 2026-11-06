@@ -121,7 +121,7 @@ def extract_catalog_poster(html, url, item):
         # e.g. "Gangnam Blues (Gangnam 1970) (2015)".
         # Accept only if the entire main title before that suffix is
         # identical to the catalog title; never use loose substring matching.
-        main_title = re.sub(r"\\s+\\([^()]+\\)\\s*$", "", title).strip()
+        main_title = re.sub(r"\s+\([^()]+\)\s*$", "", title).strip()
         if main_title == title or identity(main_title, year)[0] != catalog_title:
             return None, "title_mismatch"
     poster = poster_from_detail(html, url)
