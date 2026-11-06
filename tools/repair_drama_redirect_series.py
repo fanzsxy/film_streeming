@@ -166,6 +166,14 @@ def report_state(args, state, catalog, candidates):
         print("DRY RUN: katalog tidak diubah. --apply setelah meninjau laporan.")
 
 
+def navigation_failure(exc):
+    """Transient page cancellation is safe to skip; other browser failures stop."""
+    message = str(exc)
+    if "net::ERR_ABORTED" in message:
+        return "navigation_aborted"
+    return None
+
+
 def run(args):
     catalog = json.loads(args.catalog.read_text(encoding="utf-8-sig"))
     previous = json.loads(args.poster_progress.read_text(encoding="utf-8-sig"))
@@ -180,6 +188,9 @@ def run(args):
     queue = list(candidate_rows(catalog, previous, sitemap_state, redirect_state))
     todo = [(i, row) for i, row in queue
             if (args.recheck or
+                (args.retry_navigation_errors and
+                 (checked.get(str(row.get("url") or "").rstrip("/")) or {}).get("status")
+                 == "navigation_aborted") or
                 (args.retry_mismatches and
                  (checked.get(str(row.get("url") or "").rstrip("/")) or {}).get("status")
                  == "title_mismatch") or
@@ -192,7 +203,7 @@ def run(args):
     print("Kandidat movie gagal poster dengan redirect:", len(queue),
           "| diperiksa sekarang:", len(todo), flush=True)
     if todo:
-        from playwright.sync_api import sync_playwright
+        from playwright.sync_api import sync_playwright, Error as BrowserError
         hosts = series_hosts(args.domains)
         if not allowed_series_url(args.series_base, hosts):
             raise SystemExit("Series base URL is not allowlisted")
@@ -239,6 +250,20 @@ def run(args):
                         checked[url] = result
                         print("  ", result["status"], "|", result["final_url"],
                               "| series:", result.get("series_url", ""), flush=True)
+                    except BrowserError as exc:
+                        status = navigation_failure(exc)
+                        msg = str(exc).splitlines()[0][:300]
+                        state.setdefault("errors", []).append(
+                            {"url": url, "status": status or "browser_error", "reason": msg})
+                        if status:
+                            checked[url] = {"status": status, "final_url": destination}
+                            write_json(args.state, state)
+                            print("  Navigasi dibatalkan, lanjut URL berikutnya:", msg,
+                                  flush=True)
+                            continue
+                        write_json(args.state, state)
+                        print("  Browser gagal, pemeriksaan dihentikan:", msg, flush=True)
+                        break
                     except RuntimeError as exc:
                         msg = str(exc)
                         # Access/robots/policy restrictions: stop safely, don't
@@ -266,6 +291,8 @@ def main():
     p.add_argument("--limit", type=int, default=10)
     p.add_argument("--delay", type=float, default=2.0)
     p.add_argument("--recheck", action="store_true")
+    p.add_argument("--retry-navigation-errors", action="store_true",
+                   help="Revisit URL skipped after net::ERR_ABORTED")
     p.add_argument("--retry-mismatches", action="store_true",
                    help="Revisit previous title_mismatch entries using source URL mapping")
     p.add_argument("--apply", action="store_true")
