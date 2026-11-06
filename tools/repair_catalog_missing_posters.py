@@ -119,6 +119,20 @@ def extract_catalog_poster(html, url, item):
     poster = poster_from_detail(html, url)
     if poster and good_poster(poster):
         return poster, "found"
+    # Some LK21 movie detail pages expose the correct artwork exclusively
+    # via og:image even if the generic detail parser returns no poster.
+    # Only trust this metadata *after* exact heading title/year validation.
+    soup = BeautifulSoup(html, "html.parser")
+    for node in soup.select('meta[property="og:image"],meta[name="twitter:image"]'):
+        raw = (node.get("content") or "").strip()
+        if not raw or any(c.isspace() for c in raw):
+            continue
+        candidate = urljoin(url, raw)
+        path = urlparse(candidate).path.lower()
+        if (good_poster(candidate) and
+                path.endswith((".jpg", ".jpeg", ".png", ".webp")) and
+                ("/wp-content/uploads/" in path or "/poster/" in path)):
+            return candidate, "found_og_image"
     return None, "no_detail_poster"
 
 
