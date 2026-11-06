@@ -17,7 +17,7 @@ from urllib.parse import urlparse, urlencode, urljoin
 import re
 from bs4 import BeautifulSoup
 
-from tools.audit_catalog_completeness import valid_url
+from tools.audit_catalog_completeness import valid_url, good_poster
 from tools.import_local_lk21_sitemaps import identity
 from tools.local_lk21_browser_search import NavigationPacer, browse, load_robots
 from tools.local_lk21_gap_match import detail_title_year, poster_from_detail, poster_from_node, validated
@@ -29,14 +29,6 @@ PROGRESS = Path("crawler/data/catalog_poster_repair_progress.json")
 REPORT = Path("crawler/data/catalog_poster_repair_report.json")
 VALID_TYPES = {"movie", "series", "tv"}
 
-
-def good_poster(value):
-    if not valid_url(value):
-        return False
-    path = urlparse(value).path.lower()
-    if path.endswith((".svg", ".gif", ".ico")):
-        return False
-    return not any(s in path for s in ("placeholder", "no-image", "no-poster", "favicon", "avatar"))
 
 
 def poster_candidates(catalog, results):
