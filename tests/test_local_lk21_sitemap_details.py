@@ -50,6 +50,20 @@ class LocalSitemapDetailTests(unittest.TestCase):
         self.assertEqual(detail_metadata(html, BASE + "beautiful-film-2023", 2022)[1],
                          "year_mismatch")
 
+    def test_age_gate_is_not_a_verified_movie(self):
+        html = """<html><body><h1>Kabukicho Love Hotel (2015)</h1>
+        <section>PERINGATAN! MATERI KHUSUS DEWASA
+        Anda dapat membuka halaman ini jika telah berusia 18 tahun ke atas.
+        Untuk mengkonfirmasi umur anda silahkan login menggunakan
+        Login GMail Anda</section>
+        <meta property="og:image" content="https://example.com/poster.jpg"/>
+        <p class="synopsis">A plausible synopsis that should never be imported
+        from an age-restricted notice instead of a real movie detail.</p>
+        </body></html>"""
+        row, status = detail_metadata(html, BASE + "kabukicho-love-hotel-2015", 2015)
+        self.assertIsNone(row)
+        self.assertEqual(status, "age_restricted")
+
     def test_plan_upgrades_provisional_and_adds_new_without_tmdb(self):
         catalog = {"items": [
             {"title": "A Film", "year": 2021, "url": BASE + "a-film-2021",
