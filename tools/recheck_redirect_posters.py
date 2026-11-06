@@ -26,13 +26,14 @@ RESTRICTED = ("restricted", "verification", "captcha", "403", "401", "429")
 
 def targets(catalog, prior, recheck=RECHECK):
     checked = prior.get("checked") or {}
+    search_checked = prior.get("search_checked") or {}
     for index, item in enumerate(catalog.get("items") or []):
         if not isinstance(item, dict) or item.get("type") != "movie":
             continue
         if good_poster(item.get("poster_url")):
             continue
         url = str(item.get("url") or "").rstrip("/")
-        if checked.get(url) in recheck and validated(url):
+        if (checked.get(url) in recheck or search_checked.get(url) in recheck) and validated(url):
             yield index, item
 
 
@@ -55,6 +56,15 @@ def run(args):
             if args.recheck or str(item["url"]).rstrip("/") not in checked]
     if args.limit:
         todo = todo[:args.limit]
+    poster_checked = original.get("checked") or {}
+    search_checked = original.get("search_checked") or {}
+    print("Status dari detail:", sum(
+        poster_checked.get(str(item["url"]).rstrip("/")) in RECHECK
+        for _, item in queue
+    ), "| status dari pencarian:", sum(
+        search_checked.get(str(item["url"]).rstrip("/")) in RECHECK
+        for _, item in queue
+    ), flush=True)
     print("Kandidat redirect/detail movie:", len(queue),
           "| diperiksa sekarang:", len(todo), flush=True)
     if todo:
@@ -72,7 +82,15 @@ def run(args):
                     try:
                         html = browse(page, robots, url, pacer=pacer)
                         final_url = page.url.rstrip("/")
-                        status, poster = classify(html, final_url, item)
+                        # Redirect to the series referral path is not a movie
+                        # detail page. Keep it for later series handling.
+                        from tools.repair_drama_redirect_series import drama_slug
+                        if drama_slug(final_url):
+                            status, poster = "drama_redirect", None
+                        elif final_url != url and not validated(final_url):
+                            status, poster = "outside_movie_domain", None
+                        else:
+                            status, poster = classify(html, final_url, item)
                         if poster:
                             matches[url] = {"index": index, "poster_url": poster,
                                             "final_url": final_url,
