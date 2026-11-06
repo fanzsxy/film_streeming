@@ -192,10 +192,14 @@ def detail_title_year(html):
     soup = BeautifulSoup(html, "html.parser")
     node = soup.select_one("h1")
     title = node.get_text(" ", strip=True) if node else ""
-    match = re.search(r"\b(19\d{2}|20\d{2})\b", title)
+    # The release year is the final parenthesized year, not the first
+    # 4-digit number inside an alternate title (e.g. "Gangnam 1970").
+    match = re.search(r"\s*\(((?:19|20)\d{2})\)\s*$", title)
+    if not match:
+        match = re.search(r"\s+((?:19|20)\d{2})\s*$", title)
     if not match:
         return None, None
-    return re.sub(r"\s*\(?" + match.group(1) + r"\)?\s*$", "", title).strip(), int(match.group(1))
+    return title[:match.start()].strip(), int(match.group(1))
 
 
 def trusted_manual_match(session, robots, title, year, manual_urls):
