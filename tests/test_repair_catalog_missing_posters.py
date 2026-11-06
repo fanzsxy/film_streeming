@@ -105,6 +105,30 @@ class CatalogPosterRepairTests(unittest.TestCase):
                 {"title": "Sample Film", "year": 2020}),
                 (None, "no_detail_poster"))
 
+    def test_alternate_movie_title_suffix_keeps_primary_title_match(self):
+        html = ("""<h1>Gangnam Blues (Gangnam 1970) (2015)</h1>
+        <meta property="og:image" content="https://poster.assetsy.de/wp-content/uploads/2015/12/film-gangnam-blues-2015.jpg">""")
+        row = {"title": "Gangnam Blues", "year": 2015, "type": "movie"}
+        poster, status = extract_catalog_poster(
+            html, HOST + "gangnam-blues-2015", row)
+        self.assertEqual(status, "found")
+        self.assertEqual(poster,
+            "https://poster.assetsy.de/wp-content/uploads/2015/12/film-gangnam-blues-2015.jpg")
+        self.assertEqual(extract_catalog_poster(
+            html, HOST + "gangnam-blues-2015",
+            {**row, "title": "Completely Different Film"}), (None, "title_mismatch"))
+        self.assertEqual(extract_catalog_poster(
+            html, HOST + "gangnam-blues-2015",
+            {**row, "year": 2014}), (None, "year_mismatch"))
+
+    def test_alternate_title_does_not_create_loose_prefix_match(self):
+        html = ("""<h1>Movie Name Extended (Something Else) (2020)</h1>
+        <meta property="og:image" content="https://example.org/poster.jpg">""")
+        poster, status = extract_catalog_poster(
+            html, HOST + "movie-name-2020",
+            {"title": "Movie Name", "year": 2020, "type": "movie"})
+        self.assertEqual((poster, status), (None, "title_mismatch"))
+
     def test_gate_without_real_detail_heading_is_not_a_poster(self):
         html = """<html><head><meta property="og:image"
         content="https://images.example/site-logo.jpg"></head>

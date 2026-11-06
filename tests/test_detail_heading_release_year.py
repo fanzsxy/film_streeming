@@ -16,7 +16,7 @@ class DetailHeadingReleaseYearTests(unittest.TestCase):
     def test_missing_final_year_is_not_guessed_from_alternate_title(self):
         self.assertEqual(detail_title_year(
             "<h1>Gangnam Blues (Gangnam 1970)</h1>"),
-            ("Gangnam Blues", 1970))
+            (None, None))
         self.assertEqual(detail_title_year("<h1>Film with no release year</h1>"),
                          (None, None))
 
