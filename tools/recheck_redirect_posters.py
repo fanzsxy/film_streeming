@@ -14,6 +14,7 @@ from pathlib import Path
 from tools.audit_catalog_completeness import good_poster
 from tools.local_lk21_browser_search import browse, load_robots, NavigationPacer
 from tools.local_lk21_gap_match import validated
+from tools.triage_missing_catalog_posters import status_for, group_status
 from tools.repair_catalog_missing_posters import (
     CATALOG, PROGRESS, extract_catalog_poster, save_catalog, write_json,
 )
@@ -25,18 +26,29 @@ RECHECK = {"redirect", "missing_detail_heading_or_year", "no_detail_poster"}
 RESTRICTED = ("restricted", "verification", "captcha", "403", "401", "429")
 
 
+def eligible_status(value, recheck=RECHECK):
+    """Match triage grouping, including compound redirect status strings."""
+    if isinstance(value, dict):
+        value = value.get("status")
+    return group_status(value) == "redirect" or value in recheck
+
+
 def targets(catalog, prior, recheck=RECHECK, sitemap_state=None):
-    checked = prior.get("checked") or {}
-    search_checked = prior.get("search_checked") or {}
-    sitemap_checked = (sitemap_state or {}).get("completed") or {}
+    sitemap_state = sitemap_state or {}
     for index, item in enumerate(catalog.get("items") or []):
         if not isinstance(item, dict) or item.get("type") != "movie":
             continue
         if good_poster(item.get("poster_url")):
             continue
         url = str(item.get("url") or "").rstrip("/")
-        if (checked.get(url) in recheck or search_checked.get(url) in recheck or
-                sitemap_checked.get(url) in recheck) and validated(url):
+        if not validated(url):
+            continue
+        reason = status_for(url, prior, sitemap_state)
+        # First follow the same prioritized status that triage reported.
+        # Also include detail-metadata failures that deserve a fresh check.
+        if (reason["category"] == "redirect" or
+                any(eligible_status(reason[key], recheck) for key in (
+                    "poster_detail_status", "search_status", "sitemap_status"))):
             yield index, item
 
 
@@ -61,20 +73,17 @@ def run(args):
             if args.recheck or str(item["url"]).rstrip("/") not in checked]
     if args.limit:
         todo = todo[:args.limit]
-    poster_checked = original.get("checked") or {}
-    search_checked = original.get("search_checked") or {}
-    sitemap_checked = sitemap.get("completed") or {}
-    print("Status dari sitemap:", sum(
-        sitemap_checked.get(str(item["url"]).rstrip("/")) in RECHECK
-        for _, item in queue
-    ), flush=True)
-    print("Status dari detail:", sum(
-        poster_checked.get(str(item["url"]).rstrip("/")) in RECHECK
-        for _, item in queue
-    ), "| status dari pencarian:", sum(
-        search_checked.get(str(item["url"]).rstrip("/")) in RECHECK
-        for _, item in queue
-    ), flush=True)
+    # Counts use the same categorization as triage, rather than exact strings.
+    reasons = [status_for(str(item["url"]).rstrip("/"), original, sitemap)
+               for _, item in queue]
+    print("Status redirect sesuai triage:", sum(
+        reason["category"] == "redirect" for reason in reasons
+    ), "| detail:", sum(eligible_status(reason["poster_detail_status"])
+                       for reason in reasons),
+        "| pencarian:", sum(eligible_status(reason["search_status"])
+                           for reason in reasons),
+        "| sitemap:", sum(eligible_status(reason["sitemap_status"])
+                         for reason in reasons), flush=True)
     print("Kandidat redirect/detail movie:", len(queue),
           "| diperiksa sekarang:", len(todo), flush=True)
     if todo:
