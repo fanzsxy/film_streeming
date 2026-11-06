@@ -1,0 +1,22 @@
+{
+  "summary": {
+    "total": 35386,
+    "url_movie": 30293,
+    "already_correct": 35386,
+    "url_series": 5093,
+    "changes": 0
+  },
+  "changes": [],
+  "unknown": [],
+  "rules": {
+    "movie": [
+      "tv12.lk21official.cc"
+    ],
+    "series": [
+      "tv.lk21online.de",
+      "tv.nontondrama.vip",
+      "tv9.nontondrama.my"
+    ]
+  },
+  "applied": 0
+}

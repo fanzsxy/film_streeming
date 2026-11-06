@@ -1,0 +1,93 @@
+{
+  "original_candidates": 778,
+  "checked": 20,
+  "statuses": {
+    "missing_detail_heading_or_year": 10,
+    "drama_redirect": 10
+  },
+  "verified_poster": 0,
+  "applied": 0,
+  "details": {
+    "https://tv12.lk21official.cc/bang-gang-modern-love-story-2016": {
+      "status": "missing_detail_heading_or_year",
+      "final_url": "https://tv12.lk21official.cc/bang-gang-modern-love-story-2016"
+    },
+    "https://tv12.lk21official.cc/zombie-beauty-2016": {
+      "status": "missing_detail_heading_or_year",
+      "final_url": "https://tv12.lk21official.cc/zombie-beauty-2016"
+    },
+    "https://tv12.lk21official.cc/keopi-hanjan-halkkayo-2021": {
+      "status": "missing_detail_heading_or_year",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=keopi-hanjan-halkkayo-2021"
+    },
+    "https://tv12.lk21official.cc/game-of-thrones-2011": {
+      "status": "missing_detail_heading_or_year",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=game-of-thrones-2011"
+    },
+    "https://tv12.lk21official.cc/mayor-of-kingdom-2021": {
+      "status": "missing_detail_heading_or_year",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=mayor-of-kingdom-2021"
+    },
+    "https://tv12.lk21official.cc/bad-and-crazy-2021": {
+      "status": "missing_detail_heading_or_year",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=bad-and-crazy-2021"
+    },
+    "https://tv12.lk21official.cc/spartacus-spartacus-blood-and-sand-2010": {
+      "status": "missing_detail_heading_or_year",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=spartacus-spartacus-blood-and-sand-2010"
+    },
+    "https://tv12.lk21official.cc/hell-is-other-people-taineun-jiokida-2019": {
+      "status": "missing_detail_heading_or_year",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=hell-is-other-people-taineun-jiokida-2019"
+    },
+    "https://tv12.lk21official.cc/the-lies-within-2019": {
+      "status": "missing_detail_heading_or_year",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=the-lies-within-2019"
+    },
+    "https://tv12.lk21official.cc/the-gilded-age-2022": {
+      "status": "missing_detail_heading_or_year",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=the-gilded-age-2022"
+    },
+    "https://tv12.lk21official.cc/ao-haru-ride-season-1-2023": {
+      "status": "drama_redirect",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=ao-haru-ride-season-1-2023"
+    },
+    "https://tv12.lk21official.cc/gen-v-2023": {
+      "status": "drama_redirect",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=gen-v-2023"
+    },
+    "https://tv12.lk21official.cc/the-fall-of-the-house-of-usher-2023": {
+      "status": "drama_redirect",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=the-fall-of-the-house-of-usher-2023"
+    },
+    "https://tv12.lk21official.cc/bodies-2023": {
+      "status": "drama_redirect",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=bodies-2023"
+    },
+    "https://tv12.lk21official.cc/hollywood-2020": {
+      "status": "drama_redirect",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=hollywood-2020"
+    },
+    "https://tv12.lk21official.cc/areumdawoon-geodaeege-2012": {
+      "status": "drama_redirect",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=areumdawoon-geodaeege-2012"
+    },
+    "https://tv12.lk21official.cc/hazbin-hotel-2019": {
+      "status": "drama_redirect",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=hazbin-hotel-2019"
+    },
+    "https://tv12.lk21official.cc/ltns-2024": {
+      "status": "drama_redirect",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=ltns-2024"
+    },
+    "https://tv12.lk21official.cc/alrawabi-school-for-girls-2021": {
+      "status": "drama_redirect",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=alrawabi-school-for-girls-2021"
+    },
+    "https://tv12.lk21official.cc/du-yi-you-er-de-ta-2024": {
+      "status": "drama_redirect",
+      "final_url": "https://tv12.lk21official.cc/nontondrama?page=du-yi-you-er-de-ta-2024"
+    }
+  },
+  "matches": {}
+}

@@ -1,0 +1,33 @@
+{
+  "candidates": 246,
+  "checked": 246,
+  "diagnostics": [
+    {
+      "requested_title": "Deadly Weekend",
+      "requested_year": 2013,
+      "page_title": "Search: Deadly Weekend",
+      "cards_sample": [],
+      "matches": 0
+    },
+    {
+      "requested_title": "Stripped Naked",
+      "requested_year": 2010,
+      "page_title": "Search: Stripped Naked",
+      "cards_sample": [],
+      "matches": 0
+    },
+    {
+      "requested_title": "Kabukicho Love Hotel",
+      "requested_year": 2015,
+      "page_title": "Search: Kabukicho Love Hotel",
+      "cards_sample": [],
+      "matches": 0
+    }
+  ],
+  "verified_series": 0,
+  "applied": 0,
+  "matches": [],
+  "statuses": {
+    "series_not_verified": 246
+  }
+}
