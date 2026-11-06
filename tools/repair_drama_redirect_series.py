@@ -22,6 +22,7 @@ from tools.import_local_lk21_sitemaps import identity
 from tools.local_lk21_browser_search import browse, load_robots, NavigationPacer
 from tools.local_lk21_gap_match import validated, poster_from_detail
 from tools.repair_catalog_missing_posters import CATALOG, PROGRESS, save_catalog, write_json
+from tools.triage_missing_catalog_posters import SITEMAP_PROGRESS, status_for
 from tools.repair_misclassified_series import (
     DOMAINS, SERIES_BASE, allowed_series_url, series_hosts, series_browse, series_robots,
 )
@@ -49,9 +50,10 @@ def drama_slug(redirect_url):
     return slug.lower()
 
 
-def candidate_rows(catalog, poster_progress):
-    checked = poster_progress.get("checked") or {}
-    searched = poster_progress.get("search_checked") or {}
+def candidate_rows(catalog, poster_progress, sitemap_state=None, redirect_state=None):
+    """Pick missing movie posters using triage status or an observed drama redirect."""
+    sitemap_state = sitemap_state or {}
+    redirect_state = redirect_state or {}
     for index, item in enumerate(catalog.get("items") or []):
         if not isinstance(item, dict) or item.get("type") != "movie":
             continue
@@ -60,7 +62,9 @@ def candidate_rows(catalog, poster_progress):
         url = str(item.get("url") or "").rstrip("/")
         if not validated(url):
             continue
-        if "redirect" in (checked.get(url), searched.get(url)):
+        reason = status_for(url, poster_progress, sitemap_state)
+        observed = observed_target(redirect_state, url)
+        if reason["category"] == "redirect" or drama_slug(observed):
             yield index, item
 
 
@@ -167,11 +171,13 @@ def run(args):
     previous = json.loads(args.poster_progress.read_text(encoding="utf-8-sig"))
     redirect_state = (json.loads(args.redirect_progress.read_text(encoding="utf-8-sig"))
                       if args.redirect_progress.is_file() else {})
+    sitemap_state = (json.loads(args.sitemap_progress.read_text(encoding="utf-8-sig"))
+                     if args.sitemap_progress.is_file() else {})
     state = (json.loads(args.state.read_text(encoding="utf-8-sig"))
              if args.state.is_file() else {"checked": {}, "matches": {}})
     checked = state.setdefault("checked", {})
     matches = state.setdefault("matches", {})
-    queue = list(candidate_rows(catalog, previous))
+    queue = list(candidate_rows(catalog, previous, sitemap_state, redirect_state))
     todo = [(i, row) for i, row in queue
             if (args.recheck or
                 (args.retry_mismatches and
@@ -180,6 +186,9 @@ def run(args):
                 str(row.get("url") or "").rstrip("/") not in checked)]
     if args.limit:
         todo = todo[:args.limit]
+    observed_count = sum(bool(drama_slug(observed_target(redirect_state,
+        str(row.get("url") or "").rstrip("/")))) for _, row in queue)
+    print("Redirect drama sudah diamati:", observed_count, flush=True)
     print("Kandidat movie gagal poster dengan redirect:", len(queue),
           "| diperiksa sekarang:", len(todo), flush=True)
     if todo:
@@ -249,6 +258,7 @@ def main():
     p.add_argument("--catalog", type=Path, default=CATALOG)
     p.add_argument("--poster-progress", type=Path, default=PROGRESS)
     p.add_argument("--redirect-progress", type=Path, default=REDIRECT_PROGRESS)
+    p.add_argument("--sitemap-progress", type=Path, default=SITEMAP_PROGRESS)
     p.add_argument("--state", type=Path, default=STATE)
     p.add_argument("--report", type=Path, default=REPORT)
     p.add_argument("--domains", type=Path, default=DOMAINS)
