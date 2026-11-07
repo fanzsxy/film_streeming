@@ -17,6 +17,29 @@ void main() {
       expect(isAllowedAgeVerificationCallback(callback, false), isFalse);
     });
 
+    test('refreshes source only once after an actual Google return', () {
+      expect(shouldRefreshAfterGoogleReturn(
+        awaitingGoogleReturn: true,
+        isOriginalSource: true,
+        isKnownSeriesSource: false,
+      ), isTrue);
+      expect(shouldRefreshAfterGoogleReturn(
+        awaitingGoogleReturn: true,
+        isOriginalSource: false,
+        isKnownSeriesSource: true,
+      ), isTrue);
+      expect(shouldRefreshAfterGoogleReturn(
+        awaitingGoogleReturn: false,
+        isOriginalSource: true,
+        isKnownSeriesSource: false,
+      ), isFalse);
+      expect(shouldRefreshAfterGoogleReturn(
+        awaitingGoogleReturn: true,
+        isOriginalSource: false,
+        isKnownSeriesSource: false,
+      ), isFalse);
+    });
+
     test('does not allow lookalike, unrelated or insecure hosts', () {
       for (final url in <String>[
         'https://login.lk21official.cc.evil.test/return',
