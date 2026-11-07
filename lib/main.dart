@@ -1556,12 +1556,14 @@ class _PagedGridState extends State<PagedGrid> {
           sliver:SliverGrid(
             gridDelegate:filmstreamGridDelegate(context),
             delegate:SliverChildBuilderDelegate(
-              (context,i)=>(widget.endpoint=='catalog/movie' ||
-                widget.endpoint=='catalog/tv' ||
-                widget.endpoint=='home/latest')
-              ?CatalogPosterTile(key:ValueKey(items[i].sourceUrl),
-                movie:items[i],onTap:widget.onTap)
-              :MovieTile(movie:items[i],onTap:widget.onTap),
+              // One smooth poster behavior for Film, Series, Search,
+              // and every Beranda "Lihat Lainnya" collection. For TMDB
+              // result lists the official poster is already known, so the
+              // wrapper performs no extra lookup.
+              (context,i)=>CatalogPosterTile(
+                key:ValueKey(items[i].sourceUrl.isNotEmpty
+                    ?items[i].sourceUrl:'${items[i].type}:${items[i].id}'),
+                movie:items[i],onTap:widget.onTap),
               childCount:items.length))),
         SliverToBoxAdapter(child:CatalogPageControls(
           page:page,maxPage:maxPage,
