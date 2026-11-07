@@ -30,11 +30,15 @@ class WebSourcePage extends StatefulWidget {
 class _WebSourcePageState extends State<WebSourcePage> {
   late final WebViewController _controller;
   late bool _focused;
-  // The 18+ gate is often inside a cross-origin iframe. Flutter cannot
-  // reliably read its content, so avoid title-based special cases and give
-  // every embedded source iframe enough vertical space for its own login UI.
-  // This also enlarges ordinary players; playback remains site-controlled.
-  bool get _expandedSource => widget.embedded;
+  // Never expand all movie/series players. The source's 18+ warning
+  // needs taller space only while it is detected or verified as an affected
+  // provider page. A cross-origin iframe may hide its contents from JS.
+  bool _ageGateVisible = false;
+  bool get _expandedSource => widget.embedded && _ageGateVisible;
+  bool get _knownAgeGateExample {
+    final title = _normalizeTitle(_matchTitle);
+    return title == 'verity' || title == 'game of thrones';
+  }
   // Tracks OAuth navigation; consent UI is not a playback failure.
   bool _googleSignInInProgress = false;
   bool _loading = true;
@@ -399,7 +403,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
     // A user's explicit verification mode may follow an official Google
     // sign-in redirect within the same WebView. The OAuth provider can still
     // reject embedded user agents; do not spoof the user agent or tokens.
-    if (_expandedSource && host == 'accounts.google.com') return true;
+    if (widget.embedded && host == 'accounts.google.com') return true;
     if (!_isTv) return false;
     // Only known source site families may redirect the TOP-LEVEL series page.
     // Do not allow an arbitrary HTTPS advertising/gambling page to replace it.
@@ -425,6 +429,31 @@ class _WebSourcePageState extends State<WebSourcePage> {
         new MutationObserver(clean).observe(document.documentElement, {childList:true,subtree:true});
       })();''');
     } catch (_) { /* Site may reject script injection; keep original player available. */ }
+  }
+
+  // Detect age-gate text only where the browser's same-origin policy
+  // permits it. Cross-origin iframe text cannot be read from the parent.
+  Future<bool> _detectVisibleAgeGate() async {
+    try {
+      final raw = await _controller.runJavaScriptReturningResult(r'''(() => {
+        const hasGate = (text) => {
+          const s = String(text || '').toLowerCase();
+          return s.includes('materi khusus dewasa') ||
+            (s.includes('konfirmasi umur') && s.includes('google')) ||
+            (s.includes('konfirmasi usia') && s.includes('google'));
+        };
+        if (hasGate(document.body?.innerText)) return true;
+        for (const frame of document.querySelectorAll('iframe')) {
+          try {
+            if (hasGate(frame.contentDocument?.body?.innerText)) return true;
+          } catch (_) { /* cross-origin: not readable */ }
+        }
+        return false;
+      })()''');
+      return raw == true || raw.toString() == 'true';
+    } catch (_) {
+      return false;
+    }
   }
 
   // Controls are native Flutter widgets. The original page owns the iframe and
@@ -654,6 +683,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           final loadedHost = Uri.tryParse(url)?.host.toLowerCase();
           if (loadedHost == 'accounts.google.com') {
             _googleSignInInProgress = true;
+            if (widget.embedded) _ageGateVisible = true;
             if (mounted && generation == _navigationGeneration) {
               setState(() {
                 _loading = false;
@@ -723,6 +753,20 @@ class _WebSourcePageState extends State<WebSourcePage> {
           bool found = false;
           if (_focused && !isGoogleSignIn) found = await _applyFocus();
           if (!mounted || generation != _navigationGeneration) return;
+          if (widget.embedded && !isGoogleSignIn) {
+            final gateTextFound = await _detectVisibleAgeGate();
+            if (!mounted || generation != _navigationGeneration) return;
+            // Known cross-origin gate cases from Android screenshots are
+            // a fallback only; they must not resize unrelated movies.
+            final shouldExpand = gateTextFound ||
+                (_knownAgeGateExample && !_googleSignInInProgress);
+            if (_ageGateVisible != shouldExpand) {
+              setState(() => _ageGateVisible = shouldExpand);
+              // Reapply the provider iframe's CSS after visibility changes.
+              if (_focused && found) await _applyFocus();
+              if (!mounted || generation != _navigationGeneration) return;
+            }
+          }
           if (found) {
             await _readServers();
             await _readSourceDetails();
