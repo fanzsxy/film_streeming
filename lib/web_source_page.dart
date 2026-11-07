@@ -30,9 +30,11 @@ class WebSourcePage extends StatefulWidget {
 class _WebSourcePageState extends State<WebSourcePage> {
   late final WebViewController _controller;
   late bool _focused;
-  // Verity has a tall 18+ warning inside the ORIGINAL provider iframe.
-  // Do not render a second login button or leave the source for LK21 home.
-  bool get _showTallGate => !_isTv && _normalizeTitle(_matchTitle) == 'verity';
+  // The 18+ gate is often inside a cross-origin iframe. Flutter cannot
+  // reliably read its content, so avoid title-based special cases and give
+  // every embedded source iframe enough vertical space for its own login UI.
+  // This also enlarges ordinary players; playback remains site-controlled.
+  bool get _expandedSource => widget.embedded;
   bool _loading = true;
   bool _revealed = false;
   bool _search = false;
@@ -395,7 +397,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
     // A user's explicit verification mode may follow an official Google
     // sign-in redirect within the same WebView. The OAuth provider can still
     // reject embedded user agents; do not spoof the user agent or tokens.
-    if (_showTallGate && host == 'accounts.google.com') return true;
+    if (_expandedSource && host == 'accounts.google.com') return true;
     if (!_isTv) return false;
     // Only known source site families may redirect the TOP-LEVEL series page.
     // Do not allow an arbitrary HTTPS advertising/gambling page to replace it.
@@ -404,7 +406,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   }
 
   Future<void> _applyCleanPlayer() async {
-    if (_showTallGate) return;
+    if (_expandedSource) return;
     try {
       await _controller.runJavaScript(r'''(() => {
         if (window.__filmstreamCleanV1) return;
@@ -710,7 +712,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
             _loading = false;
             // Preserve the source's real 18+ warning and Google's own
             // sign-in UI even if no playable iframe exists on that page.
-            _search = !found && !_showTallGate && !isGoogleSignIn;
+            _search = !found && !widget.embedded && !isGoogleSignIn;
             _revealed = true;
           });
         },
@@ -865,7 +867,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           }
           return true;
         })();
-      '''.replaceAll('TARGET_AGE_GATE', _showTallGate ? 'true' : 'false'));
+      '''.replaceAll('TARGET_AGE_GATE', _expandedSource ? 'true' : 'false'));
       return result == true || result.toString() == 'true';
     } catch (_) { return false; }
   }
@@ -963,7 +965,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   @override
   Widget build(BuildContext context) {
     if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      _showTallGate
+      _expandedSource
           ? SizedBox(
               height: MediaQuery.sizeOf(context).height -
                   MediaQuery.paddingOf(context).top - kToolbarHeight,
