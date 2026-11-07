@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "The Forgotten Concubine's Revenge",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/forgotten-concubines-revenge-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-forgotten-concubines-revenge-2026-lk21.jpg.webp",
+      "rating": 5
+    },
+    {
+      "title": "Setia Itu Mahal",
+      "year": 2025,
+      "url": "https://tv.lk21online.de/setia-itu-mahal-2025",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-setia-itu-mahal-2025-lk21.jpg.webp"
+    },
+    {
+      "title": "Sunshine Through the Rain",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/sunshine-through-rain-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-sunshine-through-rain-2026-lk21.jpg.webp",
+      "rating": 8.4
+    },
+    {
+      "title": "The Silent Killer",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/silent-killer-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-silent-killer-2026-lk21.jpg.webp"
+    },
+    {
+      "title": "Scarlet Heart Ullavee",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/scarlet-heart-ullavee-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-scarlet-heart-ullavee-2026-lk21.jpg.webp",
+      "rating": 10
+    }
+  ]
+}
