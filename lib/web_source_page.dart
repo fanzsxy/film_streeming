@@ -19,6 +19,16 @@ bool isAllowedAgeVerificationCallback(Uri destination, bool loginInProgress) {
       !destination.hasPort;
 }
 
+// A successful navigation back from Google's consent does not establish
+// authorization. Refresh the original source exactly once so it can consume
+// its OWN provider cookies and decide whether to show the gate or the player.
+bool shouldRefreshAfterGoogleReturn({
+  required bool awaitingGoogleReturn,
+  required bool isOriginalSource,
+  required bool isKnownSeriesSource,
+}) =>
+    awaitingGoogleReturn && (isOriginalSource || isKnownSeriesSource);
+
 // OAuth callbacks can contain authorization codes, state, and account data.
 // Present only a sanitized host, never the full URL or its query/fragment.
 String loginReturnBlockedMessage(Uri destination) =>
@@ -773,16 +783,22 @@ class _WebSourcePageState extends State<WebSourcePage> {
           // Google returns to the source/callback after consent. Do not guess
           // whether age verification succeeded: preserve the landing document
           // and let the provider render the actual authorized player.
-          final returnedFromGoogle = _googleSignInInProgress;
-          if (returnedFromGoogle &&
-              (loadedHost == widget.url.host.toLowerCase() ||
-                  (_isTv && _isKnownSeriesSourceHost(loadedHost)))) {
+          final returnedFromGoogle = shouldRefreshAfterGoogleReturn(
+            awaitingGoogleReturn: _googleSignInInProgress,
+            isOriginalSource: loadedHost == widget.url.host.toLowerCase(),
+            isKnownSeriesSource: _isTv && _isKnownSeriesSourceHost(loadedHost),
+          );
+          if (returnedFromGoogle) {
+            // A provider may set its age-verification cookie during the
+            // callback. The old iframe can still show the prior age gate.
+            // Reload ONCE, in the same WebView cookie jar, then let the
+            // original site decide if this session is authorized.
             _googleSignInInProgress = false;
             _returnedToSourceAfterGoogle = true;
             _hostsWithObservedGoogleReturn.add(widget.url.host.toLowerCase());
-            if (_ageGateVisible && mounted) {
-              setState(() => _ageGateVisible = false);
-            }
+            if (!mounted || generation != _navigationGeneration) return;
+            await _controller.reload();
+            return;
           }
           await _applyCleanPlayer();
           await _installProgressObserver();
