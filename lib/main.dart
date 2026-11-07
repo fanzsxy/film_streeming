@@ -1146,22 +1146,23 @@ class CatalogPageControls extends StatelessWidget {
     required this.busy,required this.hasNext,required this.onSelect});
 
   Future<void> _jump(BuildContext context) async {
-    final controller=TextEditingController(text:'$page');
+    var typed='$page';
     final chosen=await showDialog<int>(context:context,builder:(dialogContext)=>
       AlertDialog(title:const Text('Lompat ke halaman'),
-        content:TextField(controller:controller,keyboardType:TextInputType.number,
+        content:TextFormField(initialValue:typed,
+          onChanged:(value)=>typed=value,
+          keyboardType:TextInputType.number,
           autofocus:true,decoration:InputDecoration(
             labelText:'Nomor halaman (1–$maxPage)')),
         actions:[
           TextButton(onPressed:()=>Navigator.pop(dialogContext),
             child:const Text('Batal')),
           FilledButton(onPressed:(){
-            final n=int.tryParse(controller.text.trim());
+            final n=int.tryParse(typed.trim());
             if(n==null || n<1 || n>maxPage)return;
             Navigator.pop(dialogContext,n);
           },child:const Text('Buka')),
         ]));
-    controller.dispose();
     if(chosen!=null && chosen!=page)onSelect(chosen);
   }
 
@@ -1200,6 +1201,13 @@ class PagedGrid extends StatefulWidget {
   @override State<PagedGrid> createState()=>_PagedGridState();
 }
 class _PagedGridState extends State<PagedGrid> {
+  // Remember page numbers across tab switches and detail navigation.
+  // Only the page number is remembered; movie widgets stay bounded to 20.
+  static final Map<String,int> _lastViewedPages={};
+  String get _pageKey {
+    final keys=widget.params.keys.toList()..sort();
+    return '${widget.endpoint}|${widget.type}|${keys.map((k)=>'$k=${widget.params[k]}').join('&')}';
+  }
   final ScrollController scroll=ScrollController();
   List<Movie> items=const [];
   int page=1, requestId=0;
@@ -1208,7 +1216,10 @@ class _PagedGridState extends State<PagedGrid> {
   int get maxPage => widget.endpoint.startsWith('catalog/') ||
       widget.endpoint=='home/latest' ? 2000 : 500;
 
-  @override void initState(){super.initState();_fetch(1);}
+  @override void initState(){
+    super.initState();
+    _fetch(_lastViewedPages[_pageKey] ?? 1);
+  }
   @override void didUpdateWidget(covariant PagedGrid old){
     super.didUpdateWidget(old);
     if(old.endpoint!=widget.endpoint||old.type!=widget.type||
@@ -1248,6 +1259,10 @@ class _PagedGridState extends State<PagedGrid> {
         .take(catalogPageSize).toList();
       setState((){
         items=distinct;page=target;
+        _lastViewedPages[_pageKey]=target;
+        if(_lastViewedPages.length>100){
+          _lastViewedPages.remove(_lastViewedPages.keys.first);
+        }
         hasNext=next.isNotEmpty && target<maxPage;
         busy=false;error='';
       });
