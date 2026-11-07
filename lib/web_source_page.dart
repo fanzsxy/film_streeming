@@ -13,10 +13,21 @@ import 'package:http/http.dart' as http;
 bool isAllowedAgeVerificationCallback(Uri destination, bool loginInProgress) {
   return loginInProgress &&
       destination.scheme == 'https' &&
-      destination.host.toLowerCase() == 'login.lk21official.cc' &&
+      const {'login.lk21official.cc', 'login.lk21online.de'}
+          .contains(destination.host.toLowerCase()) &&
       destination.userInfo.isEmpty &&
       !destination.hasPort;
 }
+
+// A successful navigation back from Google's consent does not establish
+// authorization. Refresh the original source exactly once so it can consume
+// its OWN provider cookies and decide whether to show the gate or the player.
+bool shouldRefreshAfterGoogleReturn({
+  required bool awaitingGoogleReturn,
+  required bool isOriginalSource,
+  required bool isKnownSeriesSource,
+}) =>
+    awaitingGoogleReturn && (isOriginalSource || isKnownSeriesSource);
 
 // OAuth callbacks can contain authorization codes, state, and account data.
 // Present only a sanitized host, never the full URL or its query/fragment.
@@ -53,6 +64,15 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // needs taller space only while it is detected or verified as an affected
   // provider page. A cross-origin iframe may hide its contents from JS.
   bool _ageGateVisible = false;
+  // In-memory rendering hint shared across detail views with the SAME source
+  // host. This is not authentication state and never bypasses a gate.
+  static final Set<String> _hostsWithObservedGoogleReturn = {};
+  bool get _priorReturnForThisSource =>
+      _hostsWithObservedGoogleReturn.contains(widget.url.host.toLowerCase());
+  // Once Google has returned to an actual source page, title-specific
+  // fallback must not keep a poster/video expanded like an age warning.
+  // This flag does not assert that age verification succeeded.
+  bool _returnedToSourceAfterGoogle = false;
   bool get _expandedSource => widget.embedded && _ageGateVisible;
   bool get _knownAgeGateExample {
     final title = _normalizeTitle(_matchTitle);
@@ -422,6 +442,16 @@ class _WebSourcePageState extends State<WebSourcePage> {
     });
   }
 
+  bool _isKnownSeriesSourceHost(String? host) {
+    if (host == null) return false;
+    const hosts = {
+      'tv.lk21online.de',
+      'tv.nontondrama.vip',
+      'tv9.nontondrama.my',
+    };
+    return hosts.contains(host);
+  }
+
   // Guard top-level navigations; iframe/subresource requests are not blocked.
   bool _allowedMainNavigation(String url) {
     final u = Uri.tryParse(url);
@@ -738,7 +768,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
           // This is an authentication return endpoint, not a video player.
           // Let it complete its own cookie/redirect work before inspecting
           // the actual source page; never inject player CSS/scripts here.
-          if (loadedHost == 'login.lk21official.cc' &&
+          if ((loadedHost == 'login.lk21official.cc' ||
+                  loadedHost == 'login.lk21online.de') &&
               _googleSignInInProgress) {
             if (mounted && generation == _navigationGeneration) {
               setState(() {
@@ -752,10 +783,22 @@ class _WebSourcePageState extends State<WebSourcePage> {
           // Google returns to the source/callback after consent. Do not guess
           // whether age verification succeeded: preserve the landing document
           // and let the provider render the actual authorized player.
-          final returnedFromGoogle = _googleSignInInProgress;
-          if (returnedFromGoogle &&
-              loadedHost == widget.url.host.toLowerCase()) {
+          final returnedFromGoogle = shouldRefreshAfterGoogleReturn(
+            awaitingGoogleReturn: _googleSignInInProgress,
+            isOriginalSource: loadedHost == widget.url.host.toLowerCase(),
+            isKnownSeriesSource: _isTv && _isKnownSeriesSourceHost(loadedHost),
+          );
+          if (returnedFromGoogle) {
+            // A provider may set its age-verification cookie during the
+            // callback. The old iframe can still show the prior age gate.
+            // Reload ONCE, in the same WebView cookie jar, then let the
+            // original site decide if this session is authorized.
             _googleSignInInProgress = false;
+            _returnedToSourceAfterGoogle = true;
+            _hostsWithObservedGoogleReturn.add(widget.url.host.toLowerCase());
+            if (!mounted || generation != _navigationGeneration) return;
+            await _controller.reload();
+            return;
           }
           await _applyCleanPlayer();
           await _installProgressObserver();
@@ -815,7 +858,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
             // Known cross-origin gate cases from Android screenshots are
             // a fallback only; they must not resize unrelated movies.
             final shouldExpand = gateTextFound ||
-                (_knownAgeGateExample && !_googleSignInInProgress);
+                (_knownAgeGateExample && !_googleSignInInProgress &&
+                    !_returnedToSourceAfterGoogle &&
+                    !_priorReturnForThisSource);
             if (_ageGateVisible != shouldExpand) {
               setState(() => _ageGateVisible = shouldExpand);
               // Reapply the provider iframe's CSS after visibility changes.
