@@ -804,7 +804,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
           }
           if (r.isMainFrame && _isSearchUrl(widget.url.toString()) && _search && next.host == widget.url.host && !_isSearchUrl(next.toString()) && next.path != '/') { _candidateUrl = next.toString(); }
           // Cover the old website before any new top-level document is shown.
-          if (r.isMainFrame && mounted && _focused) {
+          if (r.isMainFrame && mounted && _focused &&
+              next.host != 'accounts.google.com') {
             setState(() { _revealed = false; _loading = true; });
           }
           return NavigationDecision.navigate;
@@ -856,7 +857,27 @@ class _WebSourcePageState extends State<WebSourcePage> {
         },
       );
     }
-    _initialLoad();
+    _initializeSourceWebView();
+  }
+
+  // Some embedded provider consent flows rely on cross-site cookies. Android
+  // WebView disables third-party cookies by default for modern target SDKs.
+  // This is scoped to the user-opened source WebView and does not authorize
+  // age-restricted playback or override Google's embedded OAuth policy.
+  Future<void> _initializeSourceWebView() async {
+    if (_controller.platform is AndroidWebViewController) {
+      try {
+        final cookies = WebViewCookieManager();
+        final androidCookies = cookies.platform;
+        if (androidCookies is AndroidWebViewCookieManager) {
+          await androidCookies.setAcceptThirdPartyCookies(
+            _controller.platform as AndroidWebViewController, true);
+        }
+      } catch (_) {
+        // A cookie-setting failure must not block the normal movie player.
+      }
+    }
+    if (mounted) await _initialLoad();
   }
 
   /// Restrict *visual* focus to a known film-page DOM, never on search pages.
