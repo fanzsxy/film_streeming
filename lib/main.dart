@@ -1551,7 +1551,8 @@ class _PagedGridState extends State<PagedGrid> {
         verifiedNext=probe.isNotEmpty;
       }
       setState((){
-        maxPage=exactPages??(target+(verifiedNext?1:0));
+        maxPage=(exactPages!=null && exactPages>0)
+            ?exactPages:(target+(verifiedNext?1:0));
         _pageLimitKnown=true;
         items=distinct;page=target;
         _lastViewedPages[_pageKey]=target;
