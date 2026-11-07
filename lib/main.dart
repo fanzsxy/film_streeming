@@ -1067,6 +1067,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
       child:CircularProgressIndicator()),
     CatalogPageControls(page:visiblePage,
       maxPage:loadedPages+(more?1:0),
+      displayedMaxPage:loadedPages,
       hasNext:visiblePage<loadedPages||more,
       busy:busy||fillingPage,onSelect:_goFilterPage),
   ])),
@@ -1365,26 +1366,29 @@ int completedFilterPages(int count, bool hasMore) {
 // "Lihat Lainnya". An unknown total must not be shown as a made-up count.
 class CatalogPageControls extends StatelessWidget {
   final int page, maxPage;
+  final int? displayedMaxPage;
   final bool busy, hasNext;
   final ValueChanged<int> onSelect;
   const CatalogPageControls({super.key,required this.page,required this.maxPage,
-    required this.busy,required this.hasNext,required this.onSelect});
+    required this.busy,required this.hasNext,required this.onSelect,
+    this.displayedMaxPage});
 
   Future<void> _jump(BuildContext context) async {
     var typed='$page';
+    final jumpLimit=displayedMaxPage??maxPage;
     final chosen=await showDialog<int>(context:context,builder:(dialogContext)=>
       AlertDialog(title:const Text('Lompat ke halaman'),
         content:TextFormField(initialValue:typed,
           onChanged:(value)=>typed=value,
           keyboardType:TextInputType.number,
           autofocus:true,decoration:InputDecoration(
-            labelText:'Nomor halaman (1–$maxPage)')),
+            labelText:'Nomor halaman (1–$jumpLimit)')),
         actions:[
           TextButton(onPressed:()=>Navigator.pop(dialogContext),
             child:const Text('Batal')),
           FilledButton(onPressed:(){
             final n=int.tryParse(typed.trim());
-            if(n==null || n<1 || n>maxPage)return;
+            if(n==null || n<1 || n>jumpLimit)return;
             Navigator.pop(dialogContext,n);
           },child:const Text('Buka')),
         ]));
@@ -1393,7 +1397,7 @@ class CatalogPageControls extends StatelessWidget {
 
   @override Widget build(BuildContext context) {
     final first=page>1 ? page-1 : 1;
-    final last=(first+2).clamp(1,maxPage).toInt();
+    final last=(first+2).clamp(1,displayedMaxPage??maxPage).toInt();
     return Padding(
       padding:const EdgeInsets.fromLTRB(12,16,12,28),
       child:Column(mainAxisSize:MainAxisSize.min,children:[
@@ -1458,17 +1462,30 @@ class _PagedGridState extends State<PagedGrid> {
   int page=1, requestId=0;
   bool busy=false,hasNext=true;
   String error='';
-  int get maxPage {
-    if(widget.endpoint.startsWith('catalog/') ||
-       widget.endpoint=='home/latest')return 2000;
-    // Numbered TMDB collections consume five disjoint source pages per
-    // app page. TMDB supports at most 500 source result pages.
-    return widget.endpoint.startsWith('trending/') ||
+  // Only show observed/verified bounds, not arbitrary TMDB caps.
+  int maxPage=1;
+  bool _pageLimitKnown=false;
+
+  bool get _isRankedCollection => widget.endpoint.startsWith('trending/') ||
       widget.endpoint.startsWith('discover/') ||
       widget.endpoint.endsWith('/popular') ||
       widget.endpoint.endsWith('/top_rated') ||
       widget.endpoint=='home/family' ||
-      widget.endpoint=='home/recommended' ? 100 : 500;
+      widget.endpoint=='home/recommended';
+
+  Future<int?> _catalogPageCount() async {
+    final endpoint=widget.endpoint;
+    if(!endpoint.startsWith('catalog/') && endpoint!='home/latest' &&
+        endpoint!='search/multi')return null;
+    final source=await FilmStreamCatalog.load();
+    final media=endpoint=='home/latest' || endpoint=='catalog/movie'?'movie':
+        endpoint=='catalog/tv'?'tv':
+        (widget.type=='all'?null:widget.type);
+    final term=endpoint=='search/multi'
+        ?(widget.params['query']??'').trim().toLowerCase():'';
+    final count=source.where((e)=>(media==null||e.type==media) &&
+        (term.isEmpty||e.title.toLowerCase().contains(term))).length;
+    return (count+catalogPageSize-1)~/catalogPageSize;
   }
 
   @override void initState(){
@@ -1478,21 +1495,25 @@ class _PagedGridState extends State<PagedGrid> {
   @override void didUpdateWidget(covariant PagedGrid old){
     super.didUpdateWidget(old);
     if(old.endpoint!=widget.endpoint||old.type!=widget.type||
-       !mapEquals(old.params,widget.params))_fetch(1);
+       !mapEquals(old.params,widget.params)){
+      _pageLimitKnown=false;
+      _fetch(1);
+    }
   }
   @override void dispose(){requestId++;scroll.dispose();super.dispose();}
 
   Future<void> _fetch(int target) async {
-    if(target<1||target>maxPage)return;
+    if(target<1||(_pageLimitKnown&&target>maxPage))return;
     final token=++requestId;
     setState((){busy=true;error='';});
     try {
-      final rankPage=widget.endpoint.startsWith('trending/') ||
-          widget.endpoint.endsWith('/popular') ||
-          widget.endpoint.endsWith('/top_rated') ||
-          widget.endpoint.startsWith('discover/') ||
-          widget.endpoint=='home/family' ||
-          widget.endpoint=='home/recommended';
+      final rankPage=_isRankedCollection;
+      final exactPages=await _catalogPageCount();
+      if(!mounted||token!=requestId)return;
+      if(exactPages!=null && target>exactPages && target>1){
+        setState((){busy=false;maxPage=exactPages;_pageLimitKnown=true;hasNext=false;});
+        return;
+      }
       var next=await Tmdb.list(widget.endpoint,page:target,
         params:{...widget.params,if(rankPage)'fill_page':'true'},
         type:widget.type);
@@ -1519,13 +1540,26 @@ class _PagedGridState extends State<PagedGrid> {
       final distinct=next.where((m)=>
           seen.add(m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}'))
         .take(catalogPageSize).toList();
+      // Verify the next ranked page before showing its number.
+      bool verifiedNext=false;
+      if(exactPages==null && target<(_isRankedCollection?100:500) &&
+          distinct.isNotEmpty){
+        final probe=await Tmdb.list(widget.endpoint,page:target+1,
+          params:{...widget.params,if(rankPage)'fill_page':'true'},
+          type:widget.type);
+        if(!mounted||token!=requestId)return;
+        verifiedNext=probe.isNotEmpty;
+      }
       setState((){
+        maxPage=(exactPages!=null && exactPages>0)
+            ?exactPages:(target+(verifiedNext?1:0));
+        _pageLimitKnown=true;
         items=distinct;page=target;
         _lastViewedPages[_pageKey]=target;
         if(_lastViewedPages.length>100){
           _lastViewedPages.remove(_lastViewedPages.keys.first);
         }
-        hasNext=next.isNotEmpty && target<maxPage;
+        hasNext=target<maxPage;
         busy=false;error='';
       });
       if(scroll.hasClients)scroll.jumpTo(0);

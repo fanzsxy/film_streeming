@@ -16,6 +16,34 @@ void main() {
     expect(selected, 1);
   });
 
+  testWidgets('single actual page never shows page 2 or 3', (tester) async {
+    int selected = 0;
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body:
+      CatalogPageControls(page: 1, maxPage: 1,
+        busy: false, hasNext: false, onSelect: (n) => selected = n),
+    )));
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('2'), findsNothing);
+    expect(find.text('3'), findsNothing);
+    await tester.tap(find.byTooltip('Halaman berikutnya'));
+    expect(selected, 0);
+  });
+
+  testWidgets('filter does not number unverified next page', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body:
+      CatalogPageControls(page: 1, maxPage: 2, displayedMaxPage: 1,
+        busy: false, hasNext: true, onSelect: (_) {}),
+    )));
+    expect(find.text('2'), findsNothing);
+    expect(find.text('3'), findsNothing);
+    await tester.tap(find.text('Lompat'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), '2');
+    await tester.tap(find.text('Buka'));
+    await tester.pumpAndSettle();
+    expect(find.text('Halaman 1'), findsOneWidget);
+  });
+
   testWidgets('jump to a numbered page', (tester) async {
     int selected = 0;
     await tester.pumpWidget(MaterialApp(home: Scaffold(body:
