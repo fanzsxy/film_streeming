@@ -466,6 +466,20 @@ class LocalCatalogMetadata {
     final start=(page-1)*20;
     if(start>=filtered.length)return [];
     final selected=filtered.skip(start).take(20).toList();
+    // Film, Series, and Latest are paged views of the already downloaded
+    // catalog. Enriching 20 titles via TMDB (in five network batches)
+    // before showing a page made every numbered-page change feel slow.
+    // Use the catalog's reviewed title/year/source/poster/TMDB ID directly.
+    // The detail page can fetch extra TMDB fields when the user opens it.
+    if (endpoint == 'catalog/movie' || endpoint == 'catalog/tv') {
+      return selected.map((entry) {
+        final movie=_withCollectedMetadata(entry,{
+          'id':entry.tmdbId ?? -_stableId(entry.url),
+        });
+        _sourceByTmdb[_key(movie.type,movie.id)]=movie.sourceUrl;
+        return movie;
+      }).toList();
+    }
     final found=<Movie>[];
     for(var i=0;i<selected.length;i+=4){
       found.addAll((await Future.wait(selected.skip(i).take(4).map(enrich))).whereType<Movie>());
