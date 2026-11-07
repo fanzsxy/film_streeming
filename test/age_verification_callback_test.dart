@@ -10,9 +10,20 @@ void main() {
       expect(isAllowedAgeVerificationCallback(callback, false), isFalse);
     });
 
+    test('also permits the observed legacy series login callback only during consent', () {
+      final callback = Uri.parse(
+        'https://login.lk21online.de/oauth/complete?code=PRIVATE');
+      expect(isAllowedAgeVerificationCallback(callback, true), isTrue);
+      expect(isAllowedAgeVerificationCallback(callback, false), isFalse);
+    });
+
     test('does not allow lookalike, unrelated or insecure hosts', () {
       for (final url in <String>[
         'https://login.lk21official.cc.evil.test/return',
+        'https://login.lk21online.de.evil.test/return',
+        'https://fake-login.lk21online.de/return',
+        'http://login.lk21online.de/return',
+        'https://login.lk21online.de:8443/return',
         'https://fake-login.lk21official.cc/return',
         'https://login.lk21official.cc@evil.test/return',
         'http://login.lk21official.cc/return',
