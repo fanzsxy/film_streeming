@@ -40,6 +40,27 @@ void main() {
       ), isFalse);
     });
 
+    test('Google consent YouTube account host only during active sign-in', () {
+      final consent = Uri.parse('https://accounts.youtube.com/signin?state=PRIVATE');
+      expect(isAllowedGoogleConsentHost(consent, true), isTrue);
+      expect(isAllowedGoogleConsentHost(consent, false), isFalse);
+    });
+
+    test('Google consent does not permit lookalike or other YouTube hosts', () {
+      for (final url in <String>[
+        'https://accounts.youtube.com.evil.test/signin',
+        'https://youtube.com/watch?v=1',
+        'https://www.youtube.com/',
+        'https://other.youtube.com/',
+        'http://accounts.youtube.com/signin',
+        'https://accounts.youtube.com:8443/signin',
+        'https://accounts.youtube.com@evil.test/signin',
+      ]) {
+        expect(isAllowedGoogleConsentHost(Uri.parse(url), true),
+            isFalse, reason: url);
+      }
+    });
+
     test('does not allow lookalike, unrelated or insecure hosts', () {
       for (final url in <String>[
         'https://login.lk21official.cc.evil.test/return',
