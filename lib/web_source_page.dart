@@ -30,6 +30,7 @@ class WebSourcePage extends StatefulWidget {
 class _WebSourcePageState extends State<WebSourcePage> {
   late final WebViewController _controller;
   late bool _focused;
+  bool _verificationMode = false;
   bool _loading = true;
   bool _revealed = false;
   bool _search = false;
