@@ -19,6 +19,18 @@ bool isAllowedAgeVerificationCallback(Uri destination, bool loginInProgress) {
       !destination.hasPort;
 }
 
+// Google account consent can also navigate via accounts.youtube.com.
+// This is an exact-host allowlist, not permission for arbitrary YouTube
+// navigation, and is active only during an ongoing sign-in.
+bool isAllowedGoogleConsentHost(Uri destination, bool loginInProgress) {
+  return loginInProgress &&
+      destination.scheme == 'https' &&
+      const {'accounts.google.com', 'accounts.youtube.com'}
+          .contains(destination.host.toLowerCase()) &&
+      destination.userInfo.isEmpty &&
+      !destination.hasPort;
+}
+
 // A successful navigation back from Google's consent does not establish
 // authorization. Refresh the original source exactly once so it can consume
 // its OWN provider cookies and decide whether to show the gate or the player.
@@ -466,6 +478,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
     // sign-in redirect within the same WebView. The OAuth provider can still
     // reject embedded user agents; do not spoof the user agent or tokens.
     if (widget.embedded && host == 'accounts.google.com') return true;
+    if (widget.embedded &&
+        isAllowedGoogleConsentHost(u, _googleSignInInProgress)) return true;
     // The age-verification provider returns here after Google consent.
     // Allow its exact HTTPS callback host ONLY in an active Google flow.
     if (widget.embedded &&
@@ -753,7 +767,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
           // OAuth pages are not players. Do not inject player observers,
           // read episode DOM, or block the Google consent UI while it loads.
           final loadedHost = Uri.tryParse(url)?.host.toLowerCase();
-          if (loadedHost == 'accounts.google.com') {
+          if (loadedHost == 'accounts.google.com' ||
+              (loadedHost == 'accounts.youtube.com' &&
+                  _googleSignInInProgress)) {
             _googleSignInInProgress = true;
             if (widget.embedded) _ageGateVisible = true;
             if (mounted && generation == _navigationGeneration) {
@@ -848,7 +864,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
           // Google sign-in and the original age gate are not players.
           // Never replace their WebView content with "player not found".
           final pageHost = Uri.tryParse(url)?.host.toLowerCase();
-          final isGoogleSignIn = pageHost == 'accounts.google.com';
+          final isGoogleSignIn = pageHost == 'accounts.google.com' ||
+              (pageHost == 'accounts.youtube.com' &&
+                  _googleSignInInProgress);
           bool found = false;
           if (_focused && !isGoogleSignIn) found = await _applyFocus();
           if (!mounted || generation != _navigationGeneration) return;
@@ -920,7 +938,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
           if (r.isMainFrame && _isSearchUrl(widget.url.toString()) && _search && next.host == widget.url.host && !_isSearchUrl(next.toString()) && next.path != '/') { _candidateUrl = next.toString(); }
           // Cover the old website before any new top-level document is shown.
           if (r.isMainFrame && mounted && _focused &&
-              next.host != 'accounts.google.com') {
+              next.host != 'accounts.google.com' &&
+              !(next.host == 'accounts.youtube.com' &&
+                  _googleSignInInProgress)) {
             setState(() { _revealed = false; _loading = true; });
           }
           return NavigationDecision.navigate;
