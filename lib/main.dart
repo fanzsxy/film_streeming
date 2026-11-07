@@ -841,6 +841,11 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  // those for finished user-facing numbered pages.
  Future<void> _fillThrough(int target) async {
    if(fillingPage||target<1||target>loadedPages+(more?1:0))return;
+   if(target<=loadedPages){
+     setState(()=>visiblePage=target);
+     if(scroll.hasClients)scroll.jumpTo(0);
+     return; // Revisit an already completed page without loading.
+   }
    final token=epoch;
    setState((){fillingPage=true;error='';});
    try {
