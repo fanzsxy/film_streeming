@@ -30,9 +30,13 @@ class WebSourcePage extends StatefulWidget {
 class _WebSourcePageState extends State<WebSourcePage> {
   late final WebViewController _controller;
   late bool _focused;
-  // Verity has a tall 18+ warning inside the ORIGINAL provider iframe.
-  // Do not render a second login button or leave the source for LK21 home.
-  bool get _showTallGate => !_isTv && _normalizeTitle(_matchTitle) == 'verity';
+  // The 18+ gate is often inside a cross-origin iframe. Flutter cannot
+  // reliably read its content, so avoid title-based special cases and give
+  // every embedded source iframe enough vertical space for its own login UI.
+  // This also enlarges ordinary players; playback remains site-controlled.
+  bool get _expandedSource => widget.embedded;
+  // Tracks OAuth navigation; consent UI is not a playback failure.
+  bool _googleSignInInProgress = false;
   bool _loading = true;
   bool _revealed = false;
   bool _search = false;
@@ -395,7 +399,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
     // A user's explicit verification mode may follow an official Google
     // sign-in redirect within the same WebView. The OAuth provider can still
     // reject embedded user agents; do not spoof the user agent or tokens.
-    if (_showTallGate && host == 'accounts.google.com') return true;
+    if (_expandedSource && host == 'accounts.google.com') return true;
     if (!_isTv) return false;
     // Only known source site families may redirect the TOP-LEVEL series page.
     // Do not allow an arbitrary HTTPS advertising/gambling page to replace it.
@@ -404,7 +408,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   }
 
   Future<void> _applyCleanPlayer() async {
-    if (_showTallGate) return;
+    if (_expandedSource) return;
     try {
       await _controller.runJavaScript(r'''(() => {
         if (window.__filmstreamCleanV1) return;
@@ -645,6 +649,28 @@ class _WebSourcePageState extends State<WebSourcePage> {
         onProgress: (p) { if (mounted) setState(() => _progress = p); },
         onPageFinished: (url) async {
           final generation = _navigationGeneration;
+          // OAuth pages are not players. Do not inject player observers,
+          // read episode DOM, or block the Google consent UI while it loads.
+          final loadedHost = Uri.tryParse(url)?.host.toLowerCase();
+          if (loadedHost == 'accounts.google.com') {
+            _googleSignInInProgress = true;
+            if (mounted && generation == _navigationGeneration) {
+              setState(() {
+                _loading = false;
+                _search = false;
+                _revealed = true;
+              });
+            }
+            return;
+          }
+          // Google returns to the source/callback after consent. Do not guess
+          // whether age verification succeeded: preserve the landing document
+          // and let the provider render the actual authorized player.
+          final returnedFromGoogle = _googleSignInInProgress;
+          if (returnedFromGoogle &&
+              loadedHost == widget.url.host.toLowerCase()) {
+            _googleSignInInProgress = false;
+          }
           await _applyCleanPlayer();
           await _installProgressObserver();
           if (!mounted || generation != _navigationGeneration) return;
@@ -671,7 +697,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
             if (await _autoMatchSearch()) return;
           }
           if (!mounted || generation != _navigationGeneration) return;
-          if (_focused && _isTv && !_isSearchUrl(url)) {
+          if (_focused && _isTv && !_isSearchUrl(url) &&
+              !_googleSignInInProgress) {
             await _collectEpisodeLinks();
             if (!mounted || generation != _navigationGeneration) return;
             // Series landing pages can briefly show an interstitial before the
@@ -710,7 +737,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
             _loading = false;
             // Preserve the source's real 18+ warning and Google's own
             // sign-in UI even if no playable iframe exists on that page.
-            _search = !found && !_showTallGate && !isGoogleSignIn;
+            _search = !found && !widget.embedded &&
+                !isGoogleSignIn && !_googleSignInInProgress;
             _revealed = true;
           });
         },
@@ -726,6 +754,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
             // Reject off-site top-level redirects, including gambling landing pages.
             // Embedded video frames are not affected by this top-level rule.
             return NavigationDecision.prevent;
+          }
+          if (r.isMainFrame && next.host == 'accounts.google.com') {
+            _googleSignInInProgress = true;
           }
           if (r.isMainFrame && _isSearchUrl(widget.url.toString()) && _search && next.host == widget.url.host && !_isSearchUrl(next.toString()) && next.path != '/') { _candidateUrl = next.toString(); }
           // Cover the old website before any new top-level document is shown.
@@ -865,7 +896,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           }
           return true;
         })();
-      '''.replaceAll('TARGET_AGE_GATE', _showTallGate ? 'true' : 'false'));
+      '''.replaceAll('TARGET_AGE_GATE', _expandedSource ? 'true' : 'false'));
       return result == true || result.toString() == 'true';
     } catch (_) { return false; }
   }
@@ -963,7 +994,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   @override
   Widget build(BuildContext context) {
     if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      _showTallGate
+      _expandedSource
           ? SizedBox(
               height: MediaQuery.sizeOf(context).height -
                   MediaQuery.paddingOf(context).top - kToolbarHeight,
