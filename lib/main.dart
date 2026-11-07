@@ -178,6 +178,18 @@ class LocalCatalogMetadata {
         ? entry.activeSourceUrl : entry.url;
     return Movie.fromJson(data,fallback:entry.type);
   }
+  // Keep only the current fast catalog-page entries for optional poster
+  // upgrades. A page renders immediately, while missing TMDB artwork can
+  // be resolved in individual cards without blocking navigation.
+  static final Map<String,CatalogEntry> _pagePosterEntries={};
+  static Future<Movie?> catalogPosterUpgrade(Movie movie) {
+    final entry=_pagePosterEntries[movie.sourceUrl];
+    if(entry==null || entry.tmdbPosterPath.startsWith('/')) {
+      return Future.value(movie);
+    }
+    return enrich(entry);
+  }
+
   static Future<Movie?> enrich(CatalogEntry entry) {
     // Bound the in-memory TMDB resolver cache; do not retain thousands of
     // futures indefinitely after prolonged browsing/searching.
@@ -466,6 +478,25 @@ class LocalCatalogMetadata {
     final start=(page-1)*20;
     if(start>=filtered.length)return [];
     final selected=filtered.skip(start).take(20).toList();
+    // Film, Series, and Latest are paged views of the already downloaded
+    // catalog. Enriching 20 titles via TMDB (in five network batches)
+    // before showing a page made every numbered-page change feel slow.
+    // Use the catalog's reviewed title/year/source/poster/TMDB ID directly.
+    // The detail page can fetch extra TMDB fields when the user opens it.
+    if (endpoint == 'catalog/movie' || endpoint == 'catalog/tv') {
+      return selected.map((entry) {
+        final movie=_withCollectedMetadata(entry,{
+          'id':entry.tmdbId ?? -_stableId(entry.url),
+        });
+        _sourceByTmdb[_key(movie.type,movie.id)]=movie.sourceUrl;
+        _pagePosterEntries[movie.sourceUrl]=entry;
+        // Bound the mapping just like the existing metadata cache.
+        if(_pagePosterEntries.length>200){
+          _pagePosterEntries.remove(_pagePosterEntries.keys.first);
+        }
+        return movie;
+      }).toList();
+    }
     final found=<Movie>[];
     for(var i=0;i<selected.length;i+=4){
       found.addAll((await Future.wait(selected.skip(i).take(4).map(enrich))).whereType<Movie>());
@@ -1065,6 +1096,37 @@ class _CinemaGenresState extends State<CinemaGenres> {
     ]));
   });
 }
+// Fast catalog tiles keep TMDB artwork authoritative where available.
+// The initial movie is shown immediately; the optional network lookup only
+// upgrades the poster after validating the title/year against the catalog.
+class CatalogPosterTile extends StatefulWidget {
+  final Movie movie;
+  final ValueChanged<Movie> onTap;
+  const CatalogPosterTile({super.key,required this.movie,required this.onTap});
+  @override State<CatalogPosterTile> createState()=>_CatalogPosterTileState();
+}
+class _CatalogPosterTileState extends State<CatalogPosterTile> {
+  late Future<Movie?> posterFuture;
+  @override void initState(){
+    super.initState();
+    posterFuture=LocalCatalogMetadata.catalogPosterUpgrade(widget.movie);
+  }
+  @override void didUpdateWidget(covariant CatalogPosterTile old){
+    super.didUpdateWidget(old);
+    if(old.movie.sourceUrl!=widget.movie.sourceUrl){
+      posterFuture=LocalCatalogMetadata.catalogPosterUpgrade(widget.movie);
+    }
+  }
+  @override Widget build(BuildContext context)=>FutureBuilder<Movie?>(
+    future:posterFuture,
+    builder:(context,snapshot){
+      final resolved=snapshot.data;
+      final movie=resolved!=null && resolved.poster.isNotEmpty
+        ?resolved:widget.movie;
+      return MovieTile(movie:movie,onTap:widget.onTap);
+    });
+}
+
 class MovieTile extends StatelessWidget {
  final Movie movie; final ValueChanged<Movie> onTap;
  const MovieTile({super.key,required this.movie,required this.onTap});
@@ -1316,7 +1378,12 @@ class _PagedGridState extends State<PagedGrid> {
           sliver:SliverGrid(
             gridDelegate:filmstreamGridDelegate(context),
             delegate:SliverChildBuilderDelegate(
-              (context,i)=>MovieTile(movie:items[i],onTap:widget.onTap),
+              (context,i)=>(widget.endpoint=='catalog/movie' ||
+                widget.endpoint=='catalog/tv' ||
+                widget.endpoint=='home/latest')
+              ?CatalogPosterTile(key:ValueKey(items[i].sourceUrl),
+                movie:items[i],onTap:widget.onTap)
+              :MovieTile(movie:items[i],onTap:widget.onTap),
               childCount:items.length))),
         SliverToBoxAdapter(child:CatalogPageControls(
           page:page,maxPage:maxPage,
