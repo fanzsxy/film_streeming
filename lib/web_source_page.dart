@@ -54,6 +54,11 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // needs taller space only while it is detected or verified as an affected
   // provider page. A cross-origin iframe may hide its contents from JS.
   bool _ageGateVisible = false;
+  // In-memory rendering hint shared across detail views with the SAME source
+  // host. This is not authentication state and never bypasses a gate.
+  static final Set<String> _hostsWithObservedGoogleReturn = {};
+  bool get _priorReturnForThisSource =>
+      _hostsWithObservedGoogleReturn.contains(widget.url.host.toLowerCase());
   // Once Google has returned to an actual source page, title-specific
   // fallback must not keep a poster/video expanded like an age warning.
   // This flag does not assert that age verification succeeded.
@@ -774,6 +779,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
                   (_isTv && _isKnownSeriesSourceHost(loadedHost)))) {
             _googleSignInInProgress = false;
             _returnedToSourceAfterGoogle = true;
+            _hostsWithObservedGoogleReturn.add(widget.url.host.toLowerCase());
             if (_ageGateVisible && mounted) {
               setState(() => _ageGateVisible = false);
             }
@@ -837,7 +843,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
             // a fallback only; they must not resize unrelated movies.
             final shouldExpand = gateTextFound ||
                 (_knownAgeGateExample && !_googleSignInInProgress &&
-                    !_returnedToSourceAfterGoogle);
+                    !_returnedToSourceAfterGoogle &&
+                    !_priorReturnForThisSource);
             if (_ageGateVisible != shouldExpand) {
               setState(() => _ageGateVisible = shouldExpand);
               // Reapply the provider iframe's CSS after visibility changes.
