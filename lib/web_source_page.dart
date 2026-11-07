@@ -882,51 +882,73 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // Keep the real source page in the EXISTING Android WebView. Do not move
   // it to Chrome or copy browser cookies. Reloading also resets the site's
   // own window.open handler that clean-player mode had previously suppressed.
-  Future<void> _enterVerificationMode() async {
+  // The site owns the age gate and Google sign-in. Present its ORIGINAL
+  // page in the existing WebView at full screen, not a fake account chooser.
+  // Do not copy cookies, impersonate a browser, or bypass age checks.
+  Future<void> _showSourceFullscreen() async {
+    if (!mounted || _verificationMode) return;
+    setState(() {
+      _verificationMode = true;
+      _focused = false;
+    });
+    // Unmount the inline Android platform view before using its controller
+    // in the fullscreen route; two simultaneous WebViewWidget mounts are unsafe.
+    await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
-    await _setFocused(false);
-    if (!mounted) return;
-    setState(() => _verificationMode = true);
-    await _controller.reload();
+    try {
+      await _controller.reload(); // restore the original source login handlers
+      if (!mounted) return;
+      await Navigator.of(context).push<void>(MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (ctx) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Halaman sumber • 18+'),
+            actions: [
+              IconButton(
+                tooltip: 'Muat ulang halaman',
+                icon: const Icon(Icons.refresh),
+                onPressed: () => _controller.reload(),
+              ),
+            ],
+          ),
+          body: Column(children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 10, 16, 10),
+              child: Text(
+                'Materi khusus dewasa. Jika diminta, verifikasi usia '
+                'melalui login resmi situs untuk pengguna berusia 18 tahun ke atas. '
+                'Google dapat menolak login pada WebView tertanam.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+            Expanded(child: WebViewWidget(controller: _controller)),
+          ]),
+        ),
+      ));
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _verificationMode = false;
+        _focused = true;
+        _revealed = false;
+      });
+      await WidgetsBinding.instance.endOfFrame;
+      if (mounted) await _controller.reload();
+    }
   }
 
-  Future<void> _exitVerificationMode() async {
-    if (!mounted) return;
-    setState(() => _verificationMode = false);
-    await _setFocused(true);
-    if (!mounted) return;
-    await _controller.reload();
-  }
-
-  Widget _ageVerificationAction() {
+  Widget _fullscreenSourceAction() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Row(children: [
-          Expanded(child: OutlinedButton.icon(
-            onPressed: _verificationMode
-                ? _exitVerificationMode : _enterVerificationMode,
-            icon: Icon(_verificationMode ? Icons.smart_display_outlined
-                : Icons.verified_user_outlined, size: 18),
-            label: Text(_verificationMode
-                ? 'Kembali ke player' : 'Verifikasi usia di aplikasi'),
-          )),
-          const SizedBox(width: 6),
-          IconButton(
-            tooltip: 'Muat ulang halaman',
-            onPressed: () => _controller.reload(),
-            icon: const Icon(Icons.refresh),
-          ),
-        ]),
-        if (_verificationMode)
-          const Text(
-            'Ini halaman asli sumber di WebView FilmStream. Login Google '
-            'dapat ditolak oleh Google pada browser tertanam. '
-            'Tidak ada pemeriksaan usia yang dilewati.',
-            style: TextStyle(fontSize: 11, color: Colors.white70),
-            textAlign: TextAlign.center,
-          ),
-      ]),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: _showSourceFullscreen,
+          icon: const Icon(Icons.fullscreen),
+          label: const Text('Layar penuh situs sumber'),
+        ),
+      ),
     );
   }
 
@@ -990,7 +1012,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [_verificationMode ? SizedBox(height: 540, child: _playerBody()) : AspectRatio(aspectRatio: 16 / 9, child: _playerBody()), _flutterServers(), _ageVerificationAction(), _flutterSourceDetails()]));
+    if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [_verificationMode ? const SizedBox.shrink() : AspectRatio(aspectRatio: 16 / 9, child: _playerBody()), if (!_verificationMode) _flutterServers(), if (!_verificationMode) _fullscreenSourceAction(), if (!_verificationMode) _flutterSourceDetails()]));
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) { if (!didPop) _back(); },
