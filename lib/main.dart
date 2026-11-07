@@ -11,6 +11,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:ui' show PointerDeviceKind;
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:http/http.dart' as http;
@@ -687,15 +688,38 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  List<DropdownMenuItem<String>> _languageOptions = const [DropdownMenuItem(value:'',child:Text('Semua bahasa'))];
  bool _optionsLoaded = false;
  int genre1=0,genre2=0,page=0,epoch=0;
+ int visiblePage=1;
+ int get loadedPages => (results.length+catalogPageSize-1)~/catalogPageSize;
  bool busy=false,more=true;
  String error='';
  final results=<Movie>[];
  final Set<String> seenResults=<String>{};
  final ScrollController scroll=ScrollController();
- @override void initState(){super.initState();genre1=int.tryParse(widget.initialGenre)??0;_filterOptions=_loadOptions();_fetch();scroll.addListener((){if(scroll.hasClients&&scroll.position.pixels>scroll.position.maxScrollExtent-460)_fetch();});}
+ @override void initState(){
+   super.initState();
+   genre1=int.tryParse(widget.initialGenre)??0;
+   _filterOptions=_loadOptions();
+   _fetch();
+ }
  @override void didUpdateWidget(covariant FilmstreamFilter old){super.didUpdateWidget(old);if(old.initialGenre!=widget.initialGenre){genre1=int.tryParse(widget.initialGenre)??0;_reset();}}
  @override void dispose(){scroll.dispose();super.dispose();}
- void _reset(){epoch++;results.clear();seenResults.clear();page=0;more=true;error='';busy=false;if(scroll.hasClients)scroll.jumpTo(0);setState((){});_fetch();}
+ void _reset(){
+   epoch++;results.clear();seenResults.clear();page=0;visiblePage=1;
+   more=true;error='';busy=false;
+   if(scroll.hasClients)scroll.jumpTo(0);
+   setState((){});
+   _fetch();
+ }
+ Future<void> _goFilterPage(int target) async {
+   if(target<1||busy||target>loadedPages+(more?1:0))return;
+   if(target>loadedPages && more){
+     await _fetch();
+     if(!mounted || results.length<=(target-1)*catalogPageSize)return;
+   }
+   if(!mounted)return;
+   setState(()=>visiblePage=target);
+   if(scroll.hasClients)scroll.jumpTo(0);
+ }
  Future<void> _loadOptions() async {
   try {
    final responses=await Future.wait([Tmdb.get('genre/movie/list'),Tmdb.get('genre/tv/list')]);
@@ -753,7 +777,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     var scanned=0;
     var ended=false;
     final hasFilter=genre1>0||genre2>0||country.isNotEmpty;
-    while(incoming.length<16 && scanned<(hasFilter?8:2) && page<500) {
+    while(incoming.length<catalogPageSize && scanned<(hasFilter?8:2) && page<500) {
       final nextPage=page+1;
       // TMDB discovers genre/language candidates; only catalog matches survive.
       // Without metadata filters, sort the entire local catalog before paging.
@@ -819,7 +843,12 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   ),
   items:options,
   onChanged:(v){update(v);_reset();});
- @override Widget build(BuildContext context)=>CustomScrollView(controller:scroll,slivers:[
+ @override Widget build(BuildContext context){
+  final startIndex=(visiblePage-1)*catalogPageSize;
+  final visible=startIndex<results.length
+    ? results.skip(startIndex).take(catalogPageSize).toList()
+    : <Movie>[];
+  return CustomScrollView(controller:scroll,slivers:[
   SliverToBoxAdapter(child:Column(children:[
   Padding(
     padding:const EdgeInsets.fromLTRB(12,8,12,8),
@@ -865,11 +894,28 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   if(!_optionsLoaded) const Padding(padding:EdgeInsets.all(8),child:LinearProgressIndicator()),
   Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:6),child:Align(alignment:Alignment.centerLeft,child:Text('Katalog ${type=='all'?'Film & Series':type=='tv'?'Series':'Film'}',style:const TextStyle(fontSize:19,fontWeight:FontWeight.w800)))),
   ])),
-  if(results.isEmpty) SliverFillRemaining(hasScrollBody:false,child:Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:Text(error)):busy?const CircularProgressIndicator():more?TextButton(onPressed:_fetch,child:const Text('Belum ada kecocokan — cari halaman berikutnya')):const Text('Tidak ada hasil sesuai filter'))),
-  if(results.isNotEmpty) SliverPadding(padding:const EdgeInsets.all(12),sliver:SliverGrid(delegate:SliverChildBuilderDelegate((context,i){
-   if(i==results.length)return Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:const Text('Coba lagi')):busy?const CircularProgressIndicator():TextButton(onPressed:_fetch,child:const Text('Muat lagi')));
-   return MovieTile(key:ValueKey('${results[i].type}:${results[i].id}'),movie:results[i],onTap:widget.onTap);
-  },childCount:results.length+(more||busy||error.isNotEmpty?1:0)),gridDelegate:filmstreamGridDelegate(context))),
+  if(results.isEmpty) SliverFillRemaining(hasScrollBody:false,
+    child:Center(child:error.isNotEmpty
+      ?TextButton(onPressed:_fetch,child:Text(error))
+      :busy?const CircularProgressIndicator()
+      :more?TextButton(onPressed:_fetch,
+        child:const Text('Cari halaman katalog berikutnya'))
+      :const Text('Tidak ada hasil sesuai filter'))),
+  if(visible.isNotEmpty) SliverPadding(
+    padding:const EdgeInsets.all(12),
+    sliver:SliverGrid(delegate:SliverChildBuilderDelegate((context,i)=>
+      MovieTile(key:ValueKey('${visible[i].type}:${visible[i].id}'),
+        movie:visible[i],onTap:widget.onTap),
+      childCount:visible.length),gridDelegate:filmstreamGridDelegate(context))),
+  if(results.isNotEmpty) SliverToBoxAdapter(child:Column(children:[
+    if(error.isNotEmpty)TextButton(onPressed:_fetch,child:Text(error)),
+    if(busy)const Padding(padding:EdgeInsets.all(8),
+      child:CircularProgressIndicator()),
+    CatalogPageControls(page:visiblePage,
+      maxPage:loadedPages+(more?1:0),
+      hasNext:visiblePage<loadedPages||more,
+      busy:busy,onSelect:_goFilterPage),
+  ])),
  ]);
 }
 class CinemaHero extends StatefulWidget {
@@ -1088,24 +1134,164 @@ class LastWatchedRail extends StatelessWidget {
    ]);
  });
 }
-class PagedGrid extends StatefulWidget {final String title,endpoint,type;final Map<String,String> params;final ValueChanged<Movie> onTap;const PagedGrid({super.key,required this.title,required this.endpoint,required this.type,required this.onTap,this.params=const {}});@override State<PagedGrid> createState()=>_PagedGridState();}
-class _PagedGridState extends State<PagedGrid> {final items=<Movie>[];int page=0;bool busy=false,more=true;String error='';final scroll=ScrollController();
- @override void initState(){super.initState();fetch();scroll.addListener((){if(scroll.hasClients&&scroll.position.pixels>scroll.position.maxScrollExtent-550)fetch();});}
- @override void dispose(){scroll.dispose();super.dispose();}
- Future<void> fetch() async {if(busy||!more)return;setState(()=>busy=true);try{var next=await Tmdb.list(widget.endpoint,page:page+1,params:widget.params,type:widget.type);
-    if(next.isEmpty && page==0 && widget.endpoint=='search/multi'){
-      final query=(widget.params['query']??'').toLowerCase();
-      final terms=query.split(RegExp(r'[^a-z0-9]+')).where((w)=>w.length>=4).toList();
-      if(terms.length>=3){
-        final candidates=await Tmdb.list('search/multi',
-          params:{'query':terms.first,'include_adult':'false'},type:widget.type);
-        next=candidates.where((m){
-          final title=m.title.toLowerCase();
-          return terms.where((word)=>title.contains(word)).length>=2;
-        }).toList();
+
+const catalogPageSize = 20;
+
+// A compact numbered pager shared by Film, Series, Filter, Search and
+// "Lihat Lainnya". An unknown total must not be shown as a made-up count.
+class CatalogPageControls extends StatelessWidget {
+  final int page, maxPage;
+  final bool busy, hasNext;
+  final ValueChanged<int> onSelect;
+  const CatalogPageControls({super.key,required this.page,required this.maxPage,
+    required this.busy,required this.hasNext,required this.onSelect});
+
+  Future<void> _jump(BuildContext context) async {
+    var typed='$page';
+    final chosen=await showDialog<int>(context:context,builder:(dialogContext)=>
+      AlertDialog(title:const Text('Lompat ke halaman'),
+        content:TextFormField(initialValue:typed,
+          onChanged:(value)=>typed=value,
+          keyboardType:TextInputType.number,
+          autofocus:true,decoration:InputDecoration(
+            labelText:'Nomor halaman (1–$maxPage)')),
+        actions:[
+          TextButton(onPressed:()=>Navigator.pop(dialogContext),
+            child:const Text('Batal')),
+          FilledButton(onPressed:(){
+            final n=int.tryParse(typed.trim());
+            if(n==null || n<1 || n>maxPage)return;
+            Navigator.pop(dialogContext,n);
+          },child:const Text('Buka')),
+        ]));
+    if(chosen!=null && chosen!=page)onSelect(chosen);
+  }
+
+  @override Widget build(BuildContext context) {
+    final first=page>2 ? page-2 : 1;
+    final last=(first+4).clamp(1,maxPage).toInt();
+    return Padding(padding:const EdgeInsets.fromLTRB(8,6,8,14),
+      child:Column(mainAxisSize:MainAxisSize.min,children:[
+        Wrap(alignment:WrapAlignment.center,spacing:3,runSpacing:4,children:[
+          TextButton(onPressed:busy||page==1?null:()=>onSelect(page-1),
+            child:const Text('Sebelumnya')),
+          for(var n=first;n<=last;n++)
+            n==page
+                ? FilledButton(onPressed:null,child:Text('$n'))
+                : TextButton(onPressed:busy?null:()=>onSelect(n),child:Text('$n')),
+          TextButton(onPressed:busy||!hasNext||page>=maxPage
+              ?null:()=>onSelect(page+1),child:const Text('Berikutnya')),
+        ]),
+        Row(mainAxisAlignment:MainAxisAlignment.center,children:[
+          Text('Halaman $page',style:const TextStyle(color:Colors.white70)),
+          const SizedBox(width:12),
+          TextButton.icon(onPressed:busy?null:()=>_jump(context),
+            icon:const Icon(Icons.low_priority,size:17),
+            label:const Text('Lompat halaman')),
+        ]),
+      ]));
+  }
+}
+
+class PagedGrid extends StatefulWidget {
+  final String title,endpoint,type;
+  final Map<String,String> params;
+  final ValueChanged<Movie> onTap;
+  const PagedGrid({super.key,required this.title,required this.endpoint,
+    required this.type,required this.onTap,this.params=const {}});
+  @override State<PagedGrid> createState()=>_PagedGridState();
+}
+class _PagedGridState extends State<PagedGrid> {
+  // Remember page numbers across tab switches and detail navigation.
+  // Only the page number is remembered; movie widgets stay bounded to 20.
+  static final Map<String,int> _lastViewedPages={};
+  String get _pageKey {
+    final keys=widget.params.keys.toList()..sort();
+    return '${widget.endpoint}|${widget.type}|${keys.map((k)=>'$k=${widget.params[k]}').join('&')}';
+  }
+  final ScrollController scroll=ScrollController();
+  List<Movie> items=const [];
+  int page=1, requestId=0;
+  bool busy=false,hasNext=true;
+  String error='';
+  int get maxPage => widget.endpoint.startsWith('catalog/') ||
+      widget.endpoint=='home/latest' ? 2000 : 500;
+
+  @override void initState(){
+    super.initState();
+    _fetch(_lastViewedPages[_pageKey] ?? 1);
+  }
+  @override void didUpdateWidget(covariant PagedGrid old){
+    super.didUpdateWidget(old);
+    if(old.endpoint!=widget.endpoint||old.type!=widget.type||
+       !mapEquals(old.params,widget.params))_fetch(1);
+  }
+  @override void dispose(){requestId++;scroll.dispose();super.dispose();}
+
+  Future<void> _fetch(int target) async {
+    if(target<1||target>maxPage)return;
+    final token=++requestId;
+    setState((){busy=true;error='';});
+    try {
+      var next=await Tmdb.list(widget.endpoint,page:target,
+        params:widget.params,type:widget.type);
+      if(next.isEmpty && target==1 && widget.endpoint=='search/multi'){
+        final query=(widget.params['query']??'').toLowerCase();
+        final terms=query.split(RegExp(r'[^a-z0-9]+'))
+          .where((w)=>w.length>=4).toList();
+        if(terms.length>=3){
+          final candidates=await Tmdb.list('search/multi',page:1,
+            params:{'query':terms.first,'include_adult':'false'},
+            type:widget.type);
+          next=candidates.where((m)=>
+            terms.where((word)=>m.title.toLowerCase().contains(word)).length>=2
+          ).toList();
+        }
       }
-    }if(!mounted)return;setState((){page++;items.addAll(next.where((m)=>!items.any((x)=>x.id==m.id&&x.type==m.type)));more=next.isNotEmpty&&page<50;error='';});}catch(e){if(mounted)setState(()=>error='$e');}finally{if(mounted)setState(()=>busy=false);}}
- @override Widget build(BuildContext context)=>Column(children:[Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:10),child:Align(alignment:Alignment.centerLeft,child:Text(widget.title,style:const TextStyle(fontSize:21,fontWeight:FontWeight.bold)))),Expanded(child:items.isEmpty&&busy?const Center(child:CircularProgressIndicator()):items.isEmpty&&error.isNotEmpty?Center(child:FilledButton(onPressed:fetch,child:Text('Gagal memuat — coba lagi ($error)'))):items.isEmpty?const Center(child:Text('Tidak ditemukan')):GridView.builder(controller:scroll,padding:const EdgeInsets.all(12),gridDelegate:filmstreamGridDelegate(context),itemCount:items.length+(busy||error.isNotEmpty?1:0),itemBuilder:(context,i){if(i==items.length)return Center(child:error.isNotEmpty?TextButton(onPressed:fetch,child:const Text('Coba lagi')):const CircularProgressIndicator());return MovieTile(movie:items[i],onTap:widget.onTap);}))]);}
+      if(!mounted||token!=requestId)return;
+      // An empty page after the first is the end, NOT another visible page.
+      if(next.isEmpty && target>1){
+        setState((){busy=false;hasNext=false;});
+        return;
+      }
+      final seen=<String>{};
+      final distinct=next.where((m)=>
+          seen.add(m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}'))
+        .take(catalogPageSize).toList();
+      setState((){
+        items=distinct;page=target;
+        _lastViewedPages[_pageKey]=target;
+        if(_lastViewedPages.length>100){
+          _lastViewedPages.remove(_lastViewedPages.keys.first);
+        }
+        hasNext=next.isNotEmpty && target<maxPage;
+        busy=false;error='';
+      });
+      if(scroll.hasClients)scroll.jumpTo(0);
+    }catch(_){
+      if(mounted&&token==requestId)setState((){
+        busy=false;error='Gagal memuat halaman. Coba lagi.';
+      });
+    }
+  }
+  @override Widget build(BuildContext context)=>Column(children:[
+    Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:10),
+      child:Align(alignment:Alignment.centerLeft,
+        child:Text(widget.title,style:const TextStyle(
+          fontSize:21,fontWeight:FontWeight.bold)))),
+    Expanded(child:busy?const Center(child:CircularProgressIndicator()):
+      error.isNotEmpty?Center(child:FilledButton(
+        onPressed:()=>_fetch(page),
+        child:Text(error))):
+      items.isEmpty?const Center(child:Text('Tidak ditemukan')):
+      GridView.builder(controller:scroll,padding:const EdgeInsets.all(12),
+        gridDelegate:filmstreamGridDelegate(context),
+        itemCount:items.length,itemBuilder:(context,i)=>
+          MovieTile(movie:items[i],onTap:widget.onTap))),
+    CatalogPageControls(page:page,maxPage:maxPage,
+      hasNext:hasNext,busy:busy,onSelect:_fetch),
+  ]);
+}
 
 // Adapter percobaan untuk API metadata LK21 tidak resmi. Tidak mengekstrak stream.
 // Endpoint harus berupa server HTTPS yang Anda kelola/diizinkan untuk diakses.
