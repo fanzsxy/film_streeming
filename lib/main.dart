@@ -1246,32 +1246,49 @@ class _CatalogPosterTileState extends State<CatalogPosterTile> {
       final resolved=snapshot.data;
       final movie=resolved!=null && resolved.poster.isNotEmpty
         ?resolved:widget.movie;
-      return MovieTile(movie:movie,onTap:widget.onTap);
+      return MovieTile(
+        movie:movie,
+        fallbackPoster: movie.poster!=widget.movie.poster
+          ?widget.movie.poster:null,
+        onTap:widget.onTap,
+      );
     });
 }
 
 class MovieTile extends StatelessWidget {
- final Movie movie; final ValueChanged<Movie> onTap;
- const MovieTile({super.key,required this.movie,required this.onTap});
+ final Movie movie;
+ final String? fallbackPoster;
+ final ValueChanged<Movie> onTap;
+ const MovieTile({super.key,required this.movie,required this.onTap,
+   this.fallbackPoster});
  @override Widget build(BuildContext context)=>InkWell(
   borderRadius:BorderRadius.circular(16),onTap:()=>onTap(movie),
   child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
    Expanded(child:ClipRRect(borderRadius:BorderRadius.circular(16),child:Stack(fit:StackFit.expand,children:[
-    movie.poster.isEmpty?const ColoredBox(color:Color(0xff252a34),child:Center(child:Icon(Icons.movie_outlined,size:40))):
+    // Keep the catalog artwork in place until the official TMDB image
+    // actually has a decoded frame. Then fade in the new poster smoothly,
+    // without a spinner, a blank flash, or an artificial delay.
+    if(fallbackPoster!=null && fallbackPoster!.isNotEmpty)
+      Image.network(filmstreamImageUrl(fallbackPoster!),
+        fit:BoxFit.cover,gaplessPlayback:true,
+        errorBuilder:(_,__,___)=>const ColoredBox(
+          color:Color(0xff252a34)))
+    else const ColoredBox(color:Color(0xff252a34),
+      child:Center(child:Icon(Icons.movie_outlined,size:40))),
+    if(movie.poster.isNotEmpty)
       Image.network(filmstreamImageUrl(movie.poster),
         fit:BoxFit.cover,gaplessPlayback:true,
-        // Catalog pages can load instantly from local metadata while
-        // individual remote poster images are still downloading. Show a
-        // lightweight per-card loading cue until the first image frame.
         frameBuilder:(context,child,frame,wasSynchronouslyLoaded){
-          if(wasSynchronouslyLoaded||frame!=null)return child;
-          return const ColoredBox(color:Color(0xff252a34),
-            child:Center(child:SizedBox(width:22,height:22,
-              child:CircularProgressIndicator(strokeWidth:2))));
+          if(wasSynchronouslyLoaded)return child;
+          return AnimatedOpacity(
+            opacity:frame==null?0:1,
+            duration:const Duration(milliseconds:300),
+            curve:Curves.easeInOut,
+            child:child,
+          );
         },
-        errorBuilder:(_,__,___)=>const ColoredBox(
-          color:Color(0xff252a34),
-          child:Center(child:Icon(Icons.broken_image_outlined)))),
+        // Leave existing catalog artwork visible if TMDB fails.
+        errorBuilder:(_,__,___)=>const SizedBox.shrink()),
     Positioned(top:8,right:8,child:DecoratedBox(decoration:BoxDecoration(color:const Color(0xdd16191f),borderRadius:BorderRadius.circular(7)),child:Padding(padding:const EdgeInsets.symmetric(horizontal:6,vertical:4),child:Row(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.star_rounded,color:Color(0xffe5aa55),size:13),const SizedBox(width:3),Text(movie.rating.toStringAsFixed(1),style:const TextStyle(fontSize:11,fontWeight:FontWeight.bold))])))),
    ]))),
    const SizedBox(height:8),
