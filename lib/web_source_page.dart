@@ -79,8 +79,25 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // In-memory rendering hint shared across detail views with the SAME source
   // host. This is not authentication state and never bypasses a gate.
   static final Set<String> _hostsWithObservedGoogleReturn = {};
+  // Persist only a UI sizing hint (no credentials, cookies, tokens, or
+  // assertion that the provider authorized an age-restricted page).
+  bool _savedReturnForThisSource = false;
+  String get _visualReturnKey =>
+      'fs_view_return_v1_${widget.url.host.toLowerCase()}';
   bool get _priorReturnForThisSource =>
+      _savedReturnForThisSource ||
       _hostsWithObservedGoogleReturn.contains(widget.url.host.toLowerCase());
+
+  Future<void> _rememberVisualReturn() async {
+    _savedReturnForThisSource = true;
+    _hostsWithObservedGoogleReturn.add(widget.url.host.toLowerCase());
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(_visualReturnKey, true);
+    } catch (_) {
+      // Appearance hint only; playback and authentication are unaffected.
+    }
+  }
   // Once Google has returned to an actual source page, title-specific
   // fallback must not keep a poster/video expanded like an age warning.
   // This flag does not assert that age verification succeeded.
@@ -828,7 +845,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
             // Let the official source handle cookies and display its own result.
             _googleSignInInProgress = false;
             _returnedToSourceAfterGoogle = true;
-            _hostsWithObservedGoogleReturn.add(widget.url.host.toLowerCase());
+            await _rememberVisualReturn();
+            if (!mounted || generation != _navigationGeneration) return;
           }
           await _applyCleanPlayer();
           await _installProgressObserver();
@@ -1018,6 +1036,16 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // This is scoped to the user-opened source WebView and does not authorize
   // age-restricted playback or override Google's embedded OAuth policy.
   Future<void> _initializeSourceWebView() async {
+    // Load the visual hint BEFORE the initial WebView navigates; otherwise
+    // the first rendered poster may flash as a full-height age-warning frame.
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      _savedReturnForThisSource =
+          preferences.getBool(_visualReturnKey) ?? false;
+    } catch (_) {
+      _savedReturnForThisSource = false;
+    }
+    if (!mounted) return;
     if (_controller.platform is AndroidWebViewController) {
       try {
         final cookies = WebViewCookieManager();
