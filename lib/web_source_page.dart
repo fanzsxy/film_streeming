@@ -13,7 +13,8 @@ import 'package:http/http.dart' as http;
 bool isAllowedAgeVerificationCallback(Uri destination, bool loginInProgress) {
   return loginInProgress &&
       destination.scheme == 'https' &&
-      destination.host.toLowerCase() == 'login.lk21official.cc' &&
+      const {'login.lk21official.cc', 'login.lk21online.de'}
+          .contains(destination.host.toLowerCase()) &&
       destination.userInfo.isEmpty &&
       !destination.hasPort;
 }
@@ -53,6 +54,10 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // needs taller space only while it is detected or verified as an affected
   // provider page. A cross-origin iframe may hide its contents from JS.
   bool _ageGateVisible = false;
+  // Once Google has returned to an actual source page, title-specific
+  // fallback must not keep a poster/video expanded like an age warning.
+  // This flag does not assert that age verification succeeded.
+  bool _returnedToSourceAfterGoogle = false;
   bool get _expandedSource => widget.embedded && _ageGateVisible;
   bool get _knownAgeGateExample {
     final title = _normalizeTitle(_matchTitle);
@@ -422,6 +427,16 @@ class _WebSourcePageState extends State<WebSourcePage> {
     });
   }
 
+  bool _isKnownSeriesSourceHost(String? host) {
+    if (host == null) return false;
+    const hosts = {
+      'tv.lk21online.de',
+      'tv.nontondrama.vip',
+      'tv9.nontondrama.my',
+    };
+    return hosts.contains(host);
+  }
+
   // Guard top-level navigations; iframe/subresource requests are not blocked.
   bool _allowedMainNavigation(String url) {
     final u = Uri.tryParse(url);
@@ -738,7 +753,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
           // This is an authentication return endpoint, not a video player.
           // Let it complete its own cookie/redirect work before inspecting
           // the actual source page; never inject player CSS/scripts here.
-          if (loadedHost == 'login.lk21official.cc' &&
+          if ((loadedHost == 'login.lk21official.cc' ||
+                  loadedHost == 'login.lk21online.de') &&
               _googleSignInInProgress) {
             if (mounted && generation == _navigationGeneration) {
               setState(() {
@@ -754,8 +770,13 @@ class _WebSourcePageState extends State<WebSourcePage> {
           // and let the provider render the actual authorized player.
           final returnedFromGoogle = _googleSignInInProgress;
           if (returnedFromGoogle &&
-              loadedHost == widget.url.host.toLowerCase()) {
+              (loadedHost == widget.url.host.toLowerCase() ||
+                  (_isTv && _isKnownSeriesSourceHost(loadedHost)))) {
             _googleSignInInProgress = false;
+            _returnedToSourceAfterGoogle = true;
+            if (_ageGateVisible && mounted) {
+              setState(() => _ageGateVisible = false);
+            }
           }
           await _applyCleanPlayer();
           await _installProgressObserver();
@@ -815,7 +836,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
             // Known cross-origin gate cases from Android screenshots are
             // a fallback only; they must not resize unrelated movies.
             final shouldExpand = gateTextFound ||
-                (_knownAgeGateExample && !_googleSignInInProgress);
+                (_knownAgeGateExample && !_googleSignInInProgress &&
+                    !_returnedToSourceAfterGoogle);
             if (_ageGateVisible != shouldExpand) {
               setState(() => _ageGateVisible = shouldExpand);
               // Reapply the provider iframe's CSS after visibility changes.
