@@ -44,6 +44,29 @@ void main() {
     expect(find.text('Halaman 1'), findsOneWidget);
   });
 
+  testWidgets('filter page 8 shows 7, 8 and next candidate 9', (tester) async {
+    int selected = 0;
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body:
+      CatalogPageControls(page: 8, maxPage: 9, displayedMaxPage: 9,
+        busy: false, hasNext: true, onSelect: (n) => selected = n),
+    )));
+    expect(find.text('7'), findsOneWidget);
+    expect(find.text('8'), findsOneWidget);
+    expect(find.text('9'), findsOneWidget);
+    await tester.tap(find.text('9'));
+    expect(selected, 9);
+  });
+
+  testWidgets('filter hides next number after reaching last page', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body:
+      CatalogPageControls(page: 8, maxPage: 8, displayedMaxPage: 8,
+        busy: false, hasNext: false, onSelect: (_) {}),
+    )));
+    expect(find.text('9'), findsNothing);
+    final next = tester.widget<IconButton>(find.byTooltip('Halaman berikutnya'));
+    expect(next.onPressed, isNull);
+  });
+
   testWidgets('jump to a numbered page', (tester) async {
     int selected = 0;
     await tester.pumpWidget(MaterialApp(home: Scaffold(body:

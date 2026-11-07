@@ -1067,7 +1067,9 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
       child:CircularProgressIndicator()),
     CatalogPageControls(page:visiblePage,
       maxPage:loadedPages+(more?1:0),
-      displayedMaxPage:loadedPages,
+      // Keep numbered navigation consistent with the enabled next arrow:
+      // the next candidate page is shown only while more data may exist.
+      displayedMaxPage:loadedPages+(more?1:0),
       hasNext:visiblePage<loadedPages||more,
       busy:busy||fillingPage,onSelect:_goFilterPage),
   ])),
