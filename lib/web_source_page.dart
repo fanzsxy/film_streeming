@@ -689,8 +689,12 @@ class _WebSourcePageState extends State<WebSourcePage> {
           if (!mounted || generation != _navigationGeneration) return;
           if (!_focused && widget.onSynopsisFound != null) await _readSourceDetails();
           if (!mounted || generation != _navigationGeneration) return;
+          // Google sign-in and the original age gate are not players.
+          // Never replace their WebView content with "player not found".
+          final pageHost = Uri.tryParse(url)?.host.toLowerCase();
+          final isGoogleSignIn = pageHost == 'accounts.google.com';
           bool found = false;
-          if (_focused) found = await _applyFocus();
+          if (_focused && !isGoogleSignIn) found = await _applyFocus();
           if (!mounted || generation != _navigationGeneration) return;
           if (found) {
             await _readServers();
@@ -704,7 +708,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
           }
           if (mounted && generation == _navigationGeneration) setState(() {
             _loading = false;
-            _search = !found;
+            // Preserve the source's real 18+ warning and Google's own
+            // sign-in UI even if no playable iframe exists on that page.
+            _search = !found && !_showTallGate && !isGoogleSignIn;
             _revealed = true;
           });
         },
