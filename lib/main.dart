@@ -687,15 +687,38 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  List<DropdownMenuItem<String>> _languageOptions = const [DropdownMenuItem(value:'',child:Text('Semua bahasa'))];
  bool _optionsLoaded = false;
  int genre1=0,genre2=0,page=0,epoch=0;
+ int visiblePage=1;
+ int get loadedPages => (results.length+catalogPageSize-1)~/catalogPageSize;
  bool busy=false,more=true;
  String error='';
  final results=<Movie>[];
  final Set<String> seenResults=<String>{};
  final ScrollController scroll=ScrollController();
- @override void initState(){super.initState();genre1=int.tryParse(widget.initialGenre)??0;_filterOptions=_loadOptions();_fetch();scroll.addListener((){if(scroll.hasClients&&scroll.position.pixels>scroll.position.maxScrollExtent-460)_fetch();});}
+ @override void initState(){
+   super.initState();
+   genre1=int.tryParse(widget.initialGenre)??0;
+   _filterOptions=_loadOptions();
+   _fetch();
+ }
  @override void didUpdateWidget(covariant FilmstreamFilter old){super.didUpdateWidget(old);if(old.initialGenre!=widget.initialGenre){genre1=int.tryParse(widget.initialGenre)??0;_reset();}}
  @override void dispose(){scroll.dispose();super.dispose();}
- void _reset(){epoch++;results.clear();seenResults.clear();page=0;more=true;error='';busy=false;if(scroll.hasClients)scroll.jumpTo(0);setState((){});_fetch();}
+ void _reset(){
+   epoch++;results.clear();seenResults.clear();page=0;visiblePage=1;
+   more=true;error='';busy=false;
+   if(scroll.hasClients)scroll.jumpTo(0);
+   setState((){});
+   _fetch();
+ }
+ Future<void> _goFilterPage(int target) async {
+   if(target<1||busy||target>loadedPages+(more?1:0))return;
+   if(target>loadedPages && more){
+     await _fetch();
+     if(!mounted || results.length<=(target-1)*catalogPageSize)return;
+   }
+   if(!mounted)return;
+   setState(()=>visiblePage=target);
+   if(scroll.hasClients)scroll.jumpTo(0);
+ }
  Future<void> _loadOptions() async {
   try {
    final responses=await Future.wait([Tmdb.get('genre/movie/list'),Tmdb.get('genre/tv/list')]);
@@ -753,7 +776,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     var scanned=0;
     var ended=false;
     final hasFilter=genre1>0||genre2>0||country.isNotEmpty;
-    while(incoming.length<16 && scanned<(hasFilter?8:2) && page<500) {
+    while(incoming.length<catalogPageSize && scanned<(hasFilter?8:2) && page<500) {
       final nextPage=page+1;
       // TMDB discovers genre/language candidates; only catalog matches survive.
       // Without metadata filters, sort the entire local catalog before paging.
@@ -819,7 +842,12 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   ),
   items:options,
   onChanged:(v){update(v);_reset();});
- @override Widget build(BuildContext context)=>CustomScrollView(controller:scroll,slivers:[
+ @override Widget build(BuildContext context){
+  final startIndex=(visiblePage-1)*catalogPageSize;
+  final visible=startIndex<results.length
+    ? results.skip(startIndex).take(catalogPageSize).toList()
+    : <Movie>[];
+  return CustomScrollView(controller:scroll,slivers:[
   SliverToBoxAdapter(child:Column(children:[
   Padding(
     padding:const EdgeInsets.fromLTRB(12,8,12,8),
@@ -865,11 +893,28 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   if(!_optionsLoaded) const Padding(padding:EdgeInsets.all(8),child:LinearProgressIndicator()),
   Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:6),child:Align(alignment:Alignment.centerLeft,child:Text('Katalog ${type=='all'?'Film & Series':type=='tv'?'Series':'Film'}',style:const TextStyle(fontSize:19,fontWeight:FontWeight.w800)))),
   ])),
-  if(results.isEmpty) SliverFillRemaining(hasScrollBody:false,child:Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:Text(error)):busy?const CircularProgressIndicator():more?TextButton(onPressed:_fetch,child:const Text('Belum ada kecocokan — cari halaman berikutnya')):const Text('Tidak ada hasil sesuai filter'))),
-  if(results.isNotEmpty) SliverPadding(padding:const EdgeInsets.all(12),sliver:SliverGrid(delegate:SliverChildBuilderDelegate((context,i){
-   if(i==results.length)return Center(child:error.isNotEmpty?TextButton(onPressed:_fetch,child:const Text('Coba lagi')):busy?const CircularProgressIndicator():TextButton(onPressed:_fetch,child:const Text('Muat lagi')));
-   return MovieTile(key:ValueKey('${results[i].type}:${results[i].id}'),movie:results[i],onTap:widget.onTap);
-  },childCount:results.length+(more||busy||error.isNotEmpty?1:0)),gridDelegate:filmstreamGridDelegate(context))),
+  if(results.isEmpty) SliverFillRemaining(hasScrollBody:false,
+    child:Center(child:error.isNotEmpty
+      ?TextButton(onPressed:_fetch,child:Text(error))
+      :busy?const CircularProgressIndicator()
+      :more?TextButton(onPressed:_fetch,
+        child:const Text('Cari halaman katalog berikutnya'))
+      :const Text('Tidak ada hasil sesuai filter'))),
+  if(visible.isNotEmpty) SliverPadding(
+    padding:const EdgeInsets.all(12),
+    sliver:SliverGrid(delegate:SliverChildBuilderDelegate((context,i)=>
+      MovieTile(key:ValueKey('${visible[i].type}:${visible[i].id}'),
+        movie:visible[i],onTap:widget.onTap),
+      childCount:visible.length),gridDelegate:filmstreamGridDelegate(context))),
+  if(results.isNotEmpty) SliverToBoxAdapter(child:Column(children:[
+    if(error.isNotEmpty)TextButton(onPressed:_fetch,child:Text(error)),
+    if(busy)const Padding(padding:EdgeInsets.all(8),
+      child:CircularProgressIndicator()),
+    CatalogPageControls(page:visiblePage,
+      maxPage:loadedPages+(more?1:0),
+      hasNext:visiblePage<loadedPages||more,
+      busy:busy,onSelect:_goFilterPage),
+  ])),
  ]);
 }
 class CinemaHero extends StatefulWidget {
