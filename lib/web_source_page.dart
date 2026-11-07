@@ -25,7 +25,7 @@ bool isAllowedAgeVerificationCallback(Uri destination, bool loginInProgress) {
 bool isAllowedGoogleConsentHost(Uri destination, bool loginInProgress) {
   return loginInProgress &&
       destination.scheme == 'https' &&
-      const {'accounts.google.com', 'accounts.youtube.com'}
+      const {'accounts.google.com', 'accounts.google.co.id', 'accounts.youtube.com'}
           .contains(destination.host.toLowerCase()) &&
       destination.userInfo.isEmpty &&
       !destination.hasPort;
@@ -768,7 +768,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
           // read episode DOM, or block the Google consent UI while it loads.
           final loadedHost = Uri.tryParse(url)?.host.toLowerCase();
           if (loadedHost == 'accounts.google.com' ||
-              (loadedHost == 'accounts.youtube.com' &&
+              ((loadedHost == 'accounts.youtube.com' ||
+                  loadedHost == 'accounts.google.co.id') &&
                   _googleSignInInProgress)) {
             _googleSignInInProgress = true;
             if (widget.embedded) _ageGateVisible = true;
@@ -865,7 +866,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
           // Never replace their WebView content with "player not found".
           final pageHost = Uri.tryParse(url)?.host.toLowerCase();
           final isGoogleSignIn = pageHost == 'accounts.google.com' ||
-              (pageHost == 'accounts.youtube.com' &&
+              ((pageHost == 'accounts.youtube.com' ||
+                  pageHost == 'accounts.google.co.id') &&
                   _googleSignInInProgress);
           bool found = false;
           if (_focused && !isGoogleSignIn) found = await _applyFocus();
@@ -939,7 +941,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
           // Cover the old website before any new top-level document is shown.
           if (r.isMainFrame && mounted && _focused &&
               next.host != 'accounts.google.com' &&
-              !(next.host == 'accounts.youtube.com' &&
+              !((next.host == 'accounts.youtube.com' ||
+                  next.host == 'accounts.google.co.id') &&
                   _googleSignInInProgress)) {
             setState(() { _revealed = false; _loading = true; });
           }

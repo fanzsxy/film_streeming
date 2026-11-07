@@ -46,6 +46,26 @@ void main() {
       expect(isAllowedGoogleConsentHost(consent, false), isFalse);
     });
 
+    test('Indonesian Google account consent host only during sign-in', () {
+      final consent = Uri.parse(
+        'https://accounts.google.co.id/consent?state=SECRET');
+      expect(isAllowedGoogleConsentHost(consent, true), isTrue);
+      expect(isAllowedGoogleConsentHost(consent, false), isFalse);
+    });
+
+    test('Indonesian account login host rejects impostors', () {
+      for (final url in <String>[
+        'https://accounts.google.co.id.evil.test/consent',
+        'https://fake-accounts.google.co.id/consent',
+        'https://accounts.google.co.id@evil.test/consent',
+        'http://accounts.google.co.id/consent',
+        'https://accounts.google.co.id:8443/consent',
+      ]) {
+        expect(isAllowedGoogleConsentHost(Uri.parse(url), true),
+            isFalse, reason: url);
+      }
+    });
+
     test('Google consent does not permit lookalike or other YouTube hosts', () {
       for (final url in <String>[
         'https://accounts.youtube.com.evil.test/signin',
