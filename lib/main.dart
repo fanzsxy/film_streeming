@@ -554,7 +554,8 @@ class LocalCatalogMetadata {
     // before showing a page made every numbered-page change feel slow.
     // Use the catalog's reviewed title/year/source/poster/TMDB ID directly.
     // The detail page can fetch extra TMDB fields when the user opens it.
-    if (endpoint == 'catalog/movie' || endpoint == 'catalog/tv') {
+    if (endpoint == 'catalog/movie' || endpoint == 'catalog/tv' ||
+        endpoint == 'catalog/sorted') {
       return selected.map((entry) {
         final movie=_withCollectedMetadata(entry,{
           'id':entry.tmdbId ?? -_stableId(entry.url),
@@ -879,7 +880,10 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     var scanned=0;
     var ended=false;
     final hasFilter=genre1>0||genre2>0||country.isNotEmpty;
-    while(incoming.length<catalogPageSize && scanned<(hasFilter?8:2) && page<500) {
+    // Filtered discovery can be sparse: collect multiple catalog matches
+    // before presenting a numbered page, without doing serial per-title
+    // poster/detail lookups on the UI critical path.
+    while(incoming.length<catalogPageSize && scanned<(hasFilter?3:2) && page<500) {
       final nextPage=page+1;
       // TMDB discovers genre/language candidates; only catalog matches survive.
       // Without metadata filters, sort the entire local catalog before paging.
@@ -888,7 +892,9 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
             type:type,params:const {'sort':'latest'})]
         : await Future.wait((type=='all'?const ['movie','tv']:[type]).map((k)=>
           Tmdb.list(hasFilter?'discover/$k':'catalog/$k',page:nextPage,
-            type:k,params:hasFilter?_params(k):const {})));
+            type:k,params:hasFilter?{
+              ..._params(k),'fill_page':'true',
+            }:const {})));
 
       if(!mounted||token!=epoch)return;
       page=nextPage;
@@ -1006,7 +1012,8 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   if(visible.isNotEmpty) SliverPadding(
     padding:const EdgeInsets.all(12),
     sliver:SliverGrid(delegate:SliverChildBuilderDelegate((context,i)=>
-      MovieTile(key:ValueKey('${visible[i].type}:${visible[i].id}'),
+      CatalogPosterTile(key:ValueKey(
+          '${visible[i].type}:${visible[i].sourceUrl}'),
         movie:visible[i],onTap:widget.onTap),
       childCount:visible.length),gridDelegate:filmstreamGridDelegate(context))),
   if(results.isNotEmpty) SliverToBoxAdapter(child:Column(children:[
@@ -1368,8 +1375,18 @@ class _PagedGridState extends State<PagedGrid> {
   int page=1, requestId=0;
   bool busy=false,hasNext=true;
   String error='';
-  int get maxPage => widget.endpoint.startsWith('catalog/') ||
-      widget.endpoint=='home/latest' ? 2000 : 500;
+  int get maxPage {
+    if(widget.endpoint.startsWith('catalog/') ||
+       widget.endpoint=='home/latest')return 2000;
+    // Numbered TMDB collections consume five disjoint source pages per
+    // app page. TMDB supports at most 500 source result pages.
+    return widget.endpoint.startsWith('trending/') ||
+      widget.endpoint.startsWith('discover/') ||
+      widget.endpoint.endsWith('/popular') ||
+      widget.endpoint.endsWith('/top_rated') ||
+      widget.endpoint=='home/family' ||
+      widget.endpoint=='home/recommended' ? 100 : 500;
+  }
 
   @override void initState(){
     super.initState();
