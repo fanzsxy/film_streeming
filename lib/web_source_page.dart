@@ -79,8 +79,25 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // In-memory rendering hint shared across detail views with the SAME source
   // host. This is not authentication state and never bypasses a gate.
   static final Set<String> _hostsWithObservedGoogleReturn = {};
+  // Persist only a UI sizing hint (no credentials, cookies, tokens, or
+  // assertion that the provider authorized an age-restricted page).
+  bool _savedReturnForThisSource = false;
+  String get _visualReturnKey =>
+      'fs_view_return_v1_${widget.url.host.toLowerCase()}';
   bool get _priorReturnForThisSource =>
+      _savedReturnForThisSource ||
       _hostsWithObservedGoogleReturn.contains(widget.url.host.toLowerCase());
+
+  Future<void> _rememberVisualReturn() async {
+    _savedReturnForThisSource = true;
+    _hostsWithObservedGoogleReturn.add(widget.url.host.toLowerCase());
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(_visualReturnKey, true);
+    } catch (_) {
+      // Appearance hint only; playback and authentication are unaffected.
+    }
+  }
   // Once Google has returned to an actual source page, title-specific
   // fallback must not keep a poster/video expanded like an age warning.
   // This flag does not assert that age verification succeeded.
@@ -95,6 +112,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // Only diagnostic status. Never store OAuth URLs, query parameters, codes,
   // state, account addresses, or cookies.
   String? _signInNavigationIssue;
+  // Keep a rendered source/player visible during subsequent provider redirects.
+  // Repeated full-screen loading covers caused a visible flicker on Verity.
+  bool _hasShownSourcePage = false;
   bool _loading = true;
   bool _revealed = false;
   bool _search = false;
@@ -759,7 +779,20 @@ class _WebSourcePageState extends State<WebSourcePage> {
             setState(() => _signInNavigationIssue = null);
           }
           _episodeAttempts = 0; // Each new document gets its own resolution attempts.
-          if (mounted) setState(() { _loading = true; _revealed = false; _error = null; _progress = 0; _serverNames = const []; _selectedServer = ''; _sourceGenres = const []; _sourceSynopsis = ''; _sourceEpisodes = const []; });
+          if (mounted) setState(() {
+            _loading = true;
+            // Show the original WebView through same-session page changes
+            // after it has already rendered once. Never hide it under a
+            // second artificial spinner while login redirects are running.
+            if (!_hasShownSourcePage) _revealed = false;
+            _error = null;
+            _progress = 0;
+            _serverNames = const [];
+            _selectedServer = '';
+            _sourceGenres = const [];
+            _sourceSynopsis = '';
+            _sourceEpisodes = const [];
+          });
         },
         onProgress: (p) { if (mounted) setState(() => _progress = p); },
         onPageFinished: (url) async {
@@ -806,16 +839,14 @@ class _WebSourcePageState extends State<WebSourcePage> {
             isKnownSeriesSource: _isTv && _isKnownSeriesSourceHost(loadedHost),
           );
           if (returnedFromGoogle) {
-            // A provider may set its age-verification cookie during the
-            // callback. The old iframe can still show the prior age gate.
-            // Reload ONCE, in the same WebView cookie jar, then let the
-            // original site decide if this session is authorized.
+            // Provider has already navigated to its landing page after OAuth.
+            // Reloading it here can discard callback state and cause repeated
+            // page transitions (observed as player/poster -> spinner -> blank).
+            // Let the official source handle cookies and display its own result.
             _googleSignInInProgress = false;
             _returnedToSourceAfterGoogle = true;
-            _hostsWithObservedGoogleReturn.add(widget.url.host.toLowerCase());
+            await _rememberVisualReturn();
             if (!mounted || generation != _navigationGeneration) return;
-            await _controller.reload();
-            return;
           }
           await _applyCleanPlayer();
           await _installProgressObserver();
@@ -900,6 +931,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           }
           if (mounted && generation == _navigationGeneration) setState(() {
             _loading = false;
+            _hasShownSourcePage = true;
             // Preserve the source's real 18+ warning and Google's own
             // sign-in UI even if no playable iframe exists on that page.
             _search = !found && !widget.embedded &&
@@ -940,6 +972,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           if (r.isMainFrame && _isSearchUrl(widget.url.toString()) && _search && next.host == widget.url.host && !_isSearchUrl(next.toString()) && next.path != '/') { _candidateUrl = next.toString(); }
           // Cover the old website before any new top-level document is shown.
           if (r.isMainFrame && mounted && _focused &&
+              !_hasShownSourcePage &&
               next.host != 'accounts.google.com' &&
               !((next.host == 'accounts.youtube.com' ||
                   next.host == 'accounts.google.co.id') &&
@@ -1003,6 +1036,16 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // This is scoped to the user-opened source WebView and does not authorize
   // age-restricted playback or override Google's embedded OAuth policy.
   Future<void> _initializeSourceWebView() async {
+    // Load the visual hint BEFORE the initial WebView navigates; otherwise
+    // the first rendered poster may flash as a full-height age-warning frame.
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      _savedReturnForThisSource =
+          preferences.getBool(_visualReturnKey) ?? false;
+    } catch (_) {
+      _savedReturnForThisSource = false;
+    }
+    if (!mounted) return;
     if (_controller.platform is AndroidWebViewController) {
       try {
         final cookies = WebViewCookieManager();
