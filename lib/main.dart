@@ -815,8 +815,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  int visiblePage=1;
  // A partly collected page is not yet a valid navigation destination.
  // Only the terminal page may contain fewer than 20 titles.
- int get loadedPages => results.length ~/ catalogPageSize +
-     (!more && results.length % catalogPageSize != 0 ? 1 : 0);
+ int get loadedPages => completedFilterPages(results.length, more);
  bool fillingPage=false;
  bool busy=false,more=true;
  String error='';
@@ -833,7 +832,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  @override void dispose(){scroll.dispose();super.dispose();}
  void _reset(){
    epoch++;results.clear();seenResults.clear();page=0;visiblePage=1;
-   more=true;error='';busy=false;
+   more=true;error='';busy=false;fillingPage=false;
    if(scroll.hasClients)scroll.jumpTo(0);
    setState((){});
    _fillThrough(1);
@@ -1318,6 +1317,14 @@ class LastWatchedRail extends StatelessWidget {
 }
 
 const catalogPageSize = 20;
+
+// A partially fetched filter batch cannot be offered as a navigable page.
+// Only the final exhausted page is allowed to have fewer than 20 titles.
+int completedFilterPages(int count, bool hasMore) {
+  if(count<=0)return 0;
+  final full=count ~/ catalogPageSize;
+  return full+(!hasMore && count % catalogPageSize != 0 ? 1 : 0);
+}
 
 // A compact numbered pager shared by Film, Series, Filter, Search and
 // "Lihat Lainnya". An unknown total must not be shown as a made-up count.
