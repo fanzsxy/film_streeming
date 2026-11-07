@@ -7,6 +7,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+// The callback domain is grounded in a blocked navigation reported by
+// the Android app after Google's consent screen. Do not authorize it except
+// while the user's official Google login is in progress.
+bool isAllowedAgeVerificationCallback(Uri destination, bool loginInProgress) {
+  return loginInProgress &&
+      destination.scheme == 'https' &&
+      destination.host.toLowerCase() == 'login.lk21official.cc' &&
+      destination.userInfo.isEmpty &&
+      !destination.hasPort;
+}
+
 // OAuth callbacks can contain authorization codes, state, and account data.
 // Present only a sanitized host, never the full URL or its query/fragment.
 String loginReturnBlockedMessage(Uri destination) =>
@@ -425,6 +436,12 @@ class _WebSourcePageState extends State<WebSourcePage> {
     // sign-in redirect within the same WebView. The OAuth provider can still
     // reject embedded user agents; do not spoof the user agent or tokens.
     if (widget.embedded && host == 'accounts.google.com') return true;
+    // The age-verification provider returns here after Google consent.
+    // Allow its exact HTTPS callback host ONLY in an active Google flow.
+    if (widget.embedded &&
+        isAllowedAgeVerificationCallback(u, _googleSignInInProgress)) {
+      return true;
+    }
     if (!_isTv) return false;
     // Only known source site families may redirect the TOP-LEVEL series page.
     // Do not allow an arbitrary HTTPS advertising/gambling page to replace it.
@@ -709,6 +726,20 @@ class _WebSourcePageState extends State<WebSourcePage> {
           if (loadedHost == 'accounts.google.com') {
             _googleSignInInProgress = true;
             if (widget.embedded) _ageGateVisible = true;
+            if (mounted && generation == _navigationGeneration) {
+              setState(() {
+                _loading = false;
+                _search = false;
+                _revealed = true;
+              });
+            }
+            return;
+          }
+          // This is an authentication return endpoint, not a video player.
+          // Let it complete its own cookie/redirect work before inspecting
+          // the actual source page; never inject player CSS/scripts here.
+          if (loadedHost == 'login.lk21official.cc' &&
+              _googleSignInInProgress) {
             if (mounted && generation == _navigationGeneration) {
               setState(() {
                 _loading = false;

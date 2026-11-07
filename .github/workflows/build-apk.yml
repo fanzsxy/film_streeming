@@ -27,6 +27,7 @@ jobs:
           flutter pub get
           flutter analyze --no-fatal-infos --no-fatal-warnings
           flutter test test/search_suggestions_test.dart
+          flutter test test/age_verification_callback_test.dart
           dart format --output=none lib/main.dart lib/source_manager.dart lib/web_source_page.dart
       - name: Generate Film Streaming Android icon
         run: |
