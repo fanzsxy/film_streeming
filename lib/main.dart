@@ -623,6 +623,8 @@ class Tmdb {
     .map((e)=>Map<String,dynamic>.from(e)).toList(growable:false);
  }
  static final Map<String,Future<List<Movie>>> _railCache = {};
+ // Reuse recent TMDB discovery/ranking responses across page revisits.
+ static final Map<String,Future<Map<String,dynamic>>> _listRequestCache={};
  static Future<List<Movie>> rail(String endpoint, String type) =>
      endpoint == 'home/recommended'
          ? list(endpoint, type:type)
@@ -631,8 +633,27 @@ class Tmdb {
  static Future<Map<String,dynamic>> get(String endpoint,[Map<String,String> params=const {}]) async {
   if(tmdbToken.isEmpty)throw Exception('TMDB_TOKEN belum diatur.');
   final uri=Uri.https('api.themoviedb.org','/3/$endpoint',{'language':'en-US',...params});
-  final r=await http.get(uri,headers:{'Authorization':'Bearer $tmdbToken','accept':'application/json'}).timeout(const Duration(seconds:20));
-  if(r.statusCode!=200)throw Exception('TMDB HTTP ${r.statusCode}');return jsonDecode(r.body) as Map<String,dynamic>;
+  Future<Map<String,dynamic>> request() async {
+    final r=await http.get(uri,headers:{
+      'Authorization':'Bearer $tmdbToken','accept':'application/json',
+    }).timeout(const Duration(seconds:20));
+    if(r.statusCode!=200)throw Exception('TMDB HTTP ${r.statusCode}');
+    return jsonDecode(r.body) as Map<String,dynamic>;
+  }
+  final isListing=(endpoint.startsWith('discover/') ||
+      endpoint.startsWith('trending/') ||
+      endpoint.endsWith('/popular') || endpoint.endsWith('/top_rated')) &&
+      params.containsKey('page');
+  if(!isListing)return request();
+  final key=uri.toString();
+  if(_listRequestCache.length>140 &&
+      !_listRequestCache.containsKey(key)){
+    _listRequestCache.remove(_listRequestCache.keys.first);
+  }
+  return _listRequestCache.putIfAbsent(key,()=>request().catchError((Object e){
+    _listRequestCache.remove(key);
+    throw e;
+  }));
  }
  // Keep titles, season names, and matching metadata in English; replace only
  // descriptions with Indonesian when TMDB supplies a non-empty translation.
@@ -815,11 +836,12 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  }
  Future<void> _goFilterPage(int target) async {
    if(target<1||busy||target>loadedPages+(more?1:0))return;
-   if(target>loadedPages && more){
+   // Sparse genre matches can require more than one source batch.
+   for(var attempt=0;target>loadedPages && more && attempt<4;attempt++){
      await _fetch();
-     if(!mounted || results.length<=(target-1)*catalogPageSize)return;
+     if(!mounted)return;
    }
-   if(!mounted)return;
+   if(!mounted || results.length<=(target-1)*catalogPageSize)return;
    setState(()=>visiblePage=target);
    if(scroll.hasClients)scroll.jumpTo(0);
  }
@@ -867,7 +889,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  Map<String,String> _params(String media) {
   final both=[genre1,genre2].where((g)=>g>0).toSet().join(',');
   final sortField=sort=='popular'?'popularity.desc':sort=='latest'?(media=='tv'?'first_air_date.desc':'primary_release_date.desc'):(media=='tv'?'original_name.asc':'original_title.asc');
-  return {'sort_by':sortField,'include_adult':'false','include_video':'false','vote_count.gte':'20',if(both.isNotEmpty)'with_genres':both,if(country.isNotEmpty)'with_original_language':country};
+  return {'sort_by':sortField,'include_adult':'false','include_video':'false',if(both.isNotEmpty)'with_genres':both,if(country.isNotEmpty)'with_original_language':country};
  }
  Future<void> _fetch() async {
   if(busy||!more)return;
