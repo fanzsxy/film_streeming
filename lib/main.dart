@@ -11,6 +11,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:ui' show PointerDeviceKind;
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:http/http.dart' as http;
