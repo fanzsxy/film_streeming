@@ -95,6 +95,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // Only diagnostic status. Never store OAuth URLs, query parameters, codes,
   // state, account addresses, or cookies.
   String? _signInNavigationIssue;
+  // Keep a rendered source/player visible during subsequent provider redirects.
+  // Repeated full-screen loading covers caused a visible flicker on Verity.
+  bool _hasShownSourcePage = false;
   bool _loading = true;
   bool _revealed = false;
   bool _search = false;
@@ -759,7 +762,20 @@ class _WebSourcePageState extends State<WebSourcePage> {
             setState(() => _signInNavigationIssue = null);
           }
           _episodeAttempts = 0; // Each new document gets its own resolution attempts.
-          if (mounted) setState(() { _loading = true; _revealed = false; _error = null; _progress = 0; _serverNames = const []; _selectedServer = ''; _sourceGenres = const []; _sourceSynopsis = ''; _sourceEpisodes = const []; });
+          if (mounted) setState(() {
+            _loading = true;
+            // Show the original WebView through same-session page changes
+            // after it has already rendered once. Never hide it under a
+            // second artificial spinner while login redirects are running.
+            if (!_hasShownSourcePage) _revealed = false;
+            _error = null;
+            _progress = 0;
+            _serverNames = const [];
+            _selectedServer = '';
+            _sourceGenres = const [];
+            _sourceSynopsis = '';
+            _sourceEpisodes = const [];
+          });
         },
         onProgress: (p) { if (mounted) setState(() => _progress = p); },
         onPageFinished: (url) async {
@@ -806,16 +822,13 @@ class _WebSourcePageState extends State<WebSourcePage> {
             isKnownSeriesSource: _isTv && _isKnownSeriesSourceHost(loadedHost),
           );
           if (returnedFromGoogle) {
-            // A provider may set its age-verification cookie during the
-            // callback. The old iframe can still show the prior age gate.
-            // Reload ONCE, in the same WebView cookie jar, then let the
-            // original site decide if this session is authorized.
+            // Provider has already navigated to its landing page after OAuth.
+            // Reloading it here can discard callback state and cause repeated
+            // page transitions (observed as player/poster -> spinner -> blank).
+            // Let the official source handle cookies and display its own result.
             _googleSignInInProgress = false;
             _returnedToSourceAfterGoogle = true;
             _hostsWithObservedGoogleReturn.add(widget.url.host.toLowerCase());
-            if (!mounted || generation != _navigationGeneration) return;
-            await _controller.reload();
-            return;
           }
           await _applyCleanPlayer();
           await _installProgressObserver();
@@ -900,6 +913,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           }
           if (mounted && generation == _navigationGeneration) setState(() {
             _loading = false;
+            _hasShownSourcePage = true;
             // Preserve the source's real 18+ warning and Google's own
             // sign-in UI even if no playable iframe exists on that page.
             _search = !found && !widget.embedded &&
@@ -940,6 +954,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           if (r.isMainFrame && _isSearchUrl(widget.url.toString()) && _search && next.host == widget.url.host && !_isSearchUrl(next.toString()) && next.path != '/') { _candidateUrl = next.toString(); }
           // Cover the old website before any new top-level document is shown.
           if (r.isMainFrame && mounted && _focused &&
+              !_hasShownSourcePage &&
               next.host != 'accounts.google.com' &&
               !((next.host == 'accounts.youtube.com' ||
                   next.host == 'accounts.google.co.id') &&
