@@ -813,7 +813,10 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  bool _optionsLoaded = false;
  int genre1=0,genre2=0,page=0,epoch=0;
  int visiblePage=1;
- int get loadedPages => (results.length+catalogPageSize-1)~/catalogPageSize;
+ // A partly collected page is not yet a valid navigation destination.
+ // Only the terminal page may contain fewer than 20 titles.
+ int get loadedPages => completedFilterPages(results.length, more);
+ bool fillingPage=false;
  bool busy=false,more=true;
  String error='';
  final results=<Movie>[];
@@ -823,28 +826,43 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
    super.initState();
    genre1=int.tryParse(widget.initialGenre)??0;
    _filterOptions=_loadOptions();
-   _fetch();
+   _fillThrough(1);
  }
  @override void didUpdateWidget(covariant FilmstreamFilter old){super.didUpdateWidget(old);if(old.initialGenre!=widget.initialGenre){genre1=int.tryParse(widget.initialGenre)??0;_reset();}}
  @override void dispose(){scroll.dispose();super.dispose();}
  void _reset(){
    epoch++;results.clear();seenResults.clear();page=0;visiblePage=1;
-   more=true;error='';busy=false;
+   more=true;error='';busy=false;fillingPage=false;
    if(scroll.hasClients)scroll.jumpTo(0);
    setState((){});
-   _fetch();
+   _fillThrough(1);
  }
- Future<void> _goFilterPage(int target) async {
-   if(target<1||busy||target>loadedPages+(more?1:0))return;
-   // Sparse genre matches can require more than one source batch.
-   for(var attempt=0;target>loadedPages && more && attempt<4;attempt++){
-     await _fetch();
-     if(!mounted)return;
+ // Source batches often have only 2–4 matching titles; do not mistake
+ // those for finished user-facing numbered pages.
+ Future<void> _fillThrough(int target) async {
+   if(fillingPage||target<1||target>loadedPages+(more?1:0))return;
+   if(target<=loadedPages){
+     setState(()=>visiblePage=target);
+     if(scroll.hasClients)scroll.jumpTo(0);
+     return; // Revisit an already completed page without loading.
    }
-   if(!mounted || results.length<=(target-1)*catalogPageSize)return;
-   setState(()=>visiblePage=target);
-   if(scroll.hasClients)scroll.jumpTo(0);
+   final token=epoch;
+   setState((){fillingPage=true;error='';});
+   try {
+     while(mounted&&epoch==token&&loadedPages<target&&more&&error.isEmpty){
+       final previousPage=page;
+       await _fetch();
+       if(!mounted||epoch!=token)return;
+       if(page==previousPage)break; // Network failed; retry explicitly.
+     }
+     if(!mounted||epoch!=token||loadedPages<target)return;
+     setState(()=>visiblePage=target);
+     if(scroll.hasClients)scroll.jumpTo(0);
+   } finally {
+     if(mounted&&epoch==token)setState(()=>fillingPage=false);
+   }
  }
+ Future<void> _goFilterPage(int target)=>_fillThrough(target);
  Future<void> _loadOptions() async {
   try {
    final responses=await Future.wait([Tmdb.get('genre/movie/list'),Tmdb.get('genre/tv/list')]);
@@ -897,6 +915,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   setState(()=>busy=true);
   try {
     final incoming=<Movie>[];
+    final incomingKeys=<String>{};
     // Scan catalog pages until enough metadata matches the chosen filters.
     // A single page can contain zero matches without meaning end of catalog.
     var scanned=0;
@@ -932,7 +951,10 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
         // Search-result metadata exposes original_language. This is a language
         // filter, not a claim about country of production.
         if(country.isNotEmpty&&m.originalLanguage!=country)continue;
-        if(!seenResults.contains(m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}'))incoming.add(m);
+        final key=m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}';
+        if(!seenResults.contains(key)&&incomingKeys.add(key)){
+          incoming.add(m);
+        }
       }
     }
     if(sort=='title')incoming.sort((a,b)=>a.title.toLowerCase().compareTo(b.title.toLowerCase()));
@@ -975,7 +997,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   onChanged:(v){update(v);_reset();});
  @override Widget build(BuildContext context){
   final startIndex=(visiblePage-1)*catalogPageSize;
-  final visible=startIndex<results.length
+  final visible=visiblePage<=loadedPages&&startIndex<results.length
     ? results.skip(startIndex).take(catalogPageSize).toList()
     : <Movie>[];
   return CustomScrollView(controller:scroll,slivers:[
@@ -1024,11 +1046,11 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   if(!_optionsLoaded) const Padding(padding:EdgeInsets.all(8),child:LinearProgressIndicator()),
   Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:6),child:Align(alignment:Alignment.centerLeft,child:Text('Katalog ${type=='all'?'Film & Series':type=='tv'?'Series':'Film'}',style:const TextStyle(fontSize:19,fontWeight:FontWeight.w800)))),
   ])),
-  if(results.isEmpty) SliverFillRemaining(hasScrollBody:false,
+  if(visible.isEmpty) SliverFillRemaining(hasScrollBody:false,
     child:Center(child:error.isNotEmpty
-      ?TextButton(onPressed:_fetch,child:Text(error))
-      :busy?const CircularProgressIndicator()
-      :more?TextButton(onPressed:_fetch,
+      ?TextButton(onPressed:()=>_fillThrough(1),child:Text(error))
+      :(busy||fillingPage)?const CircularProgressIndicator()
+      :more?TextButton(onPressed:()=>_fillThrough(1),
         child:const Text('Cari halaman katalog berikutnya'))
       :const Text('Tidak ada hasil sesuai filter'))),
   if(visible.isNotEmpty) SliverPadding(
@@ -1039,13 +1061,14 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
         movie:visible[i],onTap:widget.onTap),
       childCount:visible.length),gridDelegate:filmstreamGridDelegate(context))),
   if(results.isNotEmpty) SliverToBoxAdapter(child:Column(children:[
-    if(error.isNotEmpty)TextButton(onPressed:_fetch,child:Text(error)),
-    if(busy)const Padding(padding:EdgeInsets.all(8),
+    if(error.isNotEmpty)TextButton(
+      onPressed:()=>_fillThrough(visiblePage+1),child:Text(error)),
+    if(busy||fillingPage)const Padding(padding:EdgeInsets.all(8),
       child:CircularProgressIndicator()),
     CatalogPageControls(page:visiblePage,
       maxPage:loadedPages+(more?1:0),
       hasNext:visiblePage<loadedPages||more,
-      busy:busy,onSelect:_goFilterPage),
+      busy:busy||fillingPage,onSelect:_goFilterPage),
   ])),
  ]);
 }
@@ -1299,6 +1322,14 @@ class LastWatchedRail extends StatelessWidget {
 }
 
 const catalogPageSize = 20;
+
+// A partially fetched filter batch cannot be offered as a navigable page.
+// Only the final exhausted page is allowed to have fewer than 20 titles.
+int completedFilterPages(int count, bool hasMore) {
+  if(count<=0)return 0;
+  final full=count ~/ catalogPageSize;
+  return full+(!hasMore && count % catalogPageSize != 0 ? 1 : 0);
+}
 
 // A compact numbered pager shared by Film, Series, Filter, Search and
 // "Lihat Lainnya". An unknown total must not be shown as a made-up count.
