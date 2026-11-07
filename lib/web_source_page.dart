@@ -647,6 +647,19 @@ class _WebSourcePageState extends State<WebSourcePage> {
         onProgress: (p) { if (mounted) setState(() => _progress = p); },
         onPageFinished: (url) async {
           final generation = _navigationGeneration;
+          // OAuth pages are not players. Do not inject player observers,
+          // read episode DOM, or block the Google consent UI while it loads.
+          final loadedHost = Uri.tryParse(url)?.host.toLowerCase();
+          if (loadedHost == 'accounts.google.com') {
+            if (mounted && generation == _navigationGeneration) {
+              setState(() {
+                _loading = false;
+                _search = false;
+                _revealed = true;
+              });
+            }
+            return;
+          }
           await _applyCleanPlayer();
           await _installProgressObserver();
           if (!mounted || generation != _navigationGeneration) return;
