@@ -332,6 +332,64 @@ class LocalCatalogMetadata {
     _sortedCatalog=sorted;
     return sorted;
   }
+  // A numbered page may need multiple TMDB ranking/discovery pages because
+  // the source catalog is the allow-list. Fetch a fixed, non-overlapping
+  // window so page N and page N+1 never reuse the same TMDB candidates.
+  static Future<List<Movie>> _filledDiscoveryPage(
+    List<CatalogEntry> source,String endpoint,int page,
+    Map<String,String> params,String type) async {
+    const window=5;
+    final start=(page-1)*window+1;
+    if(start>500)return [];
+    final pages=await Future.wait([
+      for(var p=start;p<start+window&&p<=500;p++)
+        Tmdb.get(endpoint,{'page':'$p',...params}),
+    ]);
+    final media=endpoint.endsWith('/tv')?'tv':endpoint.endsWith('/movie')?'movie':null;
+    final catalog=source.where((e)=>media==null||e.type==media).toList();
+    final byId=<String,List<CatalogEntry>>{};
+    final byTitle=<String,List<CatalogEntry>>{};
+    for(final e in catalog){
+      if(e.tmdbId!=null)byId.putIfAbsent('${e.type}:${e.tmdbId}',()=>[]).add(e);
+      byTitle.putIfAbsent('${e.type}:${e.year}:${_norm(e.title)}',()=>[]).add(e);
+    }
+    final found=<Movie>[];
+    final seen=<String>{};
+    for(final batch in pages){
+      for(final raw in (batch['results'] as List? ?? const [])){
+        if(raw is! Map || raw['id'] is! num)continue;
+        final data=Map<String,dynamic>.from(raw);
+        final kind=(data['media_type']??media??type).toString();
+        if(kind!='movie'&&kind!='tv')continue;
+        final date=(data['release_date']??data['first_air_date']??'').toString();
+        final year=date.length>=4?int.tryParse(date.substring(0,4)):null;
+        if(year==null)continue;
+        final id=(data['id'] as num).toInt();
+        final ids=byId['$kind:$id']??const <CatalogEntry>[];
+        CatalogEntry? selected;
+        if(ids.length==1 && ids.single.year==year){
+          selected=ids.single;
+        }else if(ids.isEmpty){
+          final candidates=<CatalogEntry>{};
+          for(final name in [
+            (data['title']??data['name']??'').toString(),
+            (data['original_title']??data['original_name']??'').toString()
+          ]){
+            candidates.addAll(byTitle['$kind:$year:${_norm(name)}']??const []);
+          }
+          if(candidates.length==1)selected=candidates.single;
+        }
+        if(selected==null || !seen.add(selected.url))continue;
+        data['media_type']=selected.type;
+        final movie=_withCollectedMetadata(selected,data);
+        _sourceByTmdb[_key(movie.type,movie.id)]=movie.sourceUrl;
+        found.add(movie);
+        if(found.length>=20)return found;
+      }
+    }
+    return found;
+  }
+
   static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
     final source=await FilmStreamCatalog.load();
     // New home collections are filtered lists of actual catalog entries.
@@ -347,6 +405,7 @@ class LocalCatalogMetadata {
         'certification.lte':'PG',
         'include_adult':'false',
         'sort_by':'popularity.desc',
+        if(params['fill_page']=='true') 'fill_page':'true',
       });
     }
     if (endpoint == 'home/recommended') {
@@ -367,11 +426,23 @@ class LocalCatalogMetadata {
           if (genres.isEmpty) continue;
           final picked = await list('discover/$media', page:page, type:media,
             params:{'with_genres':'${genres.first}',
-              'include_adult':'false','sort_by':'popularity.desc'});
+              'include_adult':'false','sort_by':'popularity.desc',
+              if(params['fill_page']=='true') 'fill_page':'true'});
           if (picked.isNotEmpty) return picked;
         } catch (_) { /* Use the next recent item or trending fallback. */ }
       }
-      return list('trending/all/week',page:page,type:'movie');
+      return list('trending/all/week',page:page,type:'movie',params:params);
+    }
+    // Numbered collections fill pages from several disjoint TMDB result
+    // pages, using returned poster metadata directly (no per-film requests).
+    // The normal Home rails keep their existing one-page ranking behavior.
+    if(params['fill_page']=='true' &&
+       (endpoint.startsWith('discover/') ||
+        endpoint.startsWith('trending/') ||
+        endpoint.endsWith('/popular') ||
+        endpoint.endsWith('/top_rated'))){
+      final clean=Map<String,String>.from(params)..remove('fill_page');
+      return _filledDiscoveryPage(source,endpoint,page,clean,type);
     }
     // TMDB discovers movies by genre/language first. Only show titles that
     // can be matched safely with entries from the owner's catalog.
@@ -1316,8 +1387,15 @@ class _PagedGridState extends State<PagedGrid> {
     final token=++requestId;
     setState((){busy=true;error='';});
     try {
+      final rankPage=widget.endpoint.startsWith('trending/') ||
+          widget.endpoint.endsWith('/popular') ||
+          widget.endpoint.endsWith('/top_rated') ||
+          widget.endpoint.startsWith('discover/') ||
+          widget.endpoint=='home/family' ||
+          widget.endpoint=='home/recommended';
       var next=await Tmdb.list(widget.endpoint,page:target,
-        params:widget.params,type:widget.type);
+        params:{...widget.params,if(rankPage)'fill_page':'true'},
+        type:widget.type);
       if(next.isEmpty && target==1 && widget.endpoint=='search/multi'){
         final query=(widget.params['query']??'').toLowerCase();
         final terms=query.split(RegExp(r'[^a-z0-9]+'))
