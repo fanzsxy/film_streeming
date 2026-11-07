@@ -30,7 +30,9 @@ class WebSourcePage extends StatefulWidget {
 class _WebSourcePageState extends State<WebSourcePage> {
   late final WebViewController _controller;
   late bool _focused;
-  bool _verificationMode = false;
+  // Verity has a tall 18+ warning inside the ORIGINAL provider iframe.
+  // Do not render a second login button or leave the source for LK21 home.
+  bool get _showTallGate => !_isTv && _normalizeTitle(_matchTitle) == 'verity';
   bool _loading = true;
   bool _revealed = false;
   bool _search = false;
@@ -393,7 +395,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
     // A user's explicit verification mode may follow an official Google
     // sign-in redirect within the same WebView. The OAuth provider can still
     // reject embedded user agents; do not spoof the user agent or tokens.
-    if (_verificationMode && host == 'accounts.google.com') return true;
+    if (_showTallGate && host == 'accounts.google.com') return true;
     if (!_isTv) return false;
     // Only known source site families may redirect the TOP-LEVEL series page.
     // Do not allow an arbitrary HTTPS advertising/gambling page to replace it.
@@ -402,7 +404,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   }
 
   Future<void> _applyCleanPlayer() async {
-    if (_verificationMode) return;
+    if (_showTallGate) return;
     try {
       await _controller.runJavaScript(r'''(() => {
         if (window.__filmstreamCleanV1) return;
@@ -826,6 +828,21 @@ class _WebSourcePageState extends State<WebSourcePage> {
               margin-left:0!important; margin-right:0!important; }
           `;
           document.documentElement.classList.add('fs-focus-v53');
+          // Expand only the source iframe's container for the tall 18+ warning.
+          // This preserves the original provider login elements and session.
+          if (TARGET_AGE_GATE) {
+            document.documentElement.classList.add('fs-age-gate');
+            style.textContent += `
+              html.fs-age-gate .main-player {
+                aspect-ratio:auto!important; height:100dvh!important;
+                max-height:none!important;
+              }
+              html.fs-age-gate .main-player > iframe,
+              html.fs-age-gate .main-player > #main-player {
+                height:100%!important; max-height:none!important;
+              }
+            `;
+          }
           const player = document.querySelector('.main-player');
           if (player) {
             window.scrollTo(0, 0);
@@ -842,7 +859,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           }
           return true;
         })();
-      ''');
+      '''.replaceAll('TARGET_AGE_GATE', _showTallGate ? 'true' : 'false'));
       return result == true || result.toString() == 'true';
     } catch (_) { return false; }
   }
@@ -877,79 +894,6 @@ class _WebSourcePageState extends State<WebSourcePage> {
   Future<void> _external() async {
     final current = Uri.tryParse(await _controller.currentUrl() ?? '') ?? widget.url;
     if (current.scheme == 'https') await launchUrl(current, mode: LaunchMode.externalApplication);
-  }
-
-  // Keep the real source page in the EXISTING Android WebView. Do not move
-  // it to Chrome or copy browser cookies. Reloading also resets the site's
-  // own window.open handler that clean-player mode had previously suppressed.
-  // The site owns the age gate and Google sign-in. Present its ORIGINAL
-  // page in the existing WebView at full screen, not a fake account chooser.
-  // Do not copy cookies, impersonate a browser, or bypass age checks.
-  Future<void> _showSourceFullscreen() async {
-    if (!mounted || _verificationMode) return;
-    setState(() {
-      _verificationMode = true;
-      _focused = false;
-    });
-    // Unmount the inline Android platform view before using its controller
-    // in the fullscreen route; two simultaneous WebViewWidget mounts are unsafe.
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) return;
-    try {
-      await _controller.reload(); // restore the original source login handlers
-      if (!mounted) return;
-      await Navigator.of(context).push<void>(MaterialPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (ctx) => Scaffold(
-          appBar: AppBar(
-            title: const Text('Halaman sumber • 18+'),
-            actions: [
-              IconButton(
-                tooltip: 'Muat ulang halaman',
-                icon: const Icon(Icons.refresh),
-                onPressed: () => _controller.reload(),
-              ),
-            ],
-          ),
-          body: Column(children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 10, 16, 10),
-              child: Text(
-                'Materi khusus dewasa. Jika diminta, verifikasi usia '
-                'melalui login resmi situs untuk pengguna berusia 18 tahun ke atas. '
-                'Google dapat menolak login pada WebView tertanam.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12),
-              ),
-            ),
-            Expanded(child: WebViewWidget(controller: _controller)),
-          ]),
-        ),
-      ));
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _verificationMode = false;
-        _focused = true;
-        _revealed = false;
-      });
-      await WidgetsBinding.instance.endOfFrame;
-      if (mounted) await _controller.reload();
-    }
-  }
-
-  Widget _fullscreenSourceAction() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-      child: SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: _showSourceFullscreen,
-          icon: const Icon(Icons.fullscreen),
-          label: const Text('Layar penuh situs sumber'),
-        ),
-      ),
-    );
   }
 
   Future<void> _notifyPlayTap() async {
@@ -1012,7 +956,17 @@ class _WebSourcePageState extends State<WebSourcePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [_verificationMode ? const SizedBox.shrink() : AspectRatio(aspectRatio: 16 / 9, child: _playerBody()), if (!_verificationMode) _flutterServers(), if (!_verificationMode) _fullscreenSourceAction(), if (!_verificationMode) _flutterSourceDetails()]));
+    if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      _showTallGate
+          ? SizedBox(
+              height: MediaQuery.sizeOf(context).height -
+                  MediaQuery.paddingOf(context).top - kToolbarHeight,
+              child: _playerBody(),
+            )
+          : AspectRatio(aspectRatio: 16 / 9, child: _playerBody()),
+      _flutterServers(),
+      _flutterSourceDetails(),
+    ]));
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) { if (!didPop) _back(); },
