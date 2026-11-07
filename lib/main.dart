@@ -918,6 +918,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   ])),
  ]);
 }
+}
 class CinemaHero extends StatefulWidget {
  final ValueChanged<Movie> onTap;
  const CinemaHero({super.key,required this.onTap});
