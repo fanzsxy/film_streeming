@@ -905,7 +905,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     // Filtered discovery can be sparse: collect multiple catalog matches
     // before presenting a numbered page, without doing serial per-title
     // poster/detail lookups on the UI critical path.
-    while(incoming.length<catalogPageSize && scanned<(hasFilter?3:2) && page<500) {
+    while(incoming.length<catalogPageSize && scanned<(hasFilter?3:2) && page<(hasFilter?100:500)) {
       final nextPage=page+1;
       // TMDB discovers genre/language candidates; only catalog matches survive.
       // Without metadata filters, sort the entire local catalog before paging.
@@ -944,7 +944,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
         if(seenResults.add(m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}'))results.add(m);
       }
       // Keep previously displayed cards in place; never re-sort on scroll.
-      more=!ended&&page<500;
+      more=!ended&&page<(hasFilter?100:500);
       error='';
     });
   } catch(e) {
