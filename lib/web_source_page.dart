@@ -41,6 +41,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
   }
   // Tracks OAuth navigation; consent UI is not a playback failure.
   bool _googleSignInInProgress = false;
+  // Only diagnostic status. Never store OAuth URLs, query parameters, codes,
+  // state, account addresses, or cookies.
+  String? _signInNavigationIssue;
   bool _loading = true;
   bool _revealed = false;
   bool _search = false;
@@ -390,6 +393,16 @@ class _WebSourcePageState extends State<WebSourcePage> {
     await prefs.setString(_cacheKey, uri.toString());
   }
 
+  void _reportAuthNavigationIssue(String message) {
+    if (!mounted) return;
+    setState(() {
+      _signInNavigationIssue = message;
+      _loading = false;
+      _revealed = true;
+      _search = false;
+    });
+  }
+
   // Guard top-level navigations; iframe/subresource requests are not blocked.
   bool _allowedMainNavigation(String url) {
     final u = Uri.tryParse(url);
@@ -672,6 +685,10 @@ class _WebSourcePageState extends State<WebSourcePage> {
       ..setNavigationDelegate(NavigationDelegate(
         onPageStarted: (_) {
           _navigationGeneration++;
+          // Clear the previous diagnostic when the user starts a new page.
+          if (mounted && _signInNavigationIssue != null) {
+            setState(() => _signInNavigationIssue = null);
+          }
           _episodeAttempts = 0; // Each new document gets its own resolution attempts.
           if (mounted) setState(() { _loading = true; _revealed = false; _error = null; _progress = 0; _serverNames = const []; _selectedServer = ''; _sourceGenres = const []; _sourceSynopsis = ''; _sourceEpisodes = const []; });
         },
@@ -788,15 +805,33 @@ class _WebSourcePageState extends State<WebSourcePage> {
         },
         onWebResourceError: (e) {
           if (e.isForMainFrame == true && mounted) {
-            setState(() { _error = e.description; _loading = false; _revealed = true; });
+            if (_googleSignInInProgress) {
+              _reportAuthNavigationIssue(
+                'Halaman autentikasi gagal dimuat (kode WebView '
+                '${e.errorCode}). Periksa koneksi dan kebijakan login '
+                'Google pada WebView tertanam.');
+            } else {
+              setState(() {
+                _error = e.description;
+                _loading = false;
+                _revealed = true;
+              });
+            }
           }
         },
         onNavigationRequest: (r) {
           final next = Uri.tryParse(r.url);
           if (next == null || (next.scheme != 'https' && next.scheme != 'about')) return NavigationDecision.prevent;
           if (r.isMainFrame && !_allowedMainNavigation(r.url)) {
-            // Reject off-site top-level redirects, including gambling landing pages.
-            // Embedded video frames are not affected by this top-level rule.
+            // Do not unblock arbitrary HTTPS redirects. OAuth callbacks can
+            // have secrets in the query string, so report only the hostname.
+            if (_googleSignInInProgress) {
+              _reportAuthNavigationIssue(
+                'Pengembalian login dari Google diblokir oleh pembatasan '
+                'domain FilmStream: ${next.host}. '
+                'URL dan token tidak disimpan. Situs sumber harus mendukung '
+                'callback ini secara resmi.');
+            }
             return NavigationDecision.prevent;
           }
           if (r.isMainFrame && next.host == 'accounts.google.com') {
@@ -1017,7 +1052,33 @@ class _WebSourcePageState extends State<WebSourcePage> {
           onPointerDown: (_) { _notifyPlayTap(); },
           child: WebViewWidget(controller: _controller),
         ),
-        if (!_revealed && _error == null)
+        if (_signInNavigationIssue != null)
+          Positioned(
+            left: 10,
+            right: 10,
+            bottom: 12,
+            child: Material(
+              color: const Color(0xff25212a),
+              elevation: 4,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(children: [
+                  const Icon(Icons.info_outline, color: Colors.amber),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(_signInNavigationIssue!,
+                    style: const TextStyle(fontSize: 12))),
+                  IconButton(
+                    tooltip: 'Tutup informasi',
+                    onPressed: () => setState(
+                      () => _signInNavigationIssue = null),
+                    icon: const Icon(Icons.close),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+        if (!_revealed && _error == null && _signInNavigationIssue == null)
           Positioned.fill(child: ColoredBox(color: const Color(0xff101014),
             child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
               const CircularProgressIndicator(), const SizedBox(height:16),
