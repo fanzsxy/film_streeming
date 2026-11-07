@@ -7,6 +7,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+// OAuth callbacks can contain authorization codes, state, and account data.
+// Present only a sanitized host, never the full URL or its query/fragment.
+String loginReturnBlockedMessage(Uri destination) =>
+    'Pengembalian login dari Google diblokir oleh pembatasan '
+    'domain FilmStream: ${destination.host}. '
+    'URL dan token tidak disimpan. Situs sumber harus mendukung '
+    'callback ini secara resmi.';
+
 /// A visual reader mode for the source page. The site's actual player/iframe
 /// remains in its original document. Nothing is proxied or extracted.
 class WebSourcePage extends StatefulWidget {
@@ -826,11 +834,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
             // Do not unblock arbitrary HTTPS redirects. OAuth callbacks can
             // have secrets in the query string, so report only the hostname.
             if (_googleSignInInProgress) {
-              _reportAuthNavigationIssue(
-                'Pengembalian login dari Google diblokir oleh pembatasan '
-                'domain FilmStream: ${next.host}. '
-                'URL dan token tidak disimpan. Situs sumber harus mendukung '
-                'callback ini secara resmi.');
+              _reportAuthNavigationIssue(loginReturnBlockedMessage(next));
             }
             return NavigationDecision.prevent;
           }
