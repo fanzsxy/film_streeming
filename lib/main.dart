@@ -1088,24 +1088,149 @@ class LastWatchedRail extends StatelessWidget {
    ]);
  });
 }
-class PagedGrid extends StatefulWidget {final String title,endpoint,type;final Map<String,String> params;final ValueChanged<Movie> onTap;const PagedGrid({super.key,required this.title,required this.endpoint,required this.type,required this.onTap,this.params=const {}});@override State<PagedGrid> createState()=>_PagedGridState();}
-class _PagedGridState extends State<PagedGrid> {final items=<Movie>[];int page=0;bool busy=false,more=true;String error='';final scroll=ScrollController();
- @override void initState(){super.initState();fetch();scroll.addListener((){if(scroll.hasClients&&scroll.position.pixels>scroll.position.maxScrollExtent-550)fetch();});}
- @override void dispose(){scroll.dispose();super.dispose();}
- Future<void> fetch() async {if(busy||!more)return;setState(()=>busy=true);try{var next=await Tmdb.list(widget.endpoint,page:page+1,params:widget.params,type:widget.type);
-    if(next.isEmpty && page==0 && widget.endpoint=='search/multi'){
-      final query=(widget.params['query']??'').toLowerCase();
-      final terms=query.split(RegExp(r'[^a-z0-9]+')).where((w)=>w.length>=4).toList();
-      if(terms.length>=3){
-        final candidates=await Tmdb.list('search/multi',
-          params:{'query':terms.first,'include_adult':'false'},type:widget.type);
-        next=candidates.where((m){
-          final title=m.title.toLowerCase();
-          return terms.where((word)=>title.contains(word)).length>=2;
-        }).toList();
+
+const catalogPageSize = 20;
+
+// A compact numbered pager shared by Film, Series, Filter, Search and
+// "Lihat Lainnya". An unknown total must not be shown as a made-up count.
+class CatalogPageControls extends StatelessWidget {
+  final int page, maxPage;
+  final bool busy, hasNext;
+  final ValueChanged<int> onSelect;
+  const CatalogPageControls({super.key,required this.page,required this.maxPage,
+    required this.busy,required this.hasNext,required this.onSelect});
+
+  Future<void> _jump(BuildContext context) async {
+    final controller=TextEditingController(text:'$page');
+    final chosen=await showDialog<int>(context:context,builder:(dialogContext)=>
+      AlertDialog(title:const Text('Lompat ke halaman'),
+        content:TextField(controller:controller,keyboardType:TextInputType.number,
+          autofocus:true,decoration:InputDecoration(
+            labelText:'Nomor halaman (1–$maxPage)')),
+        actions:[
+          TextButton(onPressed:()=>Navigator.pop(dialogContext),
+            child:const Text('Batal')),
+          FilledButton(onPressed:(){
+            final n=int.tryParse(controller.text.trim());
+            if(n==null || n<1 || n>maxPage)return;
+            Navigator.pop(dialogContext,n);
+          },child:const Text('Buka')),
+        ]));
+    controller.dispose();
+    if(chosen!=null && chosen!=page)onSelect(chosen);
+  }
+
+  @override Widget build(BuildContext context) {
+    final first=page>2 ? page-2 : 1;
+    final last=(first+4).clamp(1,maxPage).toInt();
+    return Padding(padding:const EdgeInsets.fromLTRB(8,6,8,14),
+      child:Column(mainAxisSize:MainAxisSize.min,children:[
+        Wrap(alignment:WrapAlignment.center,spacing:3,runSpacing:4,children:[
+          TextButton(onPressed:busy||page==1?null:()=>onSelect(page-1),
+            child:const Text('Sebelumnya')),
+          for(var n=first;n<=last;n++)
+            n==page
+                ? FilledButton(onPressed:null,child:Text('$n'))
+                : TextButton(onPressed:busy?null:()=>onSelect(n),child:Text('$n')),
+          TextButton(onPressed:busy||!hasNext||page>=maxPage
+              ?null:()=>onSelect(page+1),child:const Text('Berikutnya')),
+        ]),
+        Row(mainAxisAlignment:MainAxisAlignment.center,children:[
+          Text('Halaman $page',style:const TextStyle(color:Colors.white70)),
+          const SizedBox(width:12),
+          TextButton.icon(onPressed:busy?null:()=>_jump(context),
+            icon:const Icon(Icons.low_priority,size:17),
+            label:const Text('Lompat halaman')),
+        ]),
+      ]));
+  }
+}
+
+class PagedGrid extends StatefulWidget {
+  final String title,endpoint,type;
+  final Map<String,String> params;
+  final ValueChanged<Movie> onTap;
+  const PagedGrid({super.key,required this.title,required this.endpoint,
+    required this.type,required this.onTap,this.params=const {}});
+  @override State<PagedGrid> createState()=>_PagedGridState();
+}
+class _PagedGridState extends State<PagedGrid> {
+  final ScrollController scroll=ScrollController();
+  List<Movie> items=const [];
+  int page=1, requestId=0;
+  bool busy=false,hasNext=true;
+  String error='';
+  int get maxPage => widget.endpoint.startsWith('catalog/') ||
+      widget.endpoint=='home/latest' ? 2000 : 500;
+
+  @override void initState(){super.initState();_fetch(1);}
+  @override void didUpdateWidget(covariant PagedGrid old){
+    super.didUpdateWidget(old);
+    if(old.endpoint!=widget.endpoint||old.type!=widget.type||
+       !mapEquals(old.params,widget.params))_fetch(1);
+  }
+  @override void dispose(){requestId++;scroll.dispose();super.dispose();}
+
+  Future<void> _fetch(int target) async {
+    if(target<1||target>maxPage)return;
+    final token=++requestId;
+    setState((){busy=true;error='';});
+    try {
+      var next=await Tmdb.list(widget.endpoint,page:target,
+        params:widget.params,type:widget.type);
+      if(next.isEmpty && target==1 && widget.endpoint=='search/multi'){
+        final query=(widget.params['query']??'').toLowerCase();
+        final terms=query.split(RegExp(r'[^a-z0-9]+'))
+          .where((w)=>w.length>=4).toList();
+        if(terms.length>=3){
+          final candidates=await Tmdb.list('search/multi',page:1,
+            params:{'query':terms.first,'include_adult':'false'},
+            type:widget.type);
+          next=candidates.where((m)=>
+            terms.where((word)=>m.title.toLowerCase().contains(word)).length>=2
+          ).toList();
+        }
       }
-    }if(!mounted)return;setState((){page++;items.addAll(next.where((m)=>!items.any((x)=>x.id==m.id&&x.type==m.type)));more=next.isNotEmpty&&page<50;error='';});}catch(e){if(mounted)setState(()=>error='$e');}finally{if(mounted)setState(()=>busy=false);}}
- @override Widget build(BuildContext context)=>Column(children:[Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:10),child:Align(alignment:Alignment.centerLeft,child:Text(widget.title,style:const TextStyle(fontSize:21,fontWeight:FontWeight.bold)))),Expanded(child:items.isEmpty&&busy?const Center(child:CircularProgressIndicator()):items.isEmpty&&error.isNotEmpty?Center(child:FilledButton(onPressed:fetch,child:Text('Gagal memuat — coba lagi ($error)'))):items.isEmpty?const Center(child:Text('Tidak ditemukan')):GridView.builder(controller:scroll,padding:const EdgeInsets.all(12),gridDelegate:filmstreamGridDelegate(context),itemCount:items.length+(busy||error.isNotEmpty?1:0),itemBuilder:(context,i){if(i==items.length)return Center(child:error.isNotEmpty?TextButton(onPressed:fetch,child:const Text('Coba lagi')):const CircularProgressIndicator());return MovieTile(movie:items[i],onTap:widget.onTap);}))]);}
+      if(!mounted||token!=requestId)return;
+      // An empty page after the first is the end, NOT another visible page.
+      if(next.isEmpty && target>1){
+        setState((){busy=false;hasNext=false;});
+        return;
+      }
+      final seen=<String>{};
+      final distinct=next.where((m)=>
+          seen.add(m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}'))
+        .take(catalogPageSize).toList();
+      setState((){
+        items=distinct;page=target;
+        hasNext=next.isNotEmpty && target<maxPage;
+        busy=false;error='';
+      });
+      if(scroll.hasClients)scroll.jumpTo(0);
+    }catch(_){
+      if(mounted&&token==requestId)setState((){
+        busy=false;error='Gagal memuat halaman. Coba lagi.';
+      });
+    }
+  }
+  @override Widget build(BuildContext context)=>Column(children:[
+    Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:10),
+      child:Align(alignment:Alignment.centerLeft,
+        child:Text(widget.title,style:const TextStyle(
+          fontSize:21,fontWeight:FontWeight.bold)))),
+    Expanded(child:busy?const Center(child:CircularProgressIndicator()):
+      error.isNotEmpty?Center(child:FilledButton(
+        onPressed:()=>_fetch(page),
+        child:Text(error))):
+      items.isEmpty?const Center(child:Text('Tidak ditemukan')):
+      GridView.builder(controller:scroll,padding:const EdgeInsets.all(12),
+        gridDelegate:filmstreamGridDelegate(context),
+        itemCount:items.length,itemBuilder:(context,i)=>
+          MovieTile(movie:items[i],onTap:widget.onTap))),
+    CatalogPageControls(page:page,maxPage:maxPage,
+      hasNext:hasNext,busy:busy,onSelect:_fetch),
+  ]);
+}
 
 // Adapter percobaan untuk API metadata LK21 tidak resmi. Tidak mengekstrak stream.
 // Endpoint harus berupa server HTTPS yang Anda kelola/diizinkan untuk diakses.
