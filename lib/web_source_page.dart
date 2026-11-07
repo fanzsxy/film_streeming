@@ -30,6 +30,7 @@ class WebSourcePage extends StatefulWidget {
 class _WebSourcePageState extends State<WebSourcePage> {
   late final WebViewController _controller;
   late bool _focused;
+  bool _verificationMode = false;
   bool _loading = true;
   bool _revealed = false;
   bool _search = false;
@@ -389,6 +390,10 @@ class _WebSourcePageState extends State<WebSourcePage> {
     // Keep navigation within the original website. Embed frames load separately.
     final host = u.host.toLowerCase();
     if (host == origin) return true;
+    // A user's explicit verification mode may follow an official Google
+    // sign-in redirect within the same WebView. The OAuth provider can still
+    // reject embedded user agents; do not spoof the user agent or tokens.
+    if (_verificationMode && host == 'accounts.google.com') return true;
     if (!_isTv) return false;
     // Only known source site families may redirect the TOP-LEVEL series page.
     // Do not allow an arbitrary HTTPS advertising/gambling page to replace it.
@@ -397,6 +402,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   }
 
   Future<void> _applyCleanPlayer() async {
+    if (_verificationMode) return;
     try {
       await _controller.runJavaScript(r'''(() => {
         if (window.__filmstreamCleanV1) return;
@@ -873,39 +879,54 @@ class _WebSourcePageState extends State<WebSourcePage> {
     if (current.scheme == 'https') await launchUrl(current, mode: LaunchMode.externalApplication);
   }
 
-  // Third-party age verification belongs to the source website. Google sign-in
-  // and cross-site player cookies may be restricted in an embedded WebView.
-  // Open the original HTTPS page in the user's normal browser instead of
-  // attempting to bypass the gate, intercept credentials, or copy cookies.
-  Widget _externalAgeVerificationAction() {
-    if (!_focused) return const SizedBox.shrink();
+  // Keep the real source page in the EXISTING Android WebView. Do not move
+  // it to Chrome or copy browser cookies. Reloading also resets the site's
+  // own window.open handler that clean-player mode had previously suppressed.
+  Future<void> _enterVerificationMode() async {
+    if (!mounted) return;
+    await _setFocused(false);
+    if (!mounted) return;
+    setState(() => _verificationMode = true);
+    await _controller.reload();
+  }
+
+  Future<void> _exitVerificationMode() async {
+    if (!mounted) return;
+    setState(() => _verificationMode = false);
+    await _setFocused(true);
+    if (!mounted) return;
+    await _controller.reload();
+  }
+
+  Widget _ageVerificationAction() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(children: [
-            Expanded(child: OutlinedButton.icon(
-              onPressed: _external,
-              icon: const Icon(Icons.open_in_browser, size: 18),
-              label: const Text('Buka situs / verifikasi 18+'),
-            )),
-            const SizedBox(width: 6),
-            IconButton(
-              tooltip: 'Muat ulang player',
-              onPressed: () => _controller.reload(),
-              icon: const Icon(Icons.refresh),
-            ),
-          ]),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Row(children: [
+          Expanded(child: OutlinedButton.icon(
+            onPressed: _verificationMode
+                ? _exitVerificationMode : _enterVerificationMode,
+            icon: Icon(_verificationMode ? Icons.smart_display_outlined
+                : Icons.verified_user_outlined, size: 18),
+            label: Text(_verificationMode
+                ? 'Kembali ke player' : 'Verifikasi usia di aplikasi'),
+          )),
+          const SizedBox(width: 6),
+          IconButton(
+            tooltip: 'Muat ulang halaman',
+            onPressed: () => _controller.reload(),
+            icon: const Icon(Icons.refresh),
+          ),
+        ]),
+        if (_verificationMode)
           const Text(
-            'Jika situs meminta login Google, lakukan verifikasi di browser '
-            'sesuai ketentuan situs. Setelah kembali, muat ulang player. '
-            'Login browser belum tentu berlaku di pemutar aplikasi.',
+            'Ini halaman asli sumber di WebView FilmStream. Login Google '
+            'dapat ditolak oleh Google pada browser tertanam. '
+            'Tidak ada pemeriksaan usia yang dilewati.',
             style: TextStyle(fontSize: 11, color: Colors.white70),
             textAlign: TextAlign.center,
           ),
-        ],
-      ),
+      ]),
     );
   }
 
@@ -969,7 +990,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [AspectRatio(aspectRatio: 16 / 9, child: _playerBody()), _flutterServers(), _externalAgeVerificationAction(), _flutterSourceDetails()]));
+    if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [_verificationMode ? SizedBox(height: 540, child: _playerBody()) : AspectRatio(aspectRatio: 16 / 9, child: _playerBody()), _flutterServers(), _ageVerificationAction(), _flutterSourceDetails()]));
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) { if (!didPop) _back(); },
