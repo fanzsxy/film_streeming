@@ -63,8 +63,12 @@ void main() {
         busy: false, hasNext: false, onSelect: (_) {}),
     )));
     expect(find.text('9'), findsNothing);
-    final next = tester.widget<IconButton>(find.byTooltip('Halaman berikutnya'));
-    expect(next.onPressed, isNull);
+    final nextButton = find.ancestor(
+      of: find.byTooltip('Halaman berikutnya'),
+      matching: find.byType(IconButton),
+    );
+    expect(nextButton, findsOneWidget);
+    expect(tester.widget<IconButton>(nextButton).onPressed, isNull);
   });
 
   testWidgets('jump to a numbered page', (tester) async {
