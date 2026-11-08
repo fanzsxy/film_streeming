@@ -14,6 +14,8 @@ class CatalogEntry {
   final double? rating;
   final int? tmdbId;
   final String tmdbPosterPath;
+  final List<int>? genreIds;
+  final String? originalLanguage;
 
   const CatalogEntry({
     required this.title,
@@ -26,6 +28,8 @@ class CatalogEntry {
     this.rating,
     this.tmdbId,
     this.tmdbPosterPath = '',
+    this.genreIds,
+    this.originalLanguage,
   });
 
   factory CatalogEntry.fromJson(Map<String, dynamic> json) {
@@ -51,6 +55,11 @@ class CatalogEntry {
       rating: json['rating'] is num ? (json['rating'] as num).toDouble() : null,
       tmdbId: json['tmdb_id'] is int && json['tmdb_id'] > 0 ? json['tmdb_id'] as int : null,
       tmdbPosterPath: (json['tmdb_poster_path'] ?? '').toString(),
+      genreIds: json['genre_ids'] is List ? (json['genre_ids'] as List)
+          .whereType<num>().map((value) => value.toInt()).where((id) => id > 0)
+          .toSet().toList(growable: false) : null,
+      originalLanguage: json['original_language'] is String
+          ? json['original_language'] as String : null,
     );
   }
 }
@@ -113,6 +122,8 @@ class FilmStreamCatalog {
           'rating': entry.rating,
           'tmdb_id': entry.tmdbId,
           'tmdb_poster_path': entry.tmdbPosterPath,
+          if (entry.genreIds != null) 'genre_ids': entry.genreIds,
+          if (entry.originalLanguage != null) 'original_language': entry.originalLanguage,
         });
       }
       if (additions.isNotEmpty) {
