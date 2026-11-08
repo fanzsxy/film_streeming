@@ -27,10 +27,43 @@ def valid_genres(value):
     return list(dict.fromkeys(normalized))
 
 
+# Official TMDB genre IDs (movie + TV), used to name cached genre_ids.
+GENRE_NAMES = {
+    28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy",
+    80: "Crime", 99: "Documentary", 18: "Drama", 10751: "Family",
+    14: "Fantasy", 36: "History", 27: "Horror", 10402: "Music",
+    9648: "Mystery", 10749: "Romance", 878: "Science Fiction",
+    10770: "TV Movie", 53: "Thriller", 10752: "War", 37: "Western",
+    10759: "Action & Adventure", 10762: "Kids", 10763: "News",
+    10764: "Reality", 10765: "Sci-Fi & Fantasy", 10766: "Soap",
+    10767: "Talk", 10768: "War & Politics",
+}
+
+
+def genre_data(record):
+    # TMDB detail JSON uses 'genres' objects, search/cache uses 'genre_ids'.
+    raw = record.get("genres")
+    ids = valid_genres(raw) if raw is not None else valid_genres(record.get("genre_ids"))
+    if not ids:
+        return None, None
+    names = None
+    if isinstance(raw, list) and all(
+        isinstance(x, dict) and type(x.get("id")) is int
+        and isinstance(x.get("name"), str) and x["name"].strip() for x in raw
+    ):
+        names = [x["name"].strip() for x in raw]
+    elif all(x in GENRE_NAMES for x in ids):
+        names = [GENRE_NAMES[x] for x in ids]
+    return ids, names
+
+
 def fill(entry, record):
-    genres = valid_genres(record.get("genre_ids"))
-    if genres and not valid_genres(entry.get("genre_ids")):
-        entry["genre_ids"] = genres
+    ids, names = genre_data(record)
+    if ids:
+        entry["genre_ids"] = ids
+        # Replace sparse crawler labels only with verified, full TMDB genres.
+        if names:
+            entry["genres"] = names
     language = record.get("original_language")
     if isinstance(language, str) and language.strip() and not entry.get("original_language"):
         entry["original_language"] = language.strip()
@@ -72,7 +105,10 @@ def main():
             break
         if item.get("type") not in ("series", "movie"):
             continue
-        if valid_genres(item.get("genre_ids")) and item.get("original_language"):
+        ids = valid_genres(item.get("genre_ids"))
+        expected = [GENRE_NAMES.get(x) for x in ids] if ids else []
+        if (ids and item.get("original_language") and
+                expected and all(expected) and item.get("genres") == expected):
             continue
         tmdb_id = item.get("tmdb_id")
         if type(tmdb_id) is not int or tmdb_id <= 0:
