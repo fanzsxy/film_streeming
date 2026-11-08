@@ -51,11 +51,12 @@ def main():
             verified = verified_series.get(urlparse(url).path.strip("/"))
             if verified:
                 record = {**record, "type": "series", "active_source_url": verified}
-        if not record:
-            continue
         kind = entry.get("type")
-        if kind not in counts or record.get("type") != kind:
+        if kind not in counts:
             continue
+        # Merge crawler data only when the source record belongs to the same type.
+        if record.get("type") != kind:
+            record = {}
         # Only merge fields known to be useful and of expected type.
         for key in ("poster_url", "synopsis"):
             value = record.get(key)
