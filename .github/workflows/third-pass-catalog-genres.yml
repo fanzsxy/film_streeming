@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       limit:
-        description: 'Titles to verify per batch (500 recommended after pilot)'
+        description: 'Titles to verify per batch (1000 max)'
         required: true
-        default: '500'
+        default: '1000'
         type: choice
         options:
           - '25'
@@ -14,6 +14,7 @@ on:
           - '100'
           - '250'
           - '500'
+          - '1000'
       auto_continue:
         description: 'Continue automatically after this batch (enable only after pilot review)'
         required: true
@@ -31,7 +32,7 @@ concurrency:
 jobs:
   recover-genres:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     env:
       TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
       GH_TOKEN: ${{ github.token }}
@@ -48,7 +49,7 @@ jobs:
       - name: Verify missing genre matches (third pass)
         id: recover
         env:
-          LIMIT: ${{ github.event.inputs.limit || '500' }}
+          LIMIT: ${{ github.event.inputs.limit || '1000' }}
         run: |
           python tools/third_pass_catalog_genres.py --limit "$LIMIT" --delay 0.35 --github-output "$GITHUB_OUTPUT"
       - name: Save verified results into main catalog
@@ -63,9 +64,9 @@ jobs:
           else
             echo "No metadata/status changes."
           fi
-      - name: Automatically check next 500 titles
+      - name: Automatically check next 1000 titles
         if: ${{ inputs.auto_continue == true && steps.recover.outputs.pending != '0' && steps.recover.outputs.attempted != '0' && steps.recover.outputs.paused == 'false' }}
-        run: gh workflow run third-pass-catalog-genres.yml --ref main -f limit=500 -f auto_continue=true
+        run: gh workflow run third-pass-catalog-genres.yml --ref main -f limit=1000 -f auto_continue=true
       - name: Report completion
         if: ${{ steps.recover.outputs.pending == '0' }}
         run: echo "Third pass finished. Unmatched, ambiguous, invalid-year or no-genre entries still require manual review."
