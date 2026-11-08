@@ -45,6 +45,8 @@ jobs:
           python-version: '3.11'
       - name: Check Python syntax
         run: python -m py_compile tools/recover_empty_catalog_genres.py tools/third_pass_catalog_genres.py tools/retry_catalog_genres.py
+      - name: Test article-variant matching (offline)
+        run: python -m unittest discover -s tools -p 'test_empty_genre_articles.py' -v
       - name: Audit and optionally recover empty genres
         id: recover
         env:
