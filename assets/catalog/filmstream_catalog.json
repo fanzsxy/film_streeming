@@ -22946,7 +22946,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Crayon Shin-chan the Movie: Super Hot! The Spicy Kasukabe Dancers",
@@ -23058,7 +23059,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Cursa",
@@ -23208,11 +23210,17 @@
       "synopsis": "Di \"Days When the Rains Came\" (2025), Jane kembali ke kampung halaman untuk merawat ayahnya yang sakit. Perjalanan ini membuatnya mengintrospeksi hidupnya dan bertanya-tanya apa yang bisa terjadi jika...",
       "rating": 6.1,
       "genres": [
+        "Drama",
         "Comedy",
-        "Drama"
+        "Romance"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        35,
+        10749
+      ],
+      "original_language": "en",
+      "tmdb_id": 1162337
     },
     {
       "title": "De Ballonvaarder",
@@ -23368,7 +23376,8 @@
         "History"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Deadly Delivery",
@@ -23396,11 +23405,17 @@
       "synopsis": "Dalam \"Deadly Doll\" (2025), Xue Qing yang berduka karena kehilangan anak tunggalnya, mengalami gangguan mental. Ia kemudian menemukan seorang dukun bernama Mei dan membawa pulang boneka jelangkung yan...",
       "rating": 4.7,
       "genres": [
+        "Thriller",
         "Mystery",
-        "Thriller"
+        "Horror"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        53,
+        9648,
+        27
+      ],
+      "original_language": "cn",
+      "tmdb_id": 1192868
     },
     {
       "title": "Deadly Girls Trip",
@@ -23597,10 +23612,16 @@
       "rating": 8.1,
       "genres": [
         "Animation",
-        "Action"
+        "Action",
+        "Fantasy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        16,
+        28,
+        14
+      ],
+      "original_language": "ja",
+      "tmdb_id": 1311031
     },
     {
       "title": "Den of Thieves: Pantera",
@@ -23700,7 +23721,8 @@
         "Action"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Detective Dee: The Other Shore Flower",
@@ -23715,7 +23737,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Detective Kien: The Headless Horror",
@@ -23891,7 +23914,8 @@
         "Romance"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Dimelo bajito",
@@ -23905,7 +23929,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Discussion Materials",
@@ -23919,7 +23944,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Disforia",
@@ -24033,7 +24059,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Dollhouse",
@@ -24048,7 +24075,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Dolly",
@@ -24224,11 +24252,17 @@
       "synopsis": "\"Dong Ji Dao\" (2025) adalah film aksi, drama, dan thriller yang mengisahkan petualangan penuh bahaya di tahun 1942. Ketika kapal Jepang Lisbon Maru yang membawa tawanan perang Inggris ditorpedo, para ...",
       "rating": 6.0,
       "genres": [
-        "Action",
-        "Drama"
+        "Drama",
+        "History",
+        "War"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        36,
+        10752
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1305653
     },
     {
       "title": "Down River",
@@ -24298,7 +24332,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "DRAGN",
@@ -24336,7 +24371,8 @@
         "Romance"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Dreamland Awaits",
@@ -24404,7 +24440,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Dropbear",
@@ -24668,7 +24705,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Ejen Ali the Movie 2",
@@ -24755,7 +24793,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Eleanor the Great",
@@ -24932,7 +24971,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Escape from the Outland",
@@ -25008,7 +25048,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Ether's Paradise",
@@ -25036,10 +25077,15 @@
       "synopsis": "\"Even if This Love Disappears from the World Tonight\" berkisah tentang cinta murni antara seorang gadis SMA yang menderita amnesia anterograde, yang membuat ingatannya terreset setiap pagi, dan seoran...",
       "rating": 8.8,
       "genres": [
-        "Romance"
+        "Romance",
+        "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        10749,
+        18
+      ],
+      "original_language": "ko",
+      "tmdb_id": 1466115
     },
     {
       "title": "Everybody Loves Me When I'm Dead",
@@ -25108,7 +25154,8 @@
         "Documentary"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Exit 8 8-ban deguchi",
@@ -25119,11 +25166,17 @@
       "synopsis": "Dalam \"8-ban Deguchi\" (2025), seorang pria terjebak dalam terowongan bawah tanah yang misterius. Ia mengikuti petunjuk dari \"pemandu\" yang tidak terlihat, tetapi satu per satu, kejadian aneh mulai ter...",
       "rating": 6.9,
       "genres": [
-        "Action",
-        "Adventure"
+        "Mystery",
+        "Thriller",
+        "Horror"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        9648,
+        53,
+        27
+      ],
+      "original_language": "ja",
+      "tmdb_id": 1408208
     },
     {
       "title": "Exit Protocol",
@@ -25170,11 +25223,15 @@
       "synopsis": "Di film F1: The Movie (2025), seorang pembalap legendaris kembali dari pensiun untuk menjadi mentor sekaligus rekan setim pembalap muda berbakat. Dengan pengalaman dan keahlian yang dimiliki, dia memb...",
       "rating": 7.8,
       "genres": [
-        "Drama",
-        "Sport"
+        "Action",
+        "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        18
+      ],
+      "original_language": "en",
+      "tmdb_id": 911430
     },
     {
       "title": "Fackham Hall",
@@ -25317,7 +25374,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Father Mother Sister Brother",
@@ -25348,7 +25406,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Fengmen Village Horror",
@@ -25365,7 +25424,8 @@
       "tmdb_id": 1549688,
       "original_language": "zh",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Find Your Friends",
@@ -25453,7 +25513,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Flower Girl",
@@ -25487,7 +25548,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Fluxx",
@@ -25569,10 +25631,16 @@
       "rating": 7.7,
       "genres": [
         "Drama",
-        "Fantasy"
+        "Fantasy",
+        "Horror"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        18,
+        14,
+        27
+      ],
+      "original_language": "en",
+      "tmdb_id": 1062722
     },
     {
       "title": "Franz",
@@ -25587,7 +25655,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Frontline - Yokohama Bay",
@@ -25618,7 +25687,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Furioza 2 (Druga Furioza)",
@@ -25629,10 +25699,17 @@
       "synopsis": "Di \"Furioza Again\", seorang polisi wanita ambisius menggunakan kekuasaannya untuk membalas dendam kepada mantan kekasihnya dengan memeras saudaranya. Dia meminta saudaranya untuk memata-matai geng hoo...",
       "rating": 6.5,
       "genres": [
-        "Drama"
+        "Action",
+        "Crime",
+        "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        80,
+        53
+      ],
+      "original_language": "pl",
+      "tmdb_id": 1072699
     },
     {
       "title": "Fuze",
@@ -25711,7 +25788,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Gadhi",
@@ -25727,7 +25805,8 @@
       "tmdb_id": 1555720,
       "original_language": "te",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Gajaana",
@@ -25903,7 +25982,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Girl",
@@ -25917,7 +25997,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Girlfriends",
@@ -25950,7 +26031,8 @@
         "Action"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Glenrothan",
@@ -26029,7 +26111,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Good Boy",
@@ -26044,7 +26127,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Good Fortune",
@@ -26099,7 +26183,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Goodbye June",
@@ -26245,7 +26330,8 @@
         "Crime"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Guru Nanak Jahaz",
@@ -26276,7 +26362,8 @@
         "Crime"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "H Is for Hawk",
@@ -26360,7 +26447,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Hans Zimmer & Friends: Diamond in the Desert",
@@ -26451,8 +26539,11 @@
       "genres": [
         "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18
+      ],
+      "original_language": "en",
+      "tmdb_id": 1358548
     },
     {
       "title": "Hazel's Heart",
@@ -26505,7 +26596,8 @@
         "Western"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Hedda",
@@ -26634,7 +26726,8 @@
         "Crime"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Hep Yek: Loto",
@@ -26685,7 +26778,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "High School Heist",
@@ -26738,7 +26832,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Hill",
@@ -26770,7 +26865,8 @@
         "Sport"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Hjem kaere hjem",
@@ -26784,7 +26880,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Hokusai's Daughter",
@@ -26987,8 +27084,11 @@
       "genres": [
         "Horror"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        27
+      ],
+      "original_language": "th",
+      "tmdb_id": 1535290
     },
     {
       "title": "House at the Edge of the Woods",
@@ -27110,7 +27210,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Human",
@@ -27124,7 +27225,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Human Resource",
@@ -27229,8 +27331,12 @@
         "Animation",
         "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        16,
+        18
+      ],
+      "original_language": "ja",
+      "tmdb_id": 1295026
     },
     {
       "title": "Hydra",
@@ -27245,7 +27351,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "I Am the End of the World",
@@ -27279,7 +27386,8 @@
       "tmdb_id": 1560497,
       "original_language": "en",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "I Don't Love You Anymore",
@@ -27294,7 +27402,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "I Know What You Did Last Summer",
@@ -27349,7 +27458,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "I'm Frankelda",
@@ -27364,7 +27474,8 @@
         "Family"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "I'm Still a Superstar",
@@ -27419,7 +27530,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Idaho Fallen",
@@ -27449,11 +27561,17 @@
       "synopsis": "Dalam \"Identifikatsiya\" (2025), seorang pria terbangun setelah kecelakaan mengerikan dan menemukan dirinya di tahun 2035. Ia tidak mengingat apa-apa selain pekerjaannya di korporasi yang menciptakan s...",
       "rating": 4.8,
       "genres": [
+        "Science Fiction",
         "Action",
-        "Drama"
+        "Mystery"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        878,
+        28,
+        9648
+      ],
+      "original_language": "ru",
+      "tmdb_id": 586378
     },
     {
       "title": "Idiot Girls and School Ghost 2: Teaching Practice",
@@ -27464,10 +27582,15 @@
       "synopsis": "Teaching Practice: Idiot Girls and School Ghost 2 - Kang Eun-kyung, seorang guru magang, menghadapi situasi aneh di sekolah ketika ia bertemu dengan sekelompok siswi anggota klub sihir hitam yang seca...",
       "rating": 7.6,
       "genres": [
-        "Horror"
+        "Horror",
+        "Comedy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        35
+      ],
+      "original_language": "ko",
+      "tmdb_id": 1365928
     },
     {
       "title": "Idly Kadai",
@@ -27478,11 +27601,17 @@
       "synopsis": "Idly Kadai (2025) adalah komedi drama olahraga yang mengisahkan seorang pria pedesaan yang pindah ke Dubai untuk mengejar mimpinya. Setelah bencana melanda, ia kembali ke kampung halamannya dan menemu...",
       "rating": 6.8,
       "genres": [
-        "Comedy",
-        "Drama"
+        "Action",
+        "Drama",
+        "Comedy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        18,
+        35
+      ],
+      "original_language": "ta",
+      "tmdb_id": 1323880
     },
     {
       "title": "If I Had Legs I'd Kick You",
@@ -27514,7 +27643,8 @@
         "Romance"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Ikk Kudi",
@@ -27623,7 +27753,8 @@
       "tmdb_id": 1763889,
       "original_language": "ja",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "In Your Dreams",
@@ -27793,7 +27924,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "It Ends",
@@ -27959,7 +28091,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Jeongbowon (the informant)",
@@ -27970,11 +28103,15 @@
       "synopsis": "Tidak ada plot yang disediakan untuk dijadikan versi reimajinasi, maka saya akan membuat plot movie yang baru. Jeongbowon (2025) adalah film aksi komedi yang mengisahkan seorang detektif yang harus me...",
       "rating": 7.7,
       "genres": [
-        "Action",
-        "Comedy"
+        "Comedy",
+        "Action"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        35,
+        28
+      ],
+      "original_language": "ko",
+      "tmdb_id": 1160984
     },
     {
       "title": "Jiao Long Xing Dong (Operation hadal)",
@@ -27986,10 +28123,16 @@
       "rating": 5.6,
       "genres": [
         "Drama",
-        "Action"
+        "Action",
+        "War"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        28,
+        10752
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1280330
     },
     {
       "title": "Jiko Bukken: Zoku Kowai Madori",
@@ -28004,7 +28147,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Jimpa",
@@ -28171,10 +28315,15 @@
       "synopsis": "\"Junior\" (2025) adalah film drama yang mengisahkan seorang pemuda muda yang mencari kenangan bermakna, hingga menemukan sesuatu yang dapat mengubah hubungannya dengan ayahnya. Dalam pencariannya, ia m...",
       "rating": 5.0,
       "genres": [
-        "Drama"
+        "Drama",
+        "Family"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        18,
+        10751
+      ],
+      "original_language": "te",
+      "tmdb_id": 1446056
     },
     {
       "title": "Justin Willman: Magic Lover",
@@ -28244,10 +28393,15 @@
       "synopsis": "Kakukaku Shikajika (2025) adalah sebuah film romance yang mengisahkan tentang cinta segitiga yang kompleks. Tokoh utama, seorang seniman muda, terjebak dalam perasaan yang tak ter ungkapkan kepada dua...",
       "rating": 7.4,
       "genres": [
-        "Romance"
+        "Drama",
+        "Comedy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        35
+      ],
+      "original_language": "ja",
+      "tmdb_id": 1408405
     },
     {
       "title": "Kakushigoto: I Have a Secret",
@@ -28262,7 +28416,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "KalamKaval",
@@ -28333,7 +28488,8 @@
         "Romance"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Karada Sagashi: The Last Night",
@@ -28346,8 +28502,11 @@
       "genres": [
         "Horror"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27
+      ],
+      "original_language": "ja",
+      "tmdb_id": 1451398
     },
     {
       "title": "Karantina (Quarantine)",
@@ -28437,7 +28596,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Kenneled",
@@ -28538,10 +28698,16 @@
       "rating": 5.5,
       "genres": [
         "Action",
-        "Crime"
+        "Thriller",
+        "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        28,
+        53,
+        18
+      ],
+      "original_language": "te",
+      "tmdb_id": 1124838
     },
     {
       "title": "Kishkindhapuri",
@@ -28575,11 +28741,19 @@
       "synopsis": "Di \"Kiss\" (2025), seorang musisi jalanan menemukan ia bisa melihat masa depan romantis pasangan saat mereka berciuman. Setelah menyaksikan visi tentang kekasihnya sendiri, ia harus berlari melawan tak...",
       "rating": 6.4,
       "genres": [
+        "Romance",
         "Comedy",
+        "Drama",
         "Fantasy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        10749,
+        35,
+        18,
+        14
+      ],
+      "original_language": "ta",
+      "tmdb_id": 1299039
     },
     {
       "title": "Kleks i wynalazek Filipa Golarza",
@@ -28631,10 +28805,16 @@
       "rating": 6.3,
       "genres": [
         "Drama",
+        "Mystery",
         "Romance"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        9648,
+        10749
+      ],
+      "original_language": "ja",
+      "tmdb_id": 1465948
     },
     {
       "title": "Kokuho",
@@ -28801,8 +28981,11 @@
       "genres": [
         "Comedy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        35
+      ],
+      "original_language": "it",
+      "tmdb_id": 1663996
     },
     {
       "title": "L'Olivia i el terratremol invisible",
@@ -28914,7 +29097,8 @@
         "Adventure"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Land's End",
@@ -28928,7 +29112,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Last Train to Fortune",
@@ -29090,10 +29275,16 @@
       "rating": 6.7,
       "genres": [
         "Animation",
-        "Short"
+        "Family",
+        "Fantasy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        16,
+        10751,
+        14
+      ],
+      "original_language": "en",
+      "tmdb_id": 1549292
     },
     {
       "title": "Les aventures du Nexus VI",
@@ -29144,7 +29335,8 @@
       "tmdb_id": 1622926,
       "original_language": "en",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Life Hack",
@@ -29526,7 +29718,8 @@
         "Biography"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Lukewarm: Why the Cross",
@@ -29618,7 +29811,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Ma du leva",
@@ -29806,7 +30000,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Maintenance Required",
@@ -29859,7 +30054,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Manila's Finest",
@@ -29893,7 +30089,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Marama",
@@ -29904,11 +30101,17 @@
       "synopsis": "Marama (2025) adalah sebuah film Drama, Horror, Mystery, Thriller yang mengisahkan seorang wanita Maori bernama Marama yang mencari balas dendam di Inggris Victoria, 1859. Dengan latar belakang gelap ...",
       "rating": 5.9,
       "genres": [
+        "Horror",
         "Drama",
-        "Horror"
+        "Mystery"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        18,
+        9648
+      ],
+      "original_language": "en",
+      "tmdb_id": 1364953
     },
     {
       "title": "Marana Mass",
@@ -29944,7 +30147,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Marsupilami",
@@ -30092,7 +30296,8 @@
         "Sport"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Matt Rife: Unwrapped: A Christmas Crowd Work Special",
@@ -30124,7 +30329,8 @@
         "Biography"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Me No Pause Me Play",
@@ -30173,7 +30379,8 @@
         "Adventure"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Memori",
@@ -30268,7 +30475,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Merrily We Roll Along",
@@ -30503,7 +30711,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Misri",
@@ -30567,11 +30776,15 @@
       "synopsis": "Dalam \"Mom\" (2025), seorang ibu muda bernama Meredith terjebak dalam depresi pasca-melahirkan dan merasa tidak dipahami oleh suaminya. Ia mulai mengalami penglihatan menakutkan yang mengisyaratkan seb...",
       "rating": 5.0,
       "genres": [
-        "Drama",
+        "Horror",
         "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        27,
+        53
+      ],
+      "original_language": "en",
+      "tmdb_id": 729713
     },
     {
       "title": "Monster Tapes",
@@ -30758,7 +30971,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Murder in Monaco",
