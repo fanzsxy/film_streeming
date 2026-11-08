@@ -51,11 +51,11 @@ def main():
             verified = verified_series.get(urlparse(url).path.strip("/"))
             if verified:
                 record = {**record, "type": "series", "active_source_url": verified}
-        if not record:
-            continue
         kind = entry.get("type")
-        if kind not in counts or record.get("type") != kind:
+        if kind not in counts:
             continue
+        if record.get("type") != kind:
+            record = {}
         # Only merge fields known to be useful and of expected type.
         for key in ("poster_url", "synopsis"):
             value = record.get(key)
@@ -80,6 +80,12 @@ def main():
         tmdb = tmdb_by_source.get(url)
         if tmdb and tmdb.get("tmdb_type") == ("tv" if kind == "series" else "movie"):
             entry["tmdb_id"] = tmdb["tmdb_id"]
+            ids = tmdb.get("genre_ids")
+            if isinstance(ids, list) and ids and all(type(x) is int and x > 0 for x in ids):
+                entry.setdefault("genre_ids", list(dict.fromkeys(ids)))
+            language = tmdb.get("original_language")
+            if isinstance(language, str) and language.strip():
+                entry.setdefault("original_language", language.strip())
             # Fill gaps only; crawler metadata retains priority.
             # Indonesian synopsis wins whenever TMDB provides one.
             # If unavailable, retain crawler synopsis or existing English fallback.
