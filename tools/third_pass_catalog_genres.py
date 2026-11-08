@@ -184,7 +184,7 @@ def assess(item, media, token, delay):
 def fix_title_number_year(items):
     """Correct a source-site release year mistakenly copied from a numeric film title.
 
-    Only when the existing year equals the leading 4-digit number in the title,
+    Only when the existing year matches a standalone 4-digit number anywhere in the title,
     and the source URL ends with a different plausible release year. Never
     change a title, verified TMDB genre, or an unrelated year mismatch.
     """
@@ -194,14 +194,12 @@ def fix_title_number_year(items):
         if item.get("type") not in ("movie", "series") or genre_ids(item.get("genre_ids")):
             continue
         title = str(item.get("title") or "")
-        match = re.match(r"^(\d{4})(?!\d)", title)
-        if not match:
-            continue
         try:
             current = int(item.get("year"))
         except (TypeError, ValueError):
             continue
-        if current != int(match.group(1)):
+        title_numbers = [int(value) for value in re.findall(r"(?<!\d)\d{4}(?!\d)", title)]
+        if current not in title_numbers:
             continue
         url = urlparse(str(item.get("url") or ""))
         if not url.hostname or not (url.hostname == "lk21official.cc" or url.hostname.endswith(".lk21official.cc")):
