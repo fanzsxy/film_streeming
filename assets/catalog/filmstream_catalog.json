@@ -14,7 +14,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "2073",
@@ -29,7 +30,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "2050",
@@ -44,7 +46,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Death Race 2050",
@@ -59,7 +62,8 @@
         "Action"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Blade Runner 2049",
@@ -74,7 +78,8 @@
         "Mystery"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "LX 2048 (001LithiumX)",
@@ -89,7 +94,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "2047: Sights of Death",
@@ -104,7 +110,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "2046",
@@ -119,7 +126,8 @@
         "Romance"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Juarez 2045",
@@ -134,7 +142,8 @@
         "Adventure"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "KAkaku kidAtai SAC_2045 Jizoku kanA sensA",
@@ -149,7 +158,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "2037",
@@ -163,7 +173,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "2036 Origin Unknown",
@@ -177,7 +188,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "0187 UFO",
@@ -211,7 +223,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "18th Rose",
@@ -339,7 +352,8 @@
         "Reality-TV"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "33 Photos from the Ghetto",
@@ -448,7 +462,8 @@
         "History"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "9/11: Reclaiming Ground Zero",
@@ -656,11 +671,17 @@
       "synopsis": "Dalam \"A Melbourne Match\" (2026), Georgie, seorang penulis perjalanan, tiba di Melbourne untuk sebuah tugas. Di sana, ia bertemu Zach, mantan pemain sepak bola Australia yang menjadi pemandu wisatanya...",
       "rating": 8.7,
       "genres": [
-        "Drama",
-        "Romance"
+        "Romance",
+        "TV Movie",
+        "Comedy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        10749,
+        10770,
+        35
+      ],
+      "original_language": "en",
+      "tmdb_id": 1591916
     },
     {
       "title": "A Mind in Chaos",
@@ -674,8 +695,12 @@
         "Horror",
         "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        53
+      ],
+      "original_language": "en",
+      "tmdb_id": 1734379
     },
     {
       "title": "A Mosquito in the Ear",
@@ -758,10 +783,17 @@
       "synopsis": "\"A Scream in the Dark\" (2026) adalah film drama yang menegangkan. Seorang pelayan buta di restoran makan malam gelap terjebak dalam penyelidikan pembunuhan ketika bosnya dibunuh. Sementara seorang det...",
       "rating": 6.7,
       "genres": [
-        "Drama"
+        "Thriller",
+        "Mystery",
+        "TV Movie"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        53,
+        9648,
+        10770
+      ],
+      "original_language": "en",
+      "tmdb_id": 1665860
     },
     {
       "title": "A Sense of Dread",
@@ -778,7 +810,8 @@
       "tmdb_id": 1715543,
       "original_language": "en",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "A Single Christian",
@@ -1036,8 +1069,11 @@
       "genres": [
         "Action"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28
+      ],
+      "original_language": "bn",
+      "tmdb_id": 1562965
     },
     {
       "title": "Agito Chonoryoku Senso",
@@ -1052,7 +1088,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Ainsley McGregor Mysteries: A Case for the Watchmaker",
@@ -1145,7 +1182,8 @@
         "Romance"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Alpha",
@@ -1160,7 +1198,8 @@
         "Adventure"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Alpha: Men Love Vengeance",
@@ -1193,7 +1232,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "American Boy",
@@ -1209,7 +1249,8 @@
       "tmdb_id": 1695179,
       "original_language": "en",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Anaconda: Blood Coil",
