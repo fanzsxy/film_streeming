@@ -181,12 +181,12 @@ def assess(item, media, token, delay):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--limit", type=int, default=100)
+    p.add_argument("--limit", type=int, default=1000)
     p.add_argument("--delay", type=float, default=0.35)
     p.add_argument("--github-output", default="")
     args = p.parse_args()
-    if args.limit < 0 or args.limit > 500 or args.delay < 0.3:
-        p.error("limit must be 0..500 and delay >= 0.3")
+    if args.limit < 0 or args.limit > 1000 or args.delay < 0.3:
+        p.error("limit must be 0..1000 and delay >= 0.3")
     token = os.getenv("TMDB_TOKEN", "").strip()
     if args.limit and not token:
         p.error("TMDB_TOKEN secret is required")
