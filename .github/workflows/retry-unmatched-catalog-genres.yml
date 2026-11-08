@@ -1,0 +1,66 @@
+name: Retry Unmatched TMDB Genres
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Maximum unresolved titles to retry per batch'
+        required: true
+        default: '1000'
+        type: choice
+        options:
+          - '1000'
+          - '500'
+          - '100'
+  # Resumes if a chain is interrupted, and does nothing when no work remains.
+  schedule:
+    - cron: '41 */6 * * *'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: filmstream-metadata-write
+  cancel-in-progress: false
+
+jobs:
+  retry-genres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retry unmatched titles against TMDB
+        id: retry
+        env:
+          LIMIT: ${{ github.event.inputs.limit || '1000' }}
+        run: |
+          python tools/retry_catalog_genres.py --limit "$LIMIT" --delay 0.35 --github-output "$GITHUB_OUTPUT"
+      - name: Commit verified genre metadata
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/catalog/filmstream_catalog.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Retry verified TMDB genres for unresolved catalog titles"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          else
+            echo "No new verified metadata or retry statuses."
+          fi
+      - name: Queue next retry batch
+        if: ${{ steps.retry.outputs.pending != '0' && steps.retry.outputs.attempted != '0' && steps.retry.outputs.paused == 'false' }}
+        run: |
+          gh workflow run retry-unmatched-catalog-genres.yml --ref main -f limit=1000
+      - name: Summarize completion
+        if: ${{ steps.retry.outputs.pending == '0' }}
+        run: echo "All eligible unresolved titles checked. Ambiguous/unmatched entries remain unmodified for manual review."
