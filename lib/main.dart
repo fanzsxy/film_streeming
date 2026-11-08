@@ -888,45 +888,19 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  }
  Future<void> _goFilterPage(int target)=>_fillThrough(target);
  Future<void> _loadOptions() async {
-  try {
-   final responses=await Future.wait([Tmdb.get('genre/movie/list'),Tmdb.get('genre/tv/list')]);
-   final genresById=<int,String>{};
-   for(final response in responses) {
-    for(final raw in (response['genres'] as List? ?? const [])) {
-     if(raw is Map && raw['id'] is num && raw['name'] is String) {
-      genresById[(raw['id'] as num).toInt()] = (raw['name'] as String);
-     }
-    }
-   }
-   if(!mounted)return;
-   setState((){
-    _genreOptions=[const DropdownMenuItem<int>(value:0,child:Text('Semua genre')),
-      ...genresById.entries.map((e)=>DropdownMenuItem<int>(value:e.key,child:Text(e.value)))];
-    _languageOptions=const [DropdownMenuItem<String>(value:'',child:Text('Semua bahasa')),
+  // Dropdown options are static; avoid TMDB network requests on opening Filter.
+  _genreOptions=[
+    for(final item in genres.entries)
+      DropdownMenuItem<int>(value:item.key,child:Text(item.value)),
+  ];
+  _languageOptions=const [
+    DropdownMenuItem<String>(value:'',child:Text('Semua bahasa')),
     DropdownMenuItem<String>(value:'ja',child:Text('Jepang')),
     DropdownMenuItem<String>(value:'ko',child:Text('Korea')),
     DropdownMenuItem<String>(value:'zh',child:Text('China (Mandarin)')),
-    DropdownMenuItem<String>(value:'hi',child:Text('India (Hindi)'))];
-    // Keep genre selection usable if TMDB no longer exposes a legacy ID.
-    if(genre1>0 && !genresById.containsKey(genre1)){
-     _genreOptions.add(DropdownMenuItem(value:genre1,child:Text('Genre $genre1')));
-    }
-    _optionsLoaded=true;
-   });
-  }catch(_){
-   if(!mounted)return;
-   setState((){
-    _genreOptions=[const DropdownMenuItem<int>(value:0,child:Text('Semua genre')),
-      ...genres.entries.where((e)=>e.key!=0).map((e)=>
-        DropdownMenuItem<int>(value:e.key,child:Text(e.value)))];
-    _languageOptions=const [DropdownMenuItem<String>(value:'',child:Text('Semua bahasa')),
-    DropdownMenuItem<String>(value:'ja',child:Text('Jepang')),
-    DropdownMenuItem<String>(value:'ko',child:Text('Korea')),
-    DropdownMenuItem<String>(value:'zh',child:Text('China (Mandarin)')),
-    DropdownMenuItem<String>(value:'hi',child:Text('India (Hindi)'))];
-    _optionsLoaded=true;
-   });
-  }
+    DropdownMenuItem<String>(value:'hi',child:Text('India (Hindi)')),
+  ];
+  _optionsLoaded=true;
  }
  Map<String,String> _params(String media) {
   final both=[genre1,genre2].where((g)=>g>0).toSet().join(',');
@@ -1039,7 +1013,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
         Row(children:[
           Expanded(child:_pick<String>('Urutkan',sort,const [
             DropdownMenuItem(value:'title',child:Text('Abjad A–Z')),
-            DropdownMenuItem(value:'popular',child:Text('Populer')),
+            DropdownMenuItem(value:'popular',child:Text('Rating tertinggi')),
             DropdownMenuItem(value:'latest',child:Text('Terbaru'))],(v){if(v!=null)sort=v;})),
           const SizedBox(width:10),
           Expanded(child:_pick<String>('Tipe',type,const [
