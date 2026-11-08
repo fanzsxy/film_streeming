@@ -335,6 +335,23 @@ class LocalCatalogMetadata {
   // A numbered page may need multiple TMDB ranking/discovery pages because
   // the source catalog is the allow-list. Fetch a fixed, non-overlapping
   // window so page N and page N+1 never reuse the same TMDB candidates.
+  // Cache the catalog identity index across filter/discovery pages.
+  static List<CatalogEntry>? _discoveryIndexedSource;
+  static Map<String,List<CatalogEntry>> _discoveryById={};
+  static Map<String,List<CatalogEntry>> _discoveryByTitle={};
+  static void _ensureDiscoveryIndex(List<CatalogEntry> source){
+    if(identical(source,_discoveryIndexedSource))return;
+    final byId=<String,List<CatalogEntry>>{};
+    final byTitle=<String,List<CatalogEntry>>{};
+    for(final e in source){
+      if(e.tmdbId!=null)byId.putIfAbsent('${e.type}:${e.tmdbId}',()=>[]).add(e);
+      byTitle.putIfAbsent('${e.type}:${e.year}:${_norm(e.title)}',()=>[]).add(e);
+    }
+    _discoveryById=byId;
+    _discoveryByTitle=byTitle;
+    _discoveryIndexedSource=source;
+  }
+
   static Future<List<Movie>> _filledDiscoveryPage(
     List<CatalogEntry> source,String endpoint,int page,
     Map<String,String> params,String type) async {
@@ -346,13 +363,9 @@ class LocalCatalogMetadata {
         Tmdb.get(endpoint,{'page':'$p',...params}),
     ]);
     final media=endpoint.endsWith('/tv')?'tv':endpoint.endsWith('/movie')?'movie':null;
-    final catalog=source.where((e)=>media==null||e.type==media).toList();
-    final byId=<String,List<CatalogEntry>>{};
-    final byTitle=<String,List<CatalogEntry>>{};
-    for(final e in catalog){
-      if(e.tmdbId!=null)byId.putIfAbsent('${e.type}:${e.tmdbId}',()=>[]).add(e);
-      byTitle.putIfAbsent('${e.type}:${e.year}:${_norm(e.title)}',()=>[]).add(e);
-    }
+    _ensureDiscoveryIndex(source);
+    final byId=_discoveryById;
+    final byTitle=_discoveryByTitle;
     final found=<Movie>[];
     final seen=<String>{};
     for(final batch in pages){
@@ -379,7 +392,8 @@ class LocalCatalogMetadata {
           }
           if(candidates.length==1)selected=candidates.single;
         }
-        if(selected==null || !seen.add(selected.url))continue;
+        if(selected==null || (media!=null && selected.type!=media) ||
+           !seen.add(selected.url))continue;
         data['media_type']=selected.type;
         final movie=_withCollectedMetadata(selected,data);
         _sourceByTmdb[_key(movie.type,movie.id)]=movie.sourceUrl;
@@ -555,7 +569,7 @@ class LocalCatalogMetadata {
     // Use the catalog's reviewed title/year/source/poster/TMDB ID directly.
     // The detail page can fetch extra TMDB fields when the user opens it.
     if (endpoint == 'catalog/movie' || endpoint == 'catalog/tv' ||
-        endpoint == 'catalog/sorted') {
+        endpoint == 'catalog/sorted' || endpoint == 'search/multi') {
       return selected.map((entry) {
         final movie=_withCollectedMetadata(entry,{
           'id':entry.tmdbId ?? -_stableId(entry.url),
