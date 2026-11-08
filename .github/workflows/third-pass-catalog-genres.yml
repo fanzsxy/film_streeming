@@ -12,6 +12,11 @@ on:
           - '25'
           - '50'
           - '100'
+      auto_continue:
+        description: 'Continue automatically after this batch (enable only after pilot review)'
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -36,6 +41,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Check Python syntax
+        run: python -m py_compile tools/third_pass_catalog_genres.py tools/retry_catalog_genres.py
       - name: Verify missing genre matches (third pass)
         id: recover
         env:
@@ -55,8 +62,8 @@ jobs:
             echo "No metadata/status changes."
           fi
       - name: Automatically check next 100 titles
-        if: ${{ steps.recover.outputs.pending != '0' && steps.recover.outputs.attempted != '0' && steps.recover.outputs.paused == 'false' }}
-        run: gh workflow run third-pass-catalog-genres.yml --ref main -f limit=100
+        if: ${{ inputs.auto_continue == true && steps.recover.outputs.pending != '0' && steps.recover.outputs.attempted != '0' && steps.recover.outputs.paused == 'false' }}
+        run: gh workflow run third-pass-catalog-genres.yml --ref main -f limit=100 -f auto_continue=true
       - name: Report completion
         if: ${{ steps.recover.outputs.pending == '0' }}
         run: echo "Third pass finished. Unmatched, ambiguous, invalid-year or no-genre entries still require manual review."
