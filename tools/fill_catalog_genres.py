@@ -135,7 +135,7 @@ def main():
     total = sum(bool(valid_genres(item.get("genre_ids"))) for item in items)
     # Atomic replace, preserving all other catalog entries and fields.
     tmp = CATALOG.with_suffix(".genres.tmp")
-    tmp.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     tmp.replace(CATALOG)
     print(f"Genre available: {total}/{len(items)}; API requests: {fetched}; errors: {errors}")
     print("Entries without verified genre remain untouched; rerun to continue.")
