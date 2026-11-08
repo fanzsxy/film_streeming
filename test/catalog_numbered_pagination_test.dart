@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:filmstream_personal/main.dart';
+import 'package:filmstream_personal/filmstream_catalog.dart';
 
 void main() {
+  test('local search returns both film and series without TMDB requests', () async {
+    final catalog = await FilmStreamCatalog.load();
+    final term = catalog.first.title.toLowerCase();
+    final results = await Tmdb.list('search/multi', page: 1,
+      params: {'query': term, 'include_adult': 'false'}, type: 'movie');
+    expect(results, isNotEmpty);
+    expect(results.first.sourceUrl, isNotEmpty);
+    expect(results.first.title.toLowerCase().contains(term), isTrue);
+  });
+
   testWidgets('numbered pages support previous and next', (tester) async {
     int selected = 0;
     await tester.pumpWidget(MaterialApp(home: Scaffold(body:
