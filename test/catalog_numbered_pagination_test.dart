@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:filmstream_personal/main.dart';
 import 'package:filmstream_personal/filmstream_catalog.dart';
 
 void main() {
-  test('local search returns both film and series without TMDB requests', () async {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('local search returns catalog results without TMDB requests', () async {
+    SharedPreferences.setMockInitialValues({});
     final catalog = await FilmStreamCatalog.load();
     final term = catalog.first.title.toLowerCase();
     final results = await Tmdb.list('search/multi', page: 1,
