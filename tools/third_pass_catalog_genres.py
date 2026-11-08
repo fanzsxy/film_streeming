@@ -9,9 +9,10 @@ import json
 import os
 import re
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 
 from retry_catalog_genres import CATALOG, genre_ids, normalized, variants, year_of, apply_genres
@@ -179,6 +180,46 @@ def assess(item, media, token, delay):
     return chosen, None
 
 
+
+def fix_title_number_year(items):
+    """Correct a source-site release year mistakenly copied from a numeric film title.
+
+    Only when the existing year equals the leading 4-digit number in the title,
+    and the source URL ends with a different plausible release year. Never
+    change a title, verified TMDB genre, or an unrelated year mismatch.
+    """
+    corrections = []
+    ceiling = datetime.now(timezone.utc).year + 2
+    for item in items:
+        if item.get("type") not in ("movie", "series") or genre_ids(item.get("genre_ids")):
+            continue
+        title = str(item.get("title") or "")
+        match = re.match(r"^(\\d{4})(?!\\d)", title)
+        if not match:
+            continue
+        try:
+            current = int(item.get("year"))
+        except (TypeError, ValueError):
+            continue
+        if current != int(match.group(1)):
+            continue
+        url = urlparse(str(item.get("url") or ""))
+        if not url.hostname or not (url.hostname == "lk21official.cc" or url.hostname.endswith(".lk21official.cc")):
+            continue
+        slug = url.path.rstrip("/").rsplit("/", 1)[-1]
+        suffix = re.search(r"-(\\d{4})$", slug)
+        if not suffix:
+            continue
+        release_year = int(suffix.group(1))
+        if release_year == current or not (1900 <= release_year <= ceiling):
+            continue
+        item["year"] = release_year
+        for status in ("genre_sync_status", "genre_retry_status", "genre_third_status"):
+            item.pop(status, None)
+        corrections.append((title, current, release_year))
+    return corrections
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--limit", type=int, default=1000)
@@ -193,6 +234,10 @@ def main():
 
     data = json.loads(CATALOG.read_text(encoding="utf-8-sig"))
     items = data["items"]
+    corrected_years = fix_title_number_year(items)
+    for title, previous, release in corrected_years[:15]:
+        print(f"Fixed title-number year: {title!r}: {previous} -> {release}", flush=True)
+    print(f"Title-number years corrected: {len(corrected_years)}", flush=True)
     attempted = recovered = unresolved = 0
     paused = False
     for item in items:
