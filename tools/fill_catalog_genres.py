@@ -8,6 +8,9 @@ import argparse
 import json
 import os
 import time
+import difflib
+import re
+from urllib.parse import urlencode
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -69,76 +72,161 @@ def fill(entry, record):
         entry["original_language"] = language.strip()
 
 
+
+def select_match(entry, results):
+    wanted = re.sub(r"[^a-z0-9]+", " ", str(entry.get("title", "")).casefold()).strip()
+    try:
+        year = int(entry.get("year", 0))
+    except (ValueError, TypeError):
+        return None
+    ranked = []
+    for result in results:
+        if not isinstance(result, dict):
+            continue
+        date = str(result.get("release_date") or result.get("first_air_date") or "")
+        if not re.match(r"^\d{4}", date) or abs(int(date[:4]) - year) > 1:
+            continue
+        names = [result.get(k) for k in ("title", "original_title", "name", "original_name")]
+        score = max((difflib.SequenceMatcher(
+            None, wanted, re.sub(r"[^a-z0-9]+", " ", n.casefold()).strip()
+        ).ratio() for n in names if isinstance(n, str) and n), default=0.0)
+        if score >= 0.96:
+            ranked.append((score, int(date[:4]) == year, result))
+    ranked.sort(key=lambda x: (x[0], x[1]), reverse=True)
+    if not ranked or (len(ranked) > 1 and ranked[0][0] - ranked[1][0] < 0.07):
+        return None
+    return ranked[0][2]
+
+
+def fetch(endpoint, token, params=None):
+    uri = "https://api.themoviedb.org/3/" + endpoint
+    if params:
+        uri += "?" + urlencode(params)
+    request = Request(uri, headers={
+        "Authorization": "Bearer " + token,
+        "Accept": "application/json",
+        "User-Agent": "FilmStreamCatalogGenreSync/2.0",
+    })
+    with urlopen(request, timeout=25) as response:
+        return json.load(response)
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--limit", type=int, default=100)
+    parser.add_argument("--limit", type=int, default=1000)
     parser.add_argument("--delay", type=float, default=0.35)
+    parser.add_argument("--github-output", default="")
     args = parser.parse_args()
-    if args.limit < 0 or args.limit > 1000 or args.delay < 0.25:
-        parser.error("Use 0 <= --limit <= 1000 and --delay >= 0.25")
+    if not 0 <= args.limit <= 1000 or args.delay < 0.25:
+        parser.error("limit must be between 0 and 1000; delay >= 0.25")
     data = json.loads(CATALOG.read_text(encoding="utf-8-sig"))
     items = data["items"]
-    verified = {}
+    cached = {}
     if CACHE.exists():
         for line in CACHE.read_text(encoding="utf-8").splitlines():
             if not line.strip():
                 continue
             record = json.loads(line)
             if record.get("match_status") == "matched" and type(record.get("tmdb_id")) is int:
-                verified[(record.get("source_url"), record.get("tmdb_type"), record.get("tmdb_id"))] = record
+                cached[(record.get("source_url"), record.get("tmdb_type"))] = record
 
+    # Apply verified cache records without API calls.
+    cache_hits = 0
     for item in items:
-        if item.get("type") not in ("series", "movie"):
+        if item.get("type") not in ("movie", "series"):
             continue
-        media = "tv" if item.get("type") == "series" else "movie"
-        key = (item.get("url"), media, item.get("tmdb_id"))
-        if key in verified:
-            fill(item, verified[key])
+        media = "tv" if item["type"] == "series" else "movie"
+        record = cached.get((item.get("url"), media))
+        if not record or valid_genres(item.get("genre_ids")):
+            continue
+        known = item.get("tmdb_id")
+        if known is not None and known != record["tmdb_id"]:
+            continue
+        item["tmdb_id"] = record["tmdb_id"]
+        fill(item, record)
+        if valid_genres(item.get("genre_ids")):
+            cache_hits += 1
+            item.pop("genre_sync_status", None)
 
     token = os.getenv("TMDB_TOKEN", "").strip()
     if args.limit and not token:
-        parser.error("TMDB_TOKEN secret is required for API requests")
-    fetched = 0
-    errors = 0
+        parser.error("TMDB_TOKEN secret missing")
+    processed = 0
+    filled = 0
+    unavailable = 0
+    paused = False
     for item in items:
-        if fetched >= args.limit:
+        if processed >= args.limit:
             break
-        if item.get("type") not in ("series", "movie"):
+        if item.get("type") not in ("movie", "series"):
             continue
-        ids = valid_genres(item.get("genre_ids"))
-        expected = [GENRE_NAMES.get(x) for x in ids] if ids else []
-        if (ids and item.get("original_language") and
-                expected and all(expected) and item.get("genres") == expected):
+        if valid_genres(item.get("genre_ids")):
             continue
-        tmdb_id = item.get("tmdb_id")
-        if type(tmdb_id) is not int or tmdb_id <= 0:
+        if item.get("genre_sync_status") in ("unmatched", "no_genres", "invalid_year"):
             continue
-        media = "tv" if item.get("type") == "series" else "movie"
-        url = f"https://api.themoviedb.org/3/{media}/{tmdb_id}?language=en-US"
-        request = Request(url, headers={
-            "Authorization": f"Bearer {token}", "Accept": "application/json",
-            "User-Agent": "FilmStreamCatalogGenreSync/1.0",
-        })
+        media = "tv" if item["type"] == "series" else "movie"
+        known_id = item.get("tmdb_id")
+        if type(known_id) is int and known_id > 0:
+            endpoint = f"{media}/{known_id}"
+            params = {"language": "en-US"}
+        else:
+            try:
+                year = int(item.get("year", 0))
+            except (TypeError, ValueError):
+                year = 0
+            if not 1900 <= year <= 2100:
+                item["genre_sync_status"] = "invalid_year"
+                unavailable += 1
+                continue
+            endpoint = f"search/{media}"
+            params = {
+                "query": str(item.get("title", "")),
+                "language": "en-US", "include_adult": "false",
+                ("year" if media == "movie" else "first_air_date_year"): str(year),
+            }
         try:
-            with urlopen(request, timeout=20) as response:
-                detail = json.load(response)
-            fill(item, detail)
+            record = fetch(endpoint, token, params)
+            time.sleep(args.delay)
+            if endpoint.startswith("search/"):
+                match = select_match(item, record.get("results", []))
+                if match is None:
+                    item["genre_sync_status"] = "unmatched"
+                    unavailable += 1
+                    processed += 1
+                    continue
+                item["tmdb_id"] = match["id"]
+                record = match
+            fill(item, record)
+            if valid_genres(item.get("genre_ids")):
+                item.pop("genre_sync_status", None)
+                filled += 1
+            else:
+                item["genre_sync_status"] = "no_genres"
+                unavailable += 1
+            processed += 1
         except (HTTPError, URLError, TimeoutError, ValueError) as exc:
-            errors += 1
-            print(f"Skipping {media}:{tmdb_id}: {exc}")
-            if isinstance(exc, HTTPError) and exc.code == 429:
-                print("Rate limited; stopping to avoid further requests")
-                break
-        fetched += 1
-        time.sleep(args.delay)
+            print(f"TMDB error for {item.get('title')!r}: {exc}", flush=True)
+            paused = True
+            break
+        if processed % 100 == 0:
+            print(f"Processed {processed} titles; verified genres for {filled}", flush=True)
 
-    total = sum(bool(valid_genres(item.get("genre_ids"))) for item in items)
-    # Atomic replace, preserving all other catalog entries and fields.
+    complete = sum(bool(valid_genres(x.get("genre_ids"))) for x in items)
+    pending = sum(x.get("type") in ("movie", "series")
+                  and not valid_genres(x.get("genre_ids"))
+                  and x.get("genre_sync_status") not in
+                      ("unmatched", "no_genres", "invalid_year") for x in items)
     tmp = CATALOG.with_suffix(".genres.tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     tmp.replace(CATALOG)
-    print(f"Genre available: {total}/{len(items)}; API requests: {fetched}; errors: {errors}")
-    print("Entries without verified genre remain untouched; rerun to continue.")
+    print(f"Genre available: {complete}/{len(items)}")
+    print(f"This batch: {processed} checked; {filled} new; {cache_hits} from cache; {unavailable} unresolved")
+    print(f"Still eligible: {pending}; paused: {paused}")
+    if args.github_output:
+        with open(args.github_output, "a", encoding="utf-8") as report:
+            report.write(f"pending={pending}\n")
+            report.write(f"processed={processed}\n")
+            report.write(f"paused={'true' if paused else 'false'}\n")
 
 
 if __name__ == "__main__":
