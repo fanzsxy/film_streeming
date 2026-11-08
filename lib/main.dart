@@ -1494,7 +1494,8 @@ class _PagedGridState extends State<PagedGrid> {
     if(!endpoint.startsWith('catalog/') && endpoint!='home/latest' &&
         endpoint!='search/multi')return null;
     final source=await FilmStreamCatalog.load();
-    final media=endpoint=='home/latest' || endpoint=='catalog/movie'?'movie':
+    final media=endpoint=='search/multi'?null:
+        endpoint=='home/latest' || endpoint=='catalog/movie'?'movie':
         endpoint=='catalog/tv'?'tv':
         (widget.type=='all'?null:widget.type);
     final term=endpoint=='search/multi'
