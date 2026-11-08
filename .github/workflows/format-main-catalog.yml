@@ -1,0 +1,46 @@
+name: Format Main Catalog JSON
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: filmstream-metadata-write
+  cancel-in-progress: false
+
+jobs:
+  format-catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout catalog
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Format existing JSON without changing its content
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("assets/catalog/filmstream_catalog.json")
+          raw = path.read_text(encoding="utf-8-sig")
+          data = json.loads(raw)
+          assert isinstance(data, dict) and isinstance(data.get("items"), list)
+          pretty = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+          assert json.loads(pretty) == data
+          path.write_text(pretty, encoding="utf-8")
+          print(f"Formatted {len(data['items'])} entries; metadata unchanged.")
+          PY
+      - name: Commit formatting only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/catalog/filmstream_catalog.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Format main catalog JSON for readability"
+            git pull --rebase
+            git push
+          else
+            echo "Catalog already formatted."
+          fi
