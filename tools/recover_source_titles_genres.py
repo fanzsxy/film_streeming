@@ -18,19 +18,36 @@ from retry_catalog_genres import CATALOG, genre_ids, normalized
 from third_pass_catalog_genres import assess
 from recover_empty_catalog_genres import has_genres, apply_only_if_empty
 
-PASS = "source_titles_v1"
+PASS = "source_titles_and_genres_v2"
 ALLOWED_HOSTS = ("lk21official.cc", "nontondrama.vip")
-FINISHED = {"matched", "unmatched", "no_source_title", "no_genres", "ambiguous",
-            "invalid_year", "title_conflict", "existing_tmdb_ids"}
+SOURCE_GENRES = {
+    "Action", "Adventure", "Animation", "Biography", "Comedy", "Crime",
+    "Documentary", "Drama", "Family", "Fantasy", "History", "Horror",
+    "Musical", "Music", "Mystery", "Romance", "Sci-Fi", "Science Fiction",
+    "Sport", "Thriller", "War", "Western", "Reality", "Soap", "Kids",
+    "TV Movie", "War & Politics", "Action & Adventure", "Sci-Fi & Fantasy",
+}
+
 
 
 class TitleParser(HTMLParser):
+    """Read the film H1 and only genre tags in its nearby metadata header.
+
+    Genre menu links appear BEFORE the H1 and must never be collected.
+    Related-movie/footer links appear AFTER the player and must be ignored.
+    """
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.in_h1 = False
         self.h1 = []
         self.headings = []
         self.og_title = ""
+        self.seen_h1 = False
+        self.metadata_end = False
+        self.metadata_links = 0
+        self.in_link = False
+        self.link_text = []
+        self.genre_tags = []
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
@@ -39,15 +56,54 @@ class TitleParser(HTMLParser):
             self.h1 = []
         elif tag == "meta" and attrs.get("property") == "og:title":
             self.og_title = attrs.get("content", "")
+        elif self.seen_h1 and tag == "h2":
+            self.metadata_end = True
+        elif self.seen_h1 and not self.metadata_end and tag == "a":
+            self.metadata_links += 1
+            if self.metadata_links <= 25:
+                self.in_link = True
+                self.link_text = []
+            else:
+                self.metadata_end = True
 
     def handle_data(self, data):
         if self.in_h1:
             self.h1.append(data)
+        if self.in_link:
+            self.link_text.append(data)
+        # Source metadata genre badges precede the playback controls.
+        if self.seen_h1 and not self.in_link and re.search(
+            r"\b(?:Play Awal|Play Terbaru|Beri rating film ini)\b", data, re.I
+        ):
+            self.metadata_end = True
 
     def handle_endtag(self, tag):
         if tag == "h1" and self.in_h1:
             self.headings.append(" ".join(" ".join(self.h1).split()))
             self.in_h1 = False
+            self.seen_h1 = True
+        elif tag == "a" and self.in_link:
+            label = " ".join(" ".join(self.link_text).split())
+            if label in SOURCE_GENRES and label not in self.genre_tags:
+                self.genre_tags.append(label)
+            self.in_link = False
+            self.link_text = []
+
+
+def parse_source_metadata(page, expected_year):
+    parser = TitleParser()
+    parser.feed(page)
+    for heading in parser.headings:
+        match = re.match(r"^(.+?)\s*\((\d{4})\)\s*$", heading)
+        if match and int(match.group(2)) == expected_year:
+            title = html.unescape(match.group(1)).strip()
+            if 2 <= len(title) <= 180:
+                return title, parser.genre_tags
+    return None, []
+
+
+def extract_genres(page, expected_year):
+    return parse_source_metadata(page, expected_year)[1]
 
 
 def valid_source_url(raw):
@@ -59,19 +115,7 @@ def valid_source_url(raw):
 
 
 def extract_title(page, expected_year):
-    parser = TitleParser()
-    parser.feed(page)
-    headings = parser.headings
-    # Prefer an explicit H1, never a tab title used for navigation/SEO.
-    if not headings:
-        return None
-    for heading in headings:
-        match = re.match(r"^(.+?)\s*\((\d{4})\)\s*$", heading)
-        if match and int(match.group(2)) == expected_year:
-            title = html.unescape(match.group(1)).strip()
-            if 2 <= len(title) <= 180:
-                return title
-    return None
+    return parse_source_metadata(page, expected_year)[0]
 
 
 def token_subsequence(shorter, longer):
@@ -104,7 +148,7 @@ def safe_title_upgrade(item, full_title):
 def fetch_title(item, delay):
     url = str(item.get("url") or "")
     if not valid_source_url(url):
-        return None, "invalid_source"
+        return None, [], "invalid_source"
     request = Request(url, headers={
         "User-Agent": "Mozilla/5.0 (compatible; FilmStreamMetadataAudit/1.0)",
         "Accept": "text/html",
@@ -112,21 +156,21 @@ def fetch_title(item, delay):
     with urlopen(request, timeout=22) as response:
         actual = response.geturl()
         if not valid_source_url(actual):
-            return None, "invalid_redirect"
+            return None, [], "invalid_redirect"
         if urlparse(actual).hostname != urlparse(url).hostname:
             return None, "invalid_redirect"
         if urlparse(actual).path.rstrip("/") != urlparse(url).path.rstrip("/"):
             return None, "invalid_redirect"
         if "html" not in response.headers.get("Content-Type", "").lower():
-            return None, "not_html"
+            return None, [], "not_html"
         body = response.read(700_000).decode("utf-8", errors="replace")
     time.sleep(delay)
     try:
         year = int(item.get("year"))
     except (TypeError, ValueError):
-        return None, "invalid_year"
-    title = extract_title(body, year)
-    return (title, "verified") if title else (None, "no_source_title")
+        return None, [], "invalid_year"
+    title, genres = parse_source_metadata(body, year)
+    return (title, genres, "verified") if title else (None, [], "no_source_title")
 
 
 def audit(items):
@@ -151,7 +195,7 @@ def main():
     data = json.loads(CATALOG.read_text(encoding="utf-8-sig"))
     items = data["items"]
     print("Source-title audit BEFORE:", audit(items), flush=True)
-    attempted = corrected = filled = unresolved = 0
+    attempted = corrected = filled = from_source = from_tmdb = unresolved = 0
     paused = False
     if args.limit:
         for item in items:
@@ -170,7 +214,7 @@ def main():
 
             old = item.get("title")
             try:
-                title, source_status = fetch_title(item, args.delay)
+                title, source_genres, source_status = fetch_title(item, args.delay)
                 if title and not safe_title_upgrade(item, title):
                     source_status = "title_conflict"
                 elif title:
@@ -188,9 +232,21 @@ def main():
                     result, status = assess(item, media, token, args.delay)
                 if result and apply_only_if_empty(item, result):
                     filled += 1
-                    status = "matched"
+                    from_tmdb += 1
+                    status = "matched_tmdb"
+                    item["genre_data_source"] = "tmdb"
                     if filled <= 30:
                         print(f"Verified TMDB genres: {item['title']!r} -> {result['id']}", flush=True)
+                elif source_status == "verified" and source_genres and not has_genres(item):
+                    # Source metadata is useful independently of TMDB. Do not
+                    # set genre_ids: these were NOT verified from TMDB.
+                    item["genres"] = source_genres
+                    item["genre_data_source"] = "lk21_source"
+                    filled += 1
+                    from_source += 1
+                    status = "matched_source"
+                    if filled <= 30:
+                        print(f"Source genres: {item['title']!r} -> {source_genres!r}", flush=True)
                 else:
                     status = status or "unmatched"
                     unresolved += 1
@@ -215,7 +271,7 @@ def main():
                 print(f"Temporary source/TMDB error: {exc}; stopping safely", flush=True)
                 break
             if attempted % 25 == 0:
-                print(f"Source batch: checked={attempted}; titles_fixed={corrected}; genres_filled={filled}", flush=True)
+                print(f"Source batch: checked={attempted}; titles_fixed={corrected}; genres_filled={filled}; from_tmdb={from_tmdb}; from_source={from_source}", flush=True)
 
         temp = CATALOG.with_suffix(".source.tmp")
         temp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -223,7 +279,7 @@ def main():
 
     numbers = audit(items)
     print(f"Source-title audit AFTER: supported={numbers[0]}; with_genres={numbers[1]}; truly_empty={numbers[2]}; pending={numbers[3]}", flush=True)
-    print(f"Source batch: checked={attempted}; titles_fixed={corrected}; genres_filled={filled}; unresolved={unresolved}; paused={paused}", flush=True)
+    print(f"Source batch: checked={attempted}; titles_fixed={corrected}; genres_filled={filled}; from_tmdb={from_tmdb}; from_source={from_source}; unresolved={unresolved}; paused={paused}", flush=True)
     if args.github_output:
         with open(args.github_output, "a", encoding="utf-8") as out:
             out.write(f"pending={numbers[3]}\nattempted={attempted}\npaused={str(paused).lower()}\n")
