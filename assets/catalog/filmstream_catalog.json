@@ -12825,7 +12825,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Safia/Safdar",
@@ -12955,7 +12956,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Sanctus House",
@@ -13124,7 +13126,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Schumacher '94: The Birth of a Legend",
@@ -13177,7 +13180,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Secret of Kalinga",
@@ -13364,10 +13368,16 @@
       "rating": 7.8,
       "genres": [
         "Action",
+        "Crime",
         "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        28,
+        80,
+        53
+      ],
+      "original_language": "en",
+      "tmdb_id": 1290821
     },
     {
       "title": "Sheng Wang: Purple",
@@ -13435,7 +13445,8 @@
         "Biography"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Shocktopus",
@@ -13467,7 +13478,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Shot Reverse Shot",
@@ -13499,7 +13511,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Silent Screams: The Lost Girls of Telangana",
@@ -13530,7 +13543,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Sing Geetham",
@@ -13562,10 +13576,15 @@
       "synopsis": "Sister (2026) mengisahkan dua penculik yang menculik putri sebuah keluarga kaya. Namun, kebenaran di balik penculikan itu mulai terungkap, menampilkan konflik dan rahasia tersembunyi antara tiga orang...",
       "rating": 6.6,
       "genres": [
-        "Thriller"
+        "Comedy",
+        "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        35,
+        18
+      ],
+      "original_language": "en",
+      "tmdb_id": 1469050
     },
     {
       "title": "Skate to Hell",
@@ -13695,7 +13714,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Solo Mio",
@@ -13729,7 +13749,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Sommore 'Chandelier Fly'",
@@ -13930,8 +13951,11 @@
       "genres": [
         "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18
+      ],
+      "original_language": "te",
+      "tmdb_id": 1623437
     },
     {
       "title": "Star Wars: The Mandalorian and Grogu",
@@ -13943,10 +13967,16 @@
       "rating": 6.7,
       "genres": [
         "Action",
-        "Adventure"
+        "Adventure",
+        "Science Fiction"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        12,
+        878
+      ],
+      "original_language": "en",
+      "tmdb_id": 1228710
     },
     {
       "title": "State of Fear",
@@ -14134,10 +14164,15 @@
       "synopsis": "Street Fighter - Petarung jalanan Ryu dan Ken kembali bersatu setelah Chun-Li merekrut mereka untuk bertarung di Turnamen World Warrior. Di tengah pertarungan yang sengit, mereka membongkar konspirasi...",
       "rating": 6.2,
       "genres": [
-        "Action"
+        "Action",
+        "Fantasy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        28,
+        14
+      ],
+      "original_language": "en",
+      "tmdb_id": 1153576
     },
     {
       "title": "Street Flow 3",
@@ -14205,11 +14240,13 @@
       "synopsis": "Sugar (2026) mengisahkan Mi Ra, seorang ibu pekerja yang berjuang melawan segalanya untuk menyelamatkan putranya, Dong Myung, yang menderita diabetes tipe 1. Dengan penuh kasih sayang dan ketabahan, M...",
       "rating": 8.4,
       "genres": [
-        "Biography",
         "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        18
+      ],
+      "original_language": "ko",
+      "tmdb_id": 1325556
     },
     {
       "title": "Sugar & Vice: A Hannah Swensen Mystery",
@@ -14414,11 +14451,19 @@
       "synopsis": "Dalam film \"Swapped\" (2026), seekor makhluk hutan kecil dan burung megah tiba-tiba bertukar tubuh, memaksa mereka bekerja sama untuk bertahan hidup dalam petualangan paling liar mereka. Dengan kekuata...",
       "rating": 8.8,
       "genres": [
+        "Adventure",
         "Animation",
-        "Adventure"
+        "Family",
+        "Fantasy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        12,
+        16,
+        10751,
+        14
+      ],
+      "original_language": "en",
+      "tmdb_id": 1007757
     },
     {
       "title": "Swords of Legends: Doomsday",
@@ -14469,7 +14514,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Tarung: Unforgiven",
@@ -14643,7 +14689,8 @@
         "Documentary"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "THE A-CARE -Disusebody: Haiyoshin",
@@ -14658,7 +14705,8 @@
         "Mystery"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The American Dream",
@@ -14673,7 +14721,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Art of Telling Lies",
@@ -14765,8 +14814,12 @@
         "Horror",
         "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        53
+      ],
+      "original_language": "ta",
+      "tmdb_id": 1506633
     },
     {
       "title": "The Bluff",
@@ -14842,7 +14895,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Brink of War",
@@ -14932,7 +14986,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Confession",
@@ -14946,7 +15001,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Convenience Store",
@@ -15014,7 +15070,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Dangers in My Heart",
@@ -15029,7 +15086,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Day Diego Returned to the Azteca",
@@ -15061,7 +15119,8 @@
         "Biography"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Death of Robin Hood",
@@ -15403,11 +15462,15 @@
       "synopsis": "Dalam \"The Eyes\" (2026), seorang wanita yang perlahan kehilangan penglihatannya terpaksa menyelidiki kematian misterius saudara kembarnya. Ia menemukan kebenaran yang mengejutkan dan gelap yang mengan...",
       "rating": 7.3,
       "genres": [
-        "Mystery",
-        "Thriller"
+        "Thriller",
+        "Horror"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        53,
+        27
+      ],
+      "original_language": "ko",
+      "tmdb_id": 1383154
     },
     {
       "title": "The Fairfield County Four",
@@ -15746,7 +15809,8 @@
         "Action"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Investigation of Lucy Letby",
@@ -15822,7 +15886,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The King’s Warden",
@@ -15892,10 +15957,17 @@
       "synopsis": "Dalam film The Last Hail M.A.R.Y. (2026), tim ilmuwan di Stasiun Luar Angkasa Antarnegara harus berlomba melawan waktu untuk menyelamatkan tata surya dari kehancuran. Ketika Merkurius ditelan oleh gra...",
       "rating": 3.7,
       "genres": [
-        "Sci-fi"
+        "Science Fiction",
+        "Action",
+        "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        878,
+        28,
+        18
+      ],
+      "original_language": "en",
+      "tmdb_id": 1647555
     },
     {
       "title": "The Last House",
@@ -15929,7 +16001,8 @@
         "Mystery"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Last Scene",
@@ -15943,7 +16016,8 @@
         "Romance"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Last Sunrise",
@@ -16133,7 +16207,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Mongoose",
@@ -16286,10 +16361,16 @@
       "rating": 7.7,
       "genres": [
         "Adventure",
-        "Drama"
+        "Action",
+        "Fantasy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        12,
+        28,
+        14
+      ],
+      "original_language": "en",
+      "tmdb_id": 1368337
     },
     {
       "title": "The Odyssey - The Real Story",
@@ -16338,7 +16419,8 @@
         "Adventure"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Outer Threat",
@@ -16371,7 +16453,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Plastic Detox",
@@ -16504,7 +16587,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Ribbon Hero",
@@ -16618,7 +16702,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Room Below",
@@ -16650,11 +16735,15 @@
       "synopsis": "The Runner - Seorang pengacara sukses di London terpaksa terlibat dalam aksi kejar-kejaran yang mencekam di seluruh pelosok kota demi menyelamatkan putranya yang diculik. Demi keselamatan sang anak, i...",
       "rating": 4.6,
       "genres": [
-        "Action",
-        "Drama"
+        "Thriller",
+        "Action"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        53,
+        28
+      ],
+      "original_language": "en",
+      "tmdb_id": 1386315
     },
     {
       "title": "The Secret Woman",
@@ -16749,7 +16838,8 @@
         "Crime"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Sin Trade",
@@ -16787,7 +16877,8 @@
       "tmdb_id": 1750174,
       "original_language": "en",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "The Storm",
@@ -16907,7 +16998,8 @@
         "Biography"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Things Left Unspoken",
@@ -16920,8 +17012,11 @@
       "genres": [
         "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18
+      ],
+      "original_language": "it",
+      "tmdb_id": 1473635
     },
     {
       "title": "The Trouble with Mistletoe",
@@ -16957,7 +17052,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Ultimate Duo",
@@ -17109,7 +17205,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Whisper Man",
@@ -17269,7 +17366,8 @@
       "tmdb_id": 1695285,
       "original_language": "te",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Therapy Done Right",
@@ -17740,7 +17838,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Tu Yaa Main",
@@ -17812,7 +17911,8 @@
       "tmdb_id": 1732399,
       "original_language": "ko",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Twin",
@@ -17882,8 +17982,11 @@
       "genres": [
         "Comedy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        35
+      ],
+      "original_language": "en",
+      "tmdb_id": 1243460
     },
     {
       "title": "Tyson Fury vs. Arslanbek Makhmudov",
@@ -18063,11 +18166,13 @@
       "synopsis": "\"Untold UK: Jamie Vardy\" (2026) merupakan film dokumenter olahraga yang memotret evolusi Jamie Vardy, pemain sepak bola Inggris, dari pemain paruh waktu hingga legenda Liga Premier. Dalam film ini, pe...",
       "rating": 9.0,
       "genres": [
-        "Documentary",
-        "Sport"
+        "Documentary"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        99
+      ],
+      "original_language": "en",
+      "tmdb_id": 1684240
     },
     {
       "title": "Untold UK: Liverpool's Miracle of Istanbul",
@@ -18233,8 +18338,12 @@
         "Drama",
         "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        53
+      ],
+      "original_language": "te",
+      "tmdb_id": 1733512
     },
     {
       "title": "Valathu Vashathe Kallan",
@@ -18288,7 +18397,8 @@
         "Action"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Vanishing Point",
@@ -18303,7 +18413,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Velhos Bandidos (Old Bandits)",
@@ -18356,7 +18467,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Virginia Woolf's Night & Day",
@@ -18487,10 +18599,15 @@
       "synopsis": "Dalam film \"Vyprobuvalnyi Termin\" (2026), seorang pewaris cantik Polina dipaksa untuk mengikuti masa percobaan di sebuah biro iklan. Ia kemudian bertemu Roman, seorang ambisius yang tangguh. Pertarung...",
       "rating": 0.0,
       "genres": [
-        "Comedy"
+        "Comedy",
+        "Romance"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        35,
+        10749
+      ],
+      "original_language": "uk",
+      "tmdb_id": 1541434
     },
     {
       "title": "Wacken - Hearts Full of Metal",
@@ -18603,7 +18720,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "When Will You Get Divorced?",
@@ -18631,11 +18749,13 @@
       "synopsis": "Dalam \"Whisper in the Dark\", Jeremy yang terkurung oleh agoraphobia harus menghadapi teror dari masa lalunya. Ia dipenjara dalam empat dinding, tak bisa melarikan diri dari bayangan mengerikan yang me...",
       "rating": 3.2,
       "genres": [
-        "Drama",
         "Horror"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27
+      ],
+      "original_language": "en",
+      "tmdb_id": 1609139
     },
     {
       "title": "Whitmer Thomas: Terminal Crew of Dudes",
@@ -18726,7 +18846,8 @@
         "Short"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Wings of Dread",
@@ -18803,7 +18924,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Wonderful Nightmare",
@@ -18860,7 +18982,8 @@
         "Sport"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Wuthering Heights",
@@ -18947,10 +19070,15 @@
       "synopsis": "Dalam film \"Yogi Da\" (2026), seorang polisi wanita tangguh melancarkan misi melawan korupsi di kota kecilnya. Dengan kemampuan bela diri unik dan tak terkalahkan, dia menghadapi para kriminal berbahay...",
       "rating": 7.3,
       "genres": [
+        "Thriller",
         "Action"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        53,
+        28
+      ],
+      "original_language": "ta",
+      "tmdb_id": 1628578
     },
     {
       "title": "Yoh! Bestie",
@@ -19155,8 +19283,11 @@
       "genres": [
         "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18
+      ],
+      "original_language": "en",
+      "tmdb_id": 1376817
     },
     {
       "title": "100 awit para kay Stella",
@@ -19344,7 +19475,8 @@
         "Fantasy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "invalid_year"
+      "genre_retry_status": "invalid_year",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "5 Centimeters Per Second",
@@ -19573,10 +19705,16 @@
       "rating": 5.0,
       "genres": [
         "Action",
-        "Horror"
+        "Horror",
+        "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        27,
+        53
+      ],
+      "original_language": "en",
+      "tmdb_id": 1104999
     },
     {
       "title": "A House of Dynamite",
@@ -19626,7 +19764,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "A Pale View of Hills",
@@ -20004,10 +20143,15 @@
       "synopsis": "About a Place in the Kinki Region mengikuti hilangnya seorang editor majalah okultisme yang menghilang setelah menyelidiki artikel-artikel aneh, meninggalkan rekan-rekannya dengan beragam rumor, legen...",
       "rating": 6.0,
       "genres": [
-        "Horror"
+        "Horror",
+        "Mystery"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        9648
+      ],
+      "original_language": "ja",
+      "tmdb_id": 1400499
     },
     {
       "title": "Acts of Love",
@@ -20039,7 +20183,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Adorable Humans",
@@ -20112,7 +20257,8 @@
         "Family"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "After the Hunt",
@@ -20181,7 +20327,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Against All Odds",
@@ -20192,11 +20339,15 @@
       "synopsis": "Di tahun 1944, Hong Kong terjebak dalam cengkeraman Jepang. James, seorang pilot pasukan Flying Tigers Amerika yang membantu China, ditembak jatuh oleh tentara Jepang saat melakukan misi pemboman. Den...",
       "rating": 7.4,
       "genres": [
-        "Action",
-        "Drama"
+        "Drama",
+        "War"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        18,
+        10752
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1523345
     },
     {
       "title": "Agent Zero",
@@ -20300,10 +20451,15 @@
       "synopsis": "Dalam Akhanda 2, aksi intens membawa kita ke dalam konflik antara kekuatan alam dan ambisi manusia. Sebuah komunitas yang damai harus menghadapi ancaman dari sebuah perusahaan besar yang menghancurkan...",
       "rating": 6.0,
       "genres": [
-        "Action"
+        "Action",
+        "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        18
+      ],
+      "original_language": "te",
+      "tmdb_id": 1372588
     },
     {
       "title": "All Greens",
@@ -20453,7 +20609,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Altered",
@@ -20574,11 +20731,17 @@
       "synopsis": "Dalam \"Anaconda\" (2025), sekelompok teman yang tengah menghadapi krisis paruh baya memutuskan untuk menyegarkan kenangan masa muda dengan merekam ulang film favorit mereka. Mereka memilih untuk memfil...",
       "rating": 5.8,
       "genres": [
-        "Action",
-        "Adventure"
+        "Adventure",
+        "Comedy",
+        "Horror"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        12,
+        35,
+        27
+      ],
+      "original_language": "en",
+      "tmdb_id": 1234731
     },
     {
       "title": "Anaganaga Australia Lo",
@@ -20655,7 +20818,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Another World",
@@ -20670,7 +20834,8 @@
         "Action"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Anti Amor",
@@ -20799,7 +20964,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Asha",
@@ -20813,7 +20979,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Assassin",
@@ -20828,7 +20995,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Attack 13",
@@ -20904,7 +21072,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Baban Baban Ban Vampire",
@@ -20915,11 +21084,17 @@
       "synopsis": "\"Baban Baban Ban Vampire\" (2025) adalah komedi fantasi romantis yang menyegarkan. Ranmaru, seorang vampir, bersembunyi di pemandian Jepang dan jatuh cinta dengan pengasuh muda yang cantik, Rihito. Nam...",
       "rating": 5.8,
       "genres": [
-        "Comedy",
-        "Fantasy"
+        "Fantasy",
+        "Romance",
+        "Comedy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        14,
+        10749,
+        35
+      ],
+      "original_language": "ja",
+      "tmdb_id": 1373310
     },
     {
       "title": "Babo: Die Haftbefehl-Story",
@@ -21032,7 +21207,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Badass Ravikumar",
@@ -21064,10 +21240,15 @@
       "synopsis": "Dalam \"Badland Rising\" (2025), seorang pria biasa terjebak dalam perjalanan 19 jam pulang ke rumah, tanpa menyadari bahwa dua penjahat gila sedang memburunya. Ketika motif mereka terungkap, perjalanan...",
       "rating": 7.0,
       "genres": [
-        "Action"
+        "Action",
+        "Crime"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        80
+      ],
+      "original_language": "en",
+      "tmdb_id": 1325614
     },
     {
       "title": "Baka Doon sa Buwan (Somewhere in Space)",
@@ -21166,7 +21347,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Ballad of a Small Player",
@@ -21218,7 +21400,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Balti",
@@ -21370,7 +21553,8 @@
       "tmdb_id": 1577779,
       "original_language": "en",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Beast of War",
@@ -21423,11 +21607,15 @@
       "synopsis": "Dalam film Beethoven Netsuzou (2025), seorang sekretaris bernama Schindler terobsesi dengan idolanya, Beethoven. Ia menciptakan citra publik bahwa komponis itu adalah genius musik suci, sementara meny...",
       "rating": 7.3,
       "genres": [
-        "Drama",
-        "History"
+        "Music",
+        "Fantasy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        10402,
+        14
+      ],
+      "original_language": "ja",
+      "tmdb_id": 1501465
     },
     {
       "title": "Being Eddie",
@@ -21518,7 +21706,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Bikini Guillotine",
@@ -21587,7 +21776,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Black Panthers of WWII",
@@ -21657,10 +21847,15 @@
       "synopsis": "Dalam \"Blocking the Horse\" (2025), aksi seru menghadirkan kembalinya dua bersaudari berani yang nekat menyusup ke wilayah musuh untuk merebut kembali pedang emas ayahnya yang tercinta. Bergabung denga...",
       "rating": 6.0,
       "genres": [
-        "Action"
+        "Action",
+        "Adventure"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        12
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1235880
     },
     {
       "title": "Blood Barn",
@@ -21876,7 +22071,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Breed of Greed",
@@ -22041,7 +22237,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Calle Malaga",
@@ -22088,10 +22285,13 @@
       "synopsis": "Di film Capio (2025), seorang astronom amatir menemukan bintang misterius yang mengantarkannya ke pusat konspirasi gelap untuk mengendalikan umat manusia dengan memanfaatkan kecanduan teknologi. Ia ha...",
       "rating": 6.7,
       "genres": [
-        "Sci-fi"
+        "Science Fiction"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        878
+      ],
+      "original_language": "en",
+      "tmdb_id": 1690760
     },
     {
       "title": "Captain Tsunami",
@@ -22145,7 +22345,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Carolina Caroline",
@@ -22367,10 +22568,16 @@
       "rating": 7.0,
       "genres": [
         "Action",
+        "Adventure",
         "Comedy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        12,
+        35
+      ],
+      "original_language": "vi",
+      "tmdb_id": 1569555
     },
     {
       "title": "Choir of God",
@@ -22444,7 +22651,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Cleaner",
@@ -22649,7 +22857,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Counterstrike (Contraataque)",
@@ -22661,10 +22870,16 @@
       "rating": 5.9,
       "genres": [
         "Action",
+        "Adventure",
         "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        12,
+        53
+      ],
+      "original_language": "es",
+      "tmdb_id": 1356039
     },
     {
       "title": "Couples Weekend",
@@ -22715,7 +22930,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Coyotes (Palestine)",
