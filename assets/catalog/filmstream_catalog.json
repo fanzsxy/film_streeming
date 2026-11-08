@@ -31006,7 +31006,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Muzzle: City of Wolves",
@@ -31295,7 +31296,8 @@
         "Crime"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Nerariyum Nerathu",
@@ -31423,7 +31425,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Night Patrol",
@@ -31459,7 +31462,8 @@
       "tmdb_id": 1414580,
       "original_language": "kn",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Nimrods",
@@ -31594,7 +31598,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "No Tears in Hell",
@@ -31626,8 +31631,11 @@
       "genres": [
         "Horror"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27
+      ],
+      "original_language": "en",
+      "tmdb_id": 1384751
     },
     {
       "title": "Nobody",
@@ -31639,10 +31647,18 @@
       "rating": 7.9,
       "genres": [
         "Animation",
+        "Adventure",
+        "Fantasy",
         "Comedy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        16,
+        12,
+        14,
+        35
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1304434
     },
     {
       "title": "Nobody 2",
@@ -31699,7 +31715,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Not All Movies Are the Same: Dual",
@@ -31829,7 +31846,8 @@
         "Adventure"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Obsession",
@@ -31841,10 +31859,14 @@
       "rating": 8.3,
       "genres": [
         "Horror",
-        "Romance"
+        "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        27,
+        53
+      ],
+      "original_language": "en",
+      "tmdb_id": 1339713
     },
     {
       "title": "Ocean with David Attenborough",
@@ -32068,7 +32090,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "One of One",
@@ -32098,8 +32121,11 @@
       "genres": [
         "Music"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        10402
+      ],
+      "original_language": "en",
+      "tmdb_id": 1559572
     },
     {
       "title": "One Spoon of Chocolate",
@@ -32173,7 +32199,8 @@
         "Music"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Open Endings",
@@ -32247,7 +32274,8 @@
         "Mystery"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Oro Negro",
@@ -32258,11 +32286,13 @@
       "synopsis": "Dalam film Oro Negro, Ramiro dan Damián bertemu kembali setelah bertahun-tahun. Damián yang selalu terlibat dalam bisnis gelap, membawa Ramiro ke dalam petualangan mengerikan untuk mencari harta karun...",
       "rating": 5.0,
       "genres": [
-        "Adventure",
         "Horror"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27
+      ],
+      "original_language": "es",
+      "tmdb_id": 1386238
     },
     {
       "title": "Oru Jaathi Jaathakam",
@@ -32373,7 +32403,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Out of Order",
@@ -32387,7 +32418,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Out Standing",
@@ -32421,7 +32453,8 @@
         "Romance"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Ozzy Osbourne: No Escape from Now",
@@ -32432,11 +32465,13 @@
       "synopsis": "Dalam film \"Ozzy Osbourne: No Escape from Now\", ikuti perjalanan legenda musik rock yang harus menghadapi kenyataan pahit tentang identitas dan mortalitasnya. Setelah dunianya terhenti, Ozzy berjuang ...",
       "rating": 8.4,
       "genres": [
-        "Documentary",
-        "Biography"
+        "Documentary"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        99
+      ],
+      "original_language": "en",
+      "tmdb_id": 1508191
     },
     {
       "title": "P77",
@@ -32620,7 +32655,8 @@
       "tmdb_id": 1746621,
       "original_language": "en",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Param Sundari",
@@ -32655,7 +32691,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Paraxnormal",
@@ -32742,7 +32779,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Patty Is Such a Girly Name",
@@ -32773,7 +32811,8 @@
         "Action"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Penny Lane Is Dead",
@@ -32942,7 +32981,8 @@
         "Romance"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Pig Hill",
@@ -32994,7 +33034,8 @@
       "tmdb_id": 1386105,
       "original_language": "ta",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Pitfall",
@@ -33030,7 +33071,8 @@
         "Crime"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Playdate",
@@ -33045,7 +33087,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Portal to Hell",
@@ -33078,7 +33121,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Possession of Mara",
@@ -33133,7 +33177,8 @@
         "Short"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Predator: Badlands",
@@ -33249,7 +33294,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Prime Minister",
@@ -33377,10 +33423,16 @@
       "rating": 5.8,
       "genres": [
         "Action",
+        "Drama",
         "Crime"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        18,
+        80
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1005985
     },
     {
       "title": "Qifarah",
@@ -33410,11 +33462,19 @@
       "synopsis": "Quantum Supremacy - Berlatar di masa depan yang terancam oleh kehancuran akibat ulah robot liar dan ancaman AI berkuasa penuh, Kapten Monroe beserta para kru terbaiknya harus berpacu dengan waktu dala...",
       "rating": 3.8,
       "genres": [
+        "Science Fiction",
         "Animation",
+        "Adventure",
         "Action"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        878,
+        16,
+        12,
+        28
+      ],
+      "original_language": "en",
+      "tmdb_id": 1297311
     },
     {
       "title": "Que Huevos Sofia",
@@ -33428,7 +33488,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Quezon",
@@ -33567,7 +33628,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Ram Abdullah Antony",
@@ -33583,7 +33645,8 @@
       "tmdb_id": 1569802,
       "original_language": "ta",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Rambo",
@@ -33616,7 +33679,8 @@
         "Short"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Rebuilding",
@@ -33823,7 +33887,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Resurrection Road",
@@ -34017,7 +34082,8 @@
         "Fantasy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Romeria",
@@ -34032,7 +34098,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Roofman",
@@ -34120,7 +34187,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Run",
@@ -34134,7 +34202,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Runowaru",
@@ -34148,7 +34217,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Ruth & Boaz",
@@ -34239,7 +34309,8 @@
         "Adventure"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Safe House",
@@ -34253,7 +34324,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Samahan ng mga makasalanan",
@@ -34287,7 +34359,8 @@
         "Adventure"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Sana Sinabi Mo (I Wish You Had Told Me)",
@@ -34314,8 +34387,14 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/09/film-sangre-joven-2025-lk21.jpg",
       "synopsis": "Di dunia yang telah berubah, manusia dan vampir hidup berdampingan. Mereka minum darah buatan, tapi kemudian muncul keinginan akan darah asli yang dapat memperpanjang umur manusia. Seorang vampir muda...",
       "rating": 0.0,
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27
+      ],
+      "genres": [
+        "Horror"
+      ],
+      "original_language": "es",
+      "tmdb_id": 1401974
     },
     {
       "title": "Sans pitie",
@@ -34348,7 +34427,8 @@
         "Comedy"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Sarah's Oil",
@@ -34454,11 +34534,15 @@
       "synopsis": "Dalam film Savior (2025), sebuah keluarga terjebak dalam kutukan mengerikan setelah mereka melakukan ritual okultisme untuk meminta keajaiban. Namun, keajaiban itu datang dengan harga yang sangat maha...",
       "rating": 7.2,
       "genres": [
-        "Horror",
-        "Mystery"
+        "Mystery",
+        "Fantasy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        9648,
+        14
+      ],
+      "original_language": "xx",
+      "tmdb_id": 1531176
     },
     {
       "title": "Say Less",
@@ -34530,7 +34614,8 @@
         "Action"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Screw Mickiewicz 2",
@@ -34652,7 +34737,8 @@
         "Documentary"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Seishun Gestalt Houkai",
@@ -34699,8 +34785,11 @@
       "genres": [
         "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18
+      ],
+      "original_language": "kn",
+      "tmdb_id": 1620547
     },
     {
       "title": "Serpentine Pink",
@@ -34715,7 +34804,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Seven Days: Haft rooz",
@@ -34729,7 +34819,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Shadow Death",
@@ -34798,7 +34889,8 @@
         "Action"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Shark Terror",
@@ -34948,7 +35040,8 @@
         "History"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Sherlock Holmes: Mare of the Night",
@@ -35019,7 +35112,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Side Effects (Neco za neco)",
@@ -35034,7 +35128,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Sidelined 2: Intercepted",
@@ -35064,11 +35159,13 @@
       "synopsis": "Silent Friend - Di Jerman, sebuah pohon ginkgo yang megah menjadi saksi bisu perjalanan hidup tiga generasi manusia saat mereka menyingkap rahasia tersembunyi dari kehidupan tumbuhan. Dalam balutan dr...",
       "rating": 7.3,
       "genres": [
-        "Biography",
         "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        18
+      ],
+      "original_language": "de",
+      "tmdb_id": 1168719
     },
     {
       "title": "Silent Night, Deadly Night",
@@ -35155,11 +35252,15 @@
       "synopsis": "Dalam film \"Sirat\" (2025), seorang ayah nekat berpetualang ke Afrika Utara bersama putranya untuk mencari putri mereka yang hilang. Dengan aksi seru dan petualangan penuh bahaya, mereka menghadapi tan...",
       "rating": 7.2,
       "genres": [
-        "Action",
-        "Adventure"
+        "Drama",
+        "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        53
+      ],
+      "original_language": "es",
+      "tmdb_id": 1151272
     },
     {
       "title": "Sister-in-Law Act",
@@ -35331,7 +35432,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Son of Sardaar 2",
@@ -35482,7 +35584,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Stealing the Sky",
@@ -35819,11 +35922,17 @@
       "synopsis": "Dalam \"Superman\" (2025), aksi petualangan dimulai saat Clark Kent, seorang wartawan yang memiliki darah Kryptonian, berusaha menyelaraskan identitasnya yang kompleks. Sebagai simbol kebenaran, keadila...",
       "rating": 7.1,
       "genres": [
-        "Action",
-        "Adventure"
+        "Science Fiction",
+        "Adventure",
+        "Action"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        878,
+        12,
+        28
+      ],
+      "original_language": "en",
+      "tmdb_id": 1061474
     },
     {
       "title": "Svodish s uma",
@@ -35835,10 +35944,16 @@
       "rating": 8.4,
       "genres": [
         "Comedy",
-        "Drama"
+        "Romance",
+        "Fantasy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        35,
+        10749,
+        14
+      ],
+      "original_language": "ru",
+      "tmdb_id": 1489187
     },
     {
       "title": "Swiped",
@@ -35868,10 +35983,15 @@
       "synopsis": "Dalam film Ta Khon (2025), Joy dan temannya menyelidiki kematian misterius neneknya yang terkait dengan tradisi 'Phi Ta Khon'. Mereka menemukan petunjuk menyeramkan yang mengarah ke kebenaran yang men...",
       "rating": 7.5,
       "genres": [
-        "Horror"
+        "Horror",
+        "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        53
+      ],
+      "original_language": "th",
+      "tmdb_id": 1205916
     },
     {
       "title": "Tafiti: Across the Desert",
@@ -35976,7 +36096,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Tears to a Glass Eye",
@@ -36008,10 +36129,17 @@
       "synopsis": "Tee Yai Rerk Dao Jone (2025) adalah drama yang mengisahkan dua penjahat yang hubungannya diuji oleh seorang detektif yang bertekad menangkap geng perampok terkenal di Bangkok 1980-an. Dengan latar bel...",
       "rating": 6.8,
       "genres": [
+        "Crime",
+        "Action",
         "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        80,
+        28,
+        18
+      ],
+      "original_language": "th",
+      "tmdb_id": 1429738
     },
     {
       "title": "Teenage Wasteland",
@@ -36256,7 +36384,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Banished",
@@ -36288,7 +36417,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Beast of Trinity Texas",
@@ -36504,7 +36634,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Carman Family Deaths",
@@ -36578,7 +36709,8 @@
         "History"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Christophers",
@@ -36630,7 +36762,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Conjuring: Last Rites",
@@ -36734,10 +36867,17 @@
       "synopsis": "The Curse - Setelah melihat unggahan media sosial temannya yang meresahkan, Riko mencoba turun tangan untuk membantu, namun gagal mencegah temannya itu mengalami kematian misterius yang penuh kekerasa...",
       "rating": 5.0,
       "genres": [
+        "Thriller",
+        "Mystery",
         "Horror"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        53,
+        9648,
+        27
+      ],
+      "original_language": "ja",
+      "tmdb_id": 1395839
     },
     {
       "title": "The Cut",
@@ -36751,7 +36891,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Dashed Lines",
@@ -36882,7 +37023,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Drowned",
@@ -36897,7 +37039,8 @@
         "Mystery"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Dutchman",
@@ -36985,7 +37128,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Fetus",
@@ -37155,7 +37299,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Frog and the Water",
@@ -37350,7 +37495,8 @@
         "Reality-TV"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Hand That Rocks the Cradle",
@@ -37383,7 +37529,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Handyman (The Handyman)",
@@ -37397,7 +37544,8 @@
         "Action"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Healing",
@@ -37408,11 +37556,15 @@
       "synopsis": "Dalam \"The Healing\" (2025), Lyuba melarikan diri dari suaminya yang kejam ke sebuah retret misterius bersama teman-temannya. Namun, ritual-ritual surreal dan visi menakutkan mengungkap rahasia gelap, ...",
       "rating": 3.5,
       "genres": [
-        "Horror",
-        "Thriller"
+        "Documentary",
+        "Science Fiction"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        99,
+        878
+      ],
+      "original_language": "de",
+      "tmdb_id": 1630790
     },
     {
       "title": "The Hem",
@@ -37570,7 +37722,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Land That Time Forgot",
@@ -37682,7 +37835,8 @@
         "Crime"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Last Tenant",
@@ -37853,11 +38007,13 @@
       "synopsis": "Dalam \"The Lost Generation\" (2025), kisah drama romantis ini berpusat pada sekelompok pemuda yang berjuang menavigasi masa depan mereka di tengah ketidakpastian, tekanan sosial, dan kompleksitas hubun...",
       "rating": 4.0,
       "genres": [
-        "Drama",
-        "Romance"
+        "Documentary"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        99
+      ],
+      "original_language": "en",
+      "tmdb_id": 1719739
     },
     {
       "title": "The Love Doctor",
@@ -37930,7 +38086,8 @@
         "Documentary"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Man with the Black Umbrella",
@@ -38038,10 +38195,15 @@
       "synopsis": "Daniel Pierce bermimpi untuk bergabung dengan milisi setempat bersama ayahnya begitu ia genap berusia delapan belas tahun, tetapi ketika ayahnya menjadi sasaran sheriff setempat, Daniel dan teman-tema...",
       "rating": 6.8,
       "genres": [
-        "Drama"
+        "Drama",
+        "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        53
+      ],
+      "original_language": "en",
+      "tmdb_id": 1759875
     },
     {
       "title": "The Money Maker",
@@ -38169,7 +38331,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The North",
@@ -38262,7 +38425,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Partisan",
@@ -38357,7 +38521,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Plastic Men",
@@ -38486,7 +38651,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Redemption",
@@ -38501,7 +38667,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Ride",
@@ -38516,7 +38683,8 @@
         "Action"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Rivals of Amziah King",
@@ -38733,11 +38901,13 @@
       "synopsis": "Dalam \"The Showffeur\" (2025), empat teman ditarik ke dalam malam mengerikan setelah memesan tumpangan berbagi. Mereka dibawa ke pedalaman oleh seorang pengemudi misterius yang mengundang mereka ke pes...",
       "rating": 4.9,
       "genres": [
-        "Short",
         "Horror"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27
+      ],
+      "original_language": "en",
+      "tmdb_id": 1554514
     },
     {
       "title": "The Shrinking Man",
@@ -38752,7 +38922,8 @@
         "Sci-fi"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Sleeper",
@@ -38929,7 +39100,8 @@
         "Drama"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Strangers: Chapter 2",
@@ -39095,10 +39267,16 @@
       "rating": 6.0,
       "genres": [
         "Action",
-        "Comedy"
+        "Comedy",
+        "Science Fiction"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        35,
+        878
+      ],
+      "original_language": "en",
+      "tmdb_id": 338969
     },
     {
       "title": "The Truce",
@@ -39348,7 +39526,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Wildman of Shaggy Creek",
@@ -39769,11 +39948,17 @@
       "synopsis": "Di Time of Death (2025), seorang narapidana menghilang secara misterius, memicu penyelidikan oleh Detektif Frank Morley di penjara yang hampir ditutup. Penyelidikan rutin ini berubah menjadi pencarian...",
       "rating": 6.3,
       "genres": [
+        "Thriller",
         "Horror",
         "Mystery"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        53,
+        27,
+        9648
+      ],
+      "original_language": "en",
+      "tmdb_id": 1477431
     },
     {
       "title": "Times of Peril",
@@ -39904,7 +40089,8 @@
         "Thriller"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Touch Me",
@@ -39919,7 +40105,8 @@
         "Horror"
       ],
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Tow",
