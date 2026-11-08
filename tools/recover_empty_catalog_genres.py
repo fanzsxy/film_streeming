@@ -13,6 +13,7 @@ from retry_catalog_genres import CATALOG, genre_ids
 from third_pass_catalog_genres import assess
 
 FINAL = {"unmatched", "ambiguous", "no_genres", "invalid_year"}
+MATCH_VERSION = "articles_v1"
 
 
 def has_genres(item):
@@ -27,7 +28,7 @@ def counts(items):
     with_genres = sum(has_genres(item) for item in supported)
     with_ids = sum(bool(genre_ids(item.get("genre_ids"))) for item in supported)
     empty = [item for item in supported if not has_genres(item)]
-    eligible = sum(item.get("genre_empty_status") not in FINAL for item in empty)
+    eligible = sum(not (item.get("genre_empty_status") in FINAL and item.get("genre_empty_method") == MATCH_VERSION) for item in empty)
     return len(supported), with_genres, with_ids, len(empty), eligible
 
 
@@ -87,23 +88,31 @@ def main():
                 break
             if item.get("type") not in ("movie", "series"):
                 continue
-            if has_genres(item) or item.get("genre_empty_status") in FINAL:
+            if has_genres(item) or (item.get("genre_empty_status") in FINAL
+                                     and item.get("genre_empty_method") == MATCH_VERSION):
                 continue
             # Entries with genre IDs but no names should not be overwritten;
             # leave them for explicit metadata repair, not title re-matching.
             if genre_ids(item.get("genre_ids")):
                 item["genre_empty_status"] = "ambiguous"
+                item["genre_empty_method"] = MATCH_VERSION
                 unresolved += 1
                 attempted += 1
                 continue
             media = "tv" if item["type"] == "series" else "movie"
             try:
-                detail, status = assess(item, media, token, args.delay)
+                detail, status = assess(item, media, token, args.delay, article_mode=True)
                 if detail and apply_only_if_empty(item, detail):
                     recovered += 1
+                    item.pop("genre_empty_method", None)
+                    if recovered <= 25:
+                        print(f"Filled genre: {item.get('title')!r} ({item.get('year')}) -> TMDB {detail.get('id')}", flush=True)
                 else:
                     item["genre_empty_status"] = status or "no_genres"
                     unresolved += 1
+                    if attempted < 25:
+                        print(f"Still empty: {item.get('title')!r} ({item.get('year')}), reason={status}", flush=True)
+                item["genre_empty_method"] = MATCH_VERSION
                 attempted += 1
             except (HTTPError, URLError, TimeoutError, ValueError, KeyError) as exc:
                 print(f"TMDB request interrupted near {item.get('title')!r}: {exc}", flush=True)
