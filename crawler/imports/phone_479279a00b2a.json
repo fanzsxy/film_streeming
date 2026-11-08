@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "Tunnel",
+      "year": 2019,
+      "url": "https://tv.lk21online.de/tunnel-2019",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-tunnel-2019-lk21.jpg.webp",
+      "rating": 6.7
+    }
+  ]
+}
