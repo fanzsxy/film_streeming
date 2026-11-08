@@ -51,7 +51,7 @@ def variants(item):
     title = str(item.get("title") or "").strip()
     no_parentheses = re.sub(r"\([^)]*\)", " ", title).strip()
     slug = unquote(urlparse(str(item.get("url") or "")).path.rstrip("/").rsplit("/", 1)[-1])
-    slug = re.sub(r"-(?:19|20)\d{2}$", "", slug.replace("-", " ")).strip()
+    slug = re.sub(r"-(?:19|20)\d{2}$", "", slug).replace("-", " ").strip()
     values = [title, no_parentheses, slug]
     dedup = {}
     for value in values:
@@ -176,9 +176,15 @@ def main():
             known = item.get("tmdb_id")
             detail = None
             if type(known) is int and known > 0:
-                detail = tmdb_get(f"{media}/{known}", {"language": "en-US"}, token)
+                try:
+                    detail = tmdb_get(f"{media}/{known}", {"language": "en-US"}, token)
+                except HTTPError as exc:
+                    if exc.code == 404:
+                        detail = None
+                    else:
+                        raise
                 time.sleep(args.delay)
-                if verified(item, detail, media, alternatives) is None:
+                if detail is not None and verified(item, detail, media, alternatives) is None:
                     detail = None
             if detail is None:
                 results = []
