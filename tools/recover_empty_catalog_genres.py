@@ -104,15 +104,14 @@ def main():
                 detail, status = assess(item, media, token, args.delay, article_mode=True)
                 if detail and apply_only_if_empty(item, detail):
                     recovered += 1
-                    item.pop("genre_empty_method", None)
                     if recovered <= 25:
                         print(f"Filled genre: {item.get('title')!r} ({item.get('year')}) -> TMDB {detail.get('id')}", flush=True)
                 else:
                     item["genre_empty_status"] = status or "no_genres"
                     unresolved += 1
+                    item["genre_empty_method"] = MATCH_VERSION
                     if attempted < 25:
                         print(f"Still empty: {item.get('title')!r} ({item.get('year')}), reason={status}", flush=True)
-                item["genre_empty_method"] = MATCH_VERSION
                 attempted += 1
             except (HTTPError, URLError, TimeoutError, ValueError, KeyError) as exc:
                 print(f"TMDB request interrupted near {item.get('title')!r}: {exc}", flush=True)
