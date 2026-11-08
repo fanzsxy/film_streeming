@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "The Ghost Marriage",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/ghost-marriage-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-ghost-marriage-2026-lk21.jpg.webp",
+      "rating": 7
+    },
+    {
+      "title": "Model Citizen",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/model-citizen-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-model-citizen-2026-lk21.jpg.webp",
+      "rating": 3.8
+    },
+    {
+      "title": "It's Nice in Here",
+      "year": 2022,
+      "url": "https://tv12.lk21official.cc/its-nice-here-2022",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-its-nice-here-2022-lk21.jpg.webp",
+      "rating": 7.3
+    }
+  ]
+}
