@@ -1,0 +1,74 @@
+name: Recover Full Source Titles and Missing Genres
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: '0 = audit; otherwise process only empty-genre entries'
+        required: true
+        default: '0'
+        type: choice
+        options:
+          - '0'
+          - '25'
+          - '100'
+          - '250'
+          - '500'
+          - '1000'
+      auto_continue:
+        description: 'Automatically continue in 250-entry batches after verifying pilot'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: filmstream-metadata-write
+  cancel-in-progress: false
+
+jobs:
+  restore-source-titles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate script syntax
+        run: python -m py_compile tools/recover_source_titles_genres.py tools/recover_empty_catalog_genres.py tools/third_pass_catalog_genres.py tools/retry_catalog_genres.py
+      - name: Offline source title tests
+        run: python -m unittest discover -s tools -p 'test_source_title_recovery.py' -v
+      - name: Read source page titles and verify missing TMDB genres
+        id: recover
+        env:
+          LIMIT: ${{ inputs.limit || '0' }}
+        run: python tools/recover_source_titles_genres.py --limit "$LIMIT" --delay 0.65 --github-output "$GITHUB_OUTPUT"
+      - name: Commit only the updated main catalog
+        if: ${{ inputs.limit != '0' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/catalog/filmstream_catalog.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Correct source titles and recover missing TMDB genres"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          else
+            echo "No catalog changes."
+          fi
+      - name: Continue next 250 empty-genre entries
+        if: ${{ inputs.auto_continue == true && inputs.limit != '0' && steps.recover.outputs.pending != '0' && steps.recover.outputs.attempted != '0' && steps.recover.outputs.paused == 'false' }}
+        run: gh workflow run recover-source-titles-genres.yml --ref main -f limit=250 -f auto_continue=true
+      - name: Report finished
+        if: ${{ steps.recover.outputs.pending == '0' }}
+        run: echo "All originally empty-genre entries were evaluated; unresolved entries remain unchanged for manual review."
