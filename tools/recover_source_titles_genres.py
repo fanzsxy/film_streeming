@@ -86,6 +86,8 @@ class TitleParser(HTMLParser):
             label = " ".join(" ".join(self.link_text).split())
             if label in SOURCE_GENRES and label not in self.genre_tags:
                 self.genre_tags.append(label)
+            if label.casefold() in ("play awal", "play terbaru", "trailer"):
+                self.metadata_end = True
             self.in_link = False
             self.link_text = []
 
@@ -158,7 +160,7 @@ def fetch_title(item, delay):
         if not valid_source_url(actual):
             return None, [], "invalid_redirect"
         if urlparse(actual).hostname != urlparse(url).hostname:
-            return None, "invalid_redirect"
+            return None, [], "invalid_redirect"
         if urlparse(actual).path.rstrip("/") != urlparse(url).path.rstrip("/"):
             return None, "invalid_redirect"
         if "html" not in response.headers.get("Content-Type", "").lower():
