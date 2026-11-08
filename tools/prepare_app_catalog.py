@@ -80,6 +80,12 @@ def main():
         tmdb = tmdb_by_source.get(url)
         if tmdb and tmdb.get("tmdb_type") == ("tv" if kind == "series" else "movie"):
             entry["tmdb_id"] = tmdb["tmdb_id"]
+            ids = tmdb.get("genre_ids")
+            if isinstance(ids, list) and ids and all(isinstance(x, int) and x > 0 for x in ids):
+                entry["genre_ids"] = list(dict.fromkeys(ids))
+            language = tmdb.get("original_language")
+            if isinstance(language, str) and language.strip():
+                entry["original_language"] = language.strip()
             # Fill gaps only; crawler metadata retains priority.
             # Indonesian synopsis wins whenever TMDB provides one.
             # If unavailable, retain crawler synopsis or existing English fallback.
