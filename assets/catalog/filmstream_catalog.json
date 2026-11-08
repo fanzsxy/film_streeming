@@ -50,51 +50,62 @@
     },
     {
       "title": "Death Race 2050",
-      "year": 2050,
+      "year": 2017,
       "url": "https://tv12.lk21official.cc/death-race-2050-2017",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2017/01/film-death-race-2050-2017.jpg",
       "synopsis": "Tahun 2050, balap maut adalah hiburan sekaligus solusi pemerintah untuk overpopulasi—setiap korban berarti poin. Pembalap legendaris Frankenstein (Manu Bennett) kembali, tapi kali ini ia punya misi ra...",
       "rating": 3.7,
       "genres": [
+        "Action",
         "Comedy",
-        "Action"
+        "Science Fiction"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        28,
+        35,
+        878
+      ],
+      "original_language": "en",
+      "tmdb_id": 401544
     },
     {
       "title": "Blade Runner 2049",
-      "year": 2049,
+      "year": 2017,
       "url": "https://tv12.lk21official.cc/blade-runner-2049-2017",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2017/10/film-blade-runner-2049-2017.jpg",
       "synopsis": "L.A.P.D. Officer \"K\" menemukan rahasia tersembunyi yang bisa menghancurkan sisa peradaban manusia. Pencariannya membawanya pada Rick Deckard, Blade Runner legendaris yang hilang selama 30 tahun. Di te...",
       "rating": 8.0,
       "genres": [
-        "Sci-fi",
-        "Mystery"
+        "Science Fiction",
+        "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        878,
+        18
+      ],
+      "original_language": "en",
+      "tmdb_id": 335984
     },
     {
       "title": "LX 2048 (001LithiumX)",
-      "year": 2048,
+      "year": 2020,
       "url": "https://tv12.lk21official.cc/lx-2048-001lithiumx-2020",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2020/10/film-lx-2048-001lithiumx-2020-lk21.jpg",
       "synopsis": "Di masa depan yang suram, matahari telah menjadi racun mematikan, memaksa manusia hidup dalam dunia virtual. Seorang ayah yang sekarat berjuang untuk melindungi keluarganya sambil mempertanyakan arti ...",
       "rating": 4.8,
       "genres": [
-        "Drama",
-        "Sci-fi"
+        "Science Fiction",
+        "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        878,
+        18
+      ],
+      "original_language": "en",
+      "tmdb_id": 739010
     },
     {
       "title": "2047: Sights of Death",
@@ -140,7 +151,7 @@
     },
     {
       "title": "Juarez 2045",
-      "year": 2045,
+      "year": 2017,
       "url": "https://tv12.lk21official.cc/juarez-2045-2017",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2018/06/film-juarez-2045-2017-lk21.jpg",
@@ -148,15 +159,20 @@
       "rating": 2.9,
       "genres": [
         "Action",
+        "Science Fiction",
         "Adventure"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        28,
+        878,
+        12
+      ],
+      "original_language": "en",
+      "tmdb_id": 458478
     },
     {
       "title": "KAkaku kidAtai SAC_2045 Jizoku kanA sensA",
-      "year": 2045,
+      "year": 2021,
       "url": "https://tv12.lk21official.cc/kakaku-kidatai-sac_2045-jizoku-kana-sensa-2021",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/05/film-kakaku-kidatai-sac_2045-jizoku-kana-sensa-2021-lk21-d21.jpg",
@@ -166,8 +182,6 @@
         "Animation",
         "Sci-fi"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
       "genre_third_status": "unmatched"
     },
     {
@@ -230142,7 +230156,7 @@
     },
     {
       "title": "Shesha 2016",
-      "year": 2016,
+      "year": 2026,
       "url": "https://tv12.lk21official.cc/shesha-2016-2026",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/07/film-shesha-2016-2026-lk21.jpg",
@@ -230151,9 +230165,12 @@
         "Crime",
         "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        80,
+        53
+      ],
+      "original_language": "kn",
+      "tmdb_id": 1647712
     },
     {
       "title": "Shin Godzilla (Shin Gojira)",
@@ -392673,17 +392690,21 @@
     },
     {
       "title": "Summer School, 2001",
-      "year": 2001,
+      "year": 2025,
       "url": "https://tv12.lk21official.cc/summer-school-2001-2025",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/03/film-summer-school-2001-2025-lk21.jpg",
       "rating": 7.0,
       "genres": [
-        "Drama"
+        "Drama",
+        "Family"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        18,
+        10751
+      ],
+      "original_language": "cs",
+      "tmdb_id": 1481097
     },
     {
       "title": "Super Troopers",
@@ -397355,18 +397376,21 @@
     },
     {
       "title": "Class of 1999",
-      "year": 1999,
+      "year": 1990,
       "url": "https://tv12.lk21official.cc/class-of-1999-1990",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2020/11/film-class-of-1999-1990-lk21.jpg",
       "rating": 5.8,
       "genres": [
-        "Action",
-        "Sci-fi"
+        "Science Fiction",
+        "Action"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        878,
+        28
+      ],
+      "original_language": "en",
+      "tmdb_id": 23535
     },
     {
       "title": "Cruel Intentions",
@@ -406113,7 +406137,7 @@
     },
     {
       "title": "Oasis Knebworth 1996",
-      "year": 1996,
+      "year": 2021,
       "url": "https://tv12.lk21official.cc/oasis-knebworth-1996-2021",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/08/film-oasis-knebworth-1996-2021-lk21-d21.jpg",
@@ -406122,9 +406146,12 @@
         "Documentary",
         "Music"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        99,
+        10402
+      ],
+      "original_language": "en",
+      "tmdb_id": 850490
     },
     {
       "title": "One Fine Day",
@@ -413374,7 +413401,7 @@
     },
     {
       "title": "Summer 1993 (Estiu 1993)",
-      "year": 1993,
+      "year": 2017,
       "url": "https://tv12.lk21official.cc/summer-1993-estiu-1993-2017",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2018/06/film-summer-1993-estiu-1993-2017-lk21.jpg",
@@ -413382,9 +413409,11 @@
       "genres": [
         "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "no_genres"
+      "genre_ids": [
+        18
+      ],
+      "original_language": "ca",
+      "tmdb_id": 438634
     },
     {
       "title": "Super Mario Bros.",
@@ -425390,18 +425419,23 @@
     },
     {
       "title": "Argentina, 1985",
-      "year": 1985,
+      "year": 2022,
       "url": "https://tv12.lk21official.cc/argentina-1985-2022",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/10/film-argentina-1985-2022-lk21-d21.jpg",
       "rating": 8.1,
       "genres": [
         "Drama",
+        "History",
         "Crime"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        18,
+        36,
+        80
+      ],
+      "original_language": "es",
+      "tmdb_id": 714888
     },
     {
       "title": "Back to the Future",
@@ -425930,7 +425964,7 @@
     },
     {
       "title": "National Security (Namyeong-dong 1985)",
-      "year": 1985,
+      "year": 2012,
       "url": "https://tv12.lk21official.cc/national-security-namyeong-dong-1985-2012",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2020/10/film-national-security-namyeong-dong-1985-2012-lk21.jpg",
@@ -425939,9 +425973,12 @@
         "Drama",
         "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        18,
+        53
+      ],
+      "original_language": "ko",
+      "tmdb_id": 162146
     },
     {
       "title": "Once Bitten",
@@ -426776,18 +426813,25 @@
     },
     {
       "title": "Class of 1984",
-      "year": 1984,
+      "year": 1982,
       "url": "https://tv12.lk21official.cc/class-1984-1982",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2017/07/film-class-1984-1982.jpg",
       "rating": 6.5,
       "genres": [
+        "Action",
+        "Crime",
         "Drama",
-        "Action"
+        "Thriller"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        28,
+        80,
+        18,
+        53
+      ],
+      "original_language": "en",
+      "tmdb_id": 11564
     },
     {
       "title": "Conan the Destroyer",
@@ -427589,18 +427633,23 @@
     },
     {
       "title": "Wonder Woman 1984",
-      "year": 1984,
+      "year": 2020,
       "url": "https://tv12.lk21official.cc/wonder-woman-1984-2020",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2020/12/film-wonder-woman-1984-2020-lk21.jpg",
       "rating": 5.4,
       "genres": [
         "Action",
-        "Adventure"
+        "Adventure",
+        "Fantasy"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        28,
+        12,
+        14
+      ],
+      "original_language": "en",
+      "tmdb_id": 464052
     },
     {
       "title": "Angst",
@@ -428863,7 +428912,7 @@
     },
     {
       "title": "Kim Ji-young: Born 1982",
-      "year": 1982,
+      "year": 2019,
       "url": "https://tv12.lk21official.cc/kim-ji-young-born-1982-2019",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2019/12/film-kim-ji-young-born-1982-2019-lk21.jpg",
@@ -428871,9 +428920,11 @@
       "genres": [
         "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        18
+      ],
+      "original_language": "ko",
+      "tmdb_id": 586048
     },
     {
       "title": "Ninja in the Dragon's Den (Long zhi ren zhe)",
@@ -431592,18 +431643,23 @@
     },
     {
       "title": "Fear Street Part Two: 1978",
-      "year": 1978,
+      "year": 2021,
       "url": "https://tv12.lk21official.cc/fear-street-part-two-1978-2021",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2021/08/film-fear-street-part-two-1978-2021-lk21.jpg",
       "rating": 6.7,
       "genres": [
-        "Drama",
-        "Mystery"
+        "Horror",
+        "Mystery",
+        "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        27,
+        9648,
+        18
+      ],
+      "original_language": "en",
+      "tmdb_id": 591274
     },
     {
       "title": "Game of Death",
@@ -440216,7 +440272,7 @@
     },
     {
       "title": "Showtime 1958",
-      "year": 1958,
+      "year": 2020,
       "url": "https://tv12.lk21official.cc/showtime-1958-2020",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/06/film-showtime-1958-2020-lk21-d21.jpg",
@@ -440224,9 +440280,11 @@
       "genres": [
         "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        18
+      ],
+      "original_language": "ms",
+      "tmdb_id": 970728
     },
     {
       "title": "The 7th Voyage of Sinbad",
@@ -443232,17 +443290,21 @@
     },
     {
       "title": "Back to 1942 (Yi jiu si er)",
-      "year": 1942,
+      "year": 2012,
       "url": "https://tv12.lk21official.cc/back-1942-2012",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2017/03/film-back-to-1942-2012.jpg",
       "rating": 6.8,
       "genres": [
+        "War",
         "Drama"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        10752,
+        18
+      ],
+      "original_language": "zh",
+      "tmdb_id": 139329
     },
     {
       "title": "Bambi",
@@ -444547,18 +444609,21 @@
     },
     {
       "title": "The Legend of 1900 (La leggenda del pianista sull'oceano)",
-      "year": 1900,
+      "year": 1998,
       "url": "https://tv12.lk21official.cc/the-legend-of-1900-1998",
       "type": "movie",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2015/12/film-the-legend-of-1900-1998.jpg",
       "rating": 8.0,
       "genres": [
         "Drama",
-        "Romance"
+        "Music"
       ],
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_ids": [
+        18,
+        10402
+      ],
+      "original_language": "it",
+      "tmdb_id": 10376
     },
     {
       "title": "2099",
@@ -613628,8 +613693,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/06/film-first-love-2022-lk21-d21.jpg",
       "synopsis": "Romansa pedih ini mengikuti perjalanan emosional seorang pemuda bermasalah yang terpaksa menghadapi tantangan dewasa. Dengan hati yang terluka dan masa lalu yang kelam, ia belajar tentang cinta, kehil...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        10749,
+        18
+      ],
+      "genres": [
+        "Romance",
+        "Drama"
+      ],
+      "original_language": "en",
+      "tmdb_id": 834742
     },
     {
       "title": "Zero Avenue",
@@ -613661,7 +613734,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/06/film-novo-land-floating-heart-2022-lk21-d21.jpg",
       "synopsis": "Nan Xing, putri Master Kekaisaran Yin, tewas misterius sehari sebelum pernikahannya. Ketika ia \"bangkit\" dari kematian, Wang Gang, gadis kuat nan unik, terlibat dalam konspirasi gelap yang mengancam s...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Harmony",
@@ -613671,8 +613745,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/06/film-harmony-2022-lk21-d21.jpg",
       "synopsis": "Di masa depan yang suram, Sophia, prajurit yang terluka, menyadari fasilitas medis tempatnya dirawat menyimpan raha licik. Bukan penyembuhan yang ditawarkan, melainkan eksperimen mengerikan oleh proye...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        878
+      ],
+      "genres": [
+        "Science Fiction"
+      ],
+      "original_language": "fr",
+      "tmdb_id": 1030479
     },
     {
       "title": "Trevor: The Musical",
@@ -613725,7 +613805,8 @@
       "tmdb_id": 988820,
       "original_language": "zh",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Totsukuni no shAjo",
@@ -613736,7 +613817,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/06/film-totsukuni-no-shajo-2022-lk21-d21.jpg",
       "synopsis": "Di dunia yang terbagi menjadi dua wilayah, tanah dalam dan tanah luar, muncul ketakutan terhadap tanah luar yang dihuni makhluk aneh dan sering membawa kutukan. Cerita Totsukuni no shAjo (2022) mengis...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Folk Legends: The Water Monkeys",
@@ -613810,7 +613892,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/06/film-gatlopp-2022-lk21-d21.jpg",
       "synopsis": "Malam reuni teman-teman lama berubah menjadi mimpi buruk ketika permainan minum sederhana berubah menjadi pertaruhan supernatural. Jika mereka tidak bisa menang sebelum fajar, konsekuensinya akan abad...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Hotel Royal (Hoteru royaru)",
@@ -613837,8 +613920,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-after-blue-after-blue-paradis-sale-2022-lk21-d21.jpg",
       "synopsis": "Di masa depan yang penuh misteri, After Blue adalah planet asing di mana hanya wanita yang bisa bertahan di tengah flora dan fauna eksotis nan memikat. Ikuti petualangan epik ekspedisi hukuman di duni...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        878,
+        14,
+        37
+      ],
+      "genres": [
+        "Science Fiction",
+        "Fantasy",
+        "Western"
+      ],
+      "original_language": "fr",
+      "tmdb_id": 660715
     },
     {
       "title": "#Unknown",
@@ -613848,8 +613941,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-unknown-2022-lk21-d21.jpg",
       "synopsis": "Michael Lane, penulis sukses, tiba-tiba dikejar panggilan misterius dari seseorang—atau sesuatu—yang terhubung dengan pembunuhan mengerikan di masa lalu. Saat ia menyelidiki, obsesinya mengubah hidupn...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        27,
+        53
+      ],
+      "genres": [
+        "Horror",
+        "Thriller"
+      ],
+      "original_language": "en",
+      "tmdb_id": 926378
     },
     {
       "title": "Dhaakad",
@@ -613879,7 +613980,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-sunday-night-fever-2020-lk21-d21.jpg",
       "synopsis": "Bukan sekadar kisah cinta biasa—dua jiwa terperangkap dalam pusaran hasrat dan manipulasi, di mana setiap tatapan bisa berarti ketertarikan atau bahaya. Dengan nuansa thriller yang mendebarkan, film i...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Young Adult Matters (Eo-reun-deul-eun mul-la-yo)",
@@ -613945,7 +614047,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-mindarakka-2022-lk21-d21.jpg",
       "synopsis": "Di desa Hongaria-Ukraina yang terpuruk pasca-kiamat, pesawat jatuh seperti pertanda malapetaka, dan alkohol menjadi satu-satunya penghibur. Ocsenas, sang pahlawan yang terluka, bertarung melawan kebia...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Young Hunter (El cazador)",
@@ -613989,8 +614092,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-the-legend-of-yang-jian-2022-lk21-d21.jpg",
       "synopsis": "Claire dan Aidan sepakat untuk putus sebelum kuliah, tapi malam kencan terakhir mereka berubah menjadi petualangan nostalgia yang mengharukan. Dari kafe tempat pertama kali bertemu hingga tempat-tempa...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        14
+      ],
+      "genres": [
+        "Drama",
+        "Fantasy"
+      ],
+      "original_language": "zh",
+      "tmdb_id": 990783
     },
     {
       "title": "11th Hour Cleaning",
@@ -614017,8 +614128,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-the-drovers-wife-the-drovers-wife-the-legend-of-molly-johnson-2022-lk21-d21.jpg",
       "synopsis": "Seorang wanita tangguh di pedalaman Australia bertaruh nyawa melawan kesepian dan bahaya untuk melindungi anak-anaknya, sambil menunggu suaminya yang tak kunjung pulang. Ketika ancaman nyata muncul, i...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        37,
+        53
+      ],
+      "genres": [
+        "Drama",
+        "Western",
+        "Thriller"
+      ],
+      "original_language": "en",
+      "tmdb_id": 722800
     },
     {
       "title": "Dangerous Liaisons (Les Liaisons Dangereuses)",
@@ -614100,8 +614221,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-defiant-2022-lk21-d21.jpg",
       "synopsis": "Komukai Riko (Yoda Yuki) selalu dianggap \"biasa-biasa saja\" sampai suatu hari, ejekan rekan kerjanya memicu pergolakan dalam dirinya. Saat menemukan model plastik Zaku dari , ia menemukan gairah baru....",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        99
+      ],
+      "genres": [
+        "Documentary"
+      ],
+      "original_language": "uk",
+      "tmdb_id": 1156575
     },
     {
       "title": "The Dragon Order: Hunt for Alien Beasts",
@@ -614112,7 +614239,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-the-dragon-order-hunt-for-alien-beasts-2022-lk21-d21.jpg",
       "synopsis": "At the end of the Qing Dynasty, the biological expedition led by Qin Xiaofeng's father is attacked by a mysterious dragon, and the whole team is missing. His father's best friend, Xu Yuansheng, offers...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Malnazidos",
@@ -614123,7 +614251,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-malnazidos-2022-lk21-d21.jpg",
       "synopsis": "Dalam dunia pasca-pertempuran berdarah yang penuh mayat, Kapten Jan Lozano dan pengemudi mudanya ditangkap musuh, menghadapi eksekusi. Tiba-tiba, ancaman mengerikan muncul—musuh yang tak dikenal dan m...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "For Jojo (FAr Jojo)",
@@ -614151,7 +614280,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-in-2022-lk21-d21.jpg",
       "synopsis": "Seorang jurnalis ambisius menyelidiki pembunuhan berantai yang mengancam kotanya. Namun, semakin dalam ia menyelam, semakin dekat ia dengan kebenaran mengerikan: pembunuhnya mungkin ada di sekitarnya....",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "invalid_year"
+      "genre_retry_status": "invalid_year",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Under the Amalfi Sun (Sotto il sole di Amalfi)",
@@ -614259,8 +614389,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/Grandma.jpg",
       "synopsis": "Dalam kegelapan yang mencekam, seorang nenek menyimpan rahasia mengerikan yang siap menghancurkan siapa pun yang berani mengungkapnya. Ketika dua wanita muda terjebak dalam permainan psikologisnya, ke...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        27
+      ],
+      "genres": [
+        "Horror"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1126401
     },
     {
       "title": "Ang Babaeng Nawawala Sa Sarili",
@@ -614436,7 +614572,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-five-elements-secret-art-2022-lk21-d21.jpg",
       "synopsis": "Warisan rahasia Lima Elemen—emas, kayu, air, api, dan tanah—menjadi buruan banyak pihak. Yang Lao dan putranya, Yang Yiqin, yang hidup sederhana di Taoyuan Town, tiba-tiba ditarik ke dalam pertarungan...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "A Peeping Hole Nozoki Ana",
@@ -614446,7 +614583,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-a-peeping-hole-nozoki-ana-2014-lk21-d21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Prison School Kangoku Gakuen Prison School",
@@ -614456,7 +614594,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-prison-school-kangoku-gakuen-prison-school-2015-lk21-d21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Notre-Dame brAle",
@@ -614467,7 +614606,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-notre-dame-brale-2022-lk21-d21.jpg",
       "synopsis": "Drama thriller yang menggugah! Mengisahkan detik-detik mencekam kebakaran Notre-Dame di Paris 2019, film ini menghadirkan ketegangan nyata di balik api yang melahap ikon sejarah. Dengan visual memukau...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Stealing Dragon and Turning Cat",
@@ -614478,7 +614618,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-stealing-dragon-and-turning-cat-2022-lk21-d21.jpg",
       "synopsis": "Aksi kocak penuh kejutan! Xu Yi, gelandangan yang selalu menyalahkan nasib, tiba-tiba bertukar identitas dengan Longshan, pembuat perhiasan yang terlibat konflik dengan geng kriminal. Terjebak dalam s...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "My Chilling Roommate",
@@ -614562,8 +614703,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-compartment-number-6-hytti-nro-6-2021-lk21-d21.jpg",
       "synopsis": "Dalam perjalanan kereta api dingin menuju Lingkaran Arktik, dua orang asing—seorang wanita Finlandia pemalu dan pria Rusia kasar—terpaksa berbagi kabin sempit. Awalnya penuh gesekan, perlahan perjalan...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "original_language": "fi",
+      "tmdb_id": 588182
     },
     {
       "title": "Kinnporsche The Series La Forte",
@@ -614572,8 +614719,18 @@
       "type": "series",
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-kinnporsche-the-series-la-forte-2022-lk21-d21.jpg",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        10759,
+        80,
+        18
+      ],
+      "genres": [
+        "Action & Adventure",
+        "Crime",
+        "Drama"
+      ],
+      "original_language": "th",
+      "tmdb_id": 117067
     },
     {
       "title": "The Prodigal Son (Subdue the Devil)",
@@ -614584,7 +614741,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-the-prodigal-son-subdue-the-devil-2022-lk21-d21.jpg",
       "synopsis": "Midah, Rohayu, dan Ani—tiga janda penggemar berat Aiman Zalini—bertekad menghadiri konser terakhir idolanya. Dengan modal nekat, mereka merintis bisnis jus vape alami yang sukses luar biasa! Tapi bisa...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Tiga Janda Melawan Dunia",
@@ -614618,7 +614776,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-not-just-a-girl-2022-lk21-d21.jpg",
       "synopsis": "Thriller survival yang mencekam! Setelah kematian tragis saudaranya, Nic dan teman-temannya berusaha healing dengan kayak di Pasifik. Tapi perjalanan indah berubah jadi neraka ketika hiu pembunuh memb...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Unboxed",
@@ -614665,7 +614824,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-snake-revenge-snake-island-horror-2022-lk21-d21.jpg",
       "synopsis": "Petualangan berdarah-dingin dimulai ketika tim majalah geografi menginjakkan kaki di pulau terpencil Asia Tenggara. Namun, ekspedisi mereka berubah menjadi mimpi buruk ketika sang pemimpin diam-diam m...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Girl Picture (TytAt tytAt tytAt)",
@@ -614737,7 +614897,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/07/film-to-yuk-hing-dai-2-2022-lk21-d21.jpg",
       "synopsis": "Ho Chun, pengusaha muda yang percaya uang bisa menyelesaikan segalanya, terjebak di penjara. Tapi dia punya rencana gila: menawarkan uang besar kepada narapidana berbahaya seperti Big Roller, Kin-Tin,...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Physics Teacher",
@@ -615093,8 +615254,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/08/film-detective-dee-and-fire-unicorn-di-renjie-fire-kirin-2022-lk21-d21.jpg",
       "synopsis": "Di Kerala akhir 90-an, seorang petani karet muda yang berkuasa bentrok dengan perwira polisi ambisius. Perseteruan mereka memicu perang dendam berdarah di mana harga diri dan kekuasaan dipertaruhkan. ...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        14
+      ],
+      "genres": [
+        "Action",
+        "Fantasy"
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1003623
     },
     {
       "title": "They/Them",
@@ -615257,7 +615426,8 @@
       "tmdb_id": 1010257,
       "original_language": "hi",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Om - The Battle Within",
@@ -615267,8 +615437,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/08/film-om-the-battle-within-2022-lk21-d21.jpg",
       "synopsis": "Terjebak dalam amnesia setelah misi gagal, Om harus melawan teroris dan mengungkap konspirasi yang menjerat orang tuanya. Dengan aksi brutal dan plot berbelit, film thriller ini adalah perlombaan mela...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        12,
+        53
+      ],
+      "genres": [
+        "Action",
+        "Adventure",
+        "Thriller"
+      ],
+      "original_language": "hi",
+      "tmdb_id": 764928
     },
     {
       "title": "Collide",
@@ -615279,7 +615459,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/08/film-collide-2022-lk21-d21.jpg",
       "synopsis": "Malam di sebuah restoran LA menjadi titik pertemuan tak terduga bagi sekelompok orang dengan rahasia gelap. Ketika nasib mereka bertabrakan, ketegangan memuncak, dan setiap detik menentukan hidup atau...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Snow Monster 2",
@@ -615371,8 +615552,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/08/film-samuels-travels-2022-lk21-d21.jpg",
       "synopsis": "Tersesat di pedalaman Eropa Timur, Sam—seorang pencari ayah kandungnya—terjebak dalam lelucon nasib saat kecelakaan kecil membawanya ke pertanian aneh. Ditangkap putri peternak babi yang eksentrik, ia...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        35,
+        27,
+        14
+      ],
+      "genres": [
+        "Comedy",
+        "Horror",
+        "Fantasy"
+      ],
+      "original_language": "lv",
+      "tmdb_id": 861035
     },
     {
       "title": "Sitio Diablo",
@@ -615436,8 +615627,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/09/film-gabriels-rapture-part-three-2022-lk21-d21.jpg",
       "synopsis": "Cinta Julia dan Gabriel diuji saat mereka terpisah oleh jarak dan penemuan diri. Dengan hati yang hancur dan harapan yang pudar, apakah mereka bisa menemukan jalan kembali satu sama lain? Kisah romant...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        10749
+      ],
+      "genres": [
+        "Romance"
+      ],
+      "original_language": "en",
+      "tmdb_id": 971961
     },
     {
       "title": "September Mornings",
@@ -615465,7 +615662,8 @@
       "tmdb_id": 307546,
       "original_language": "ja",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Girl Friday",
@@ -615512,7 +615710,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/10/film-dead-bride-2022-lk21-d21.jpg",
       "synopsis": "Alyson dan Richard kembali ke rumah masa kecil Alyson setelah kematian ayahnya, membawa serta bayi mereka. Namun, kedamaian segera berubah menjadi horor ketika kekuatan jahat mulai mengancam keluarga ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Miss Osaka",
@@ -615577,8 +615776,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2022/10/film-corpse-prison-part-two-2017-lk21-d21.jpg",
       "synopsis": "Sebuah ekspedisi akademik berubah menjadi mimpi buruk ketika sekelompok mahasiswa menyadari bahwa profesor mereka membawa mereka ke kota terpencil Yasaka bukan untuk penelitian, melainkan untuk ritual...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        53
+      ],
+      "genres": [
+        "Horror",
+        "Thriller"
+      ],
+      "original_language": "ja",
+      "tmdb_id": 481899
     },
     {
       "title": "Typewriter",
@@ -615833,7 +616040,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/01/film-un-hiver-en-ete-2023-lk21-d21.jpg",
       "synopsis": "Musim panas berubah menjadi dingin yang menusuk ketika flu kutub melanda Prancis. Sepuluh orang asing yang tersesat bertemu, berbagi harapan, ketakutan, dan cinta di tengah krisis. Sebuah drama intim ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Offering",
@@ -615897,7 +616105,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/01/Extrac-Casong-60x90.jpg",
       "synopsis": "Wu Guohao dan Da Xiaowei, dua imigran ilegal dari Guangdong, bertekad menguasai jalanan Hong Kong. Dengan kecerdikan dan keberanian, mereka merangkak dari bawah tanah ke puncak dunia kriminal, menarik...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Devil Beneath",
@@ -616009,7 +616218,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/01/jOOyb_4f.jpg",
       "synopsis": "Ledakan dahsyat mengguncang bank, memicu aksi pengejaran berdarah antara polisi dan geng bersenjata. Tim elit Black Panther SWAT bergerak cepat, tapi bagi Jiang Miao—ini lebih dari sekadar misi. Dalan...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Undeaducated",
@@ -616149,8 +616359,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/02/film-alcarras-2023-lk21-d21.jpg",
       "synopsis": "Di pedesaan Catalonia yang sunyi, sebuah keluarga petani buah persik terancam kehilangan segalanya ketika pemilik tanah mereka meninggal dan ahli warisnya memutuskan untuk menjual lahan itu. Konflik b...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "original_language": "ca",
+      "tmdb_id": 804251
     },
     {
       "title": "Dr Jason Leong: Ride with Caution",
@@ -616252,7 +616468,8 @@
       "tmdb_id": 1088878,
       "original_language": "en",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Grand Jete",
@@ -616315,8 +616532,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/02/film-die-hart-the-movie-2023-lk21-d21.jpg",
       "synopsis": "Kevin Hart (dalam versi fiksi dirinya) nekat mengejar mimpi menjadi bintang film laga! Dia mendaftar di sekolah aksi Ron Wilcox, di mana latihan gila-gilaan, ledakan, dan lawakan khas Hart menghadangn...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        35,
+        28,
+        53
+      ],
+      "genres": [
+        "Comedy",
+        "Action",
+        "Thriller"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1077280
     },
     {
       "title": "Love Addicts",
@@ -616345,7 +616572,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/03/film-missing-2023-lk21-d21.jpg",
       "synopsis": "Seorang wanita muda berjuang menemukan ibunya yang hilang—hanya bermodal laptop dan koneksi internet. Dengan bujet $7 juta dan pendapatan $42,4 juta, film ini adalah thriller digital yang memukau, pen...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Sex Life",
@@ -616372,7 +616600,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/03/film-lost-2023-lk21-d21.jpg",
       "synopsis": "Sebuah thriller psikologis yang mengisahkan perjalanan penuh ketegangan untuk menemukan kembali nilai-nilai kemanusiaan yang hilang: empati dan integritas. Setiap detiknya akan menguji batas moral dan...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Gabriel's Rapture: Part Two",
@@ -616382,8 +616611,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/03/film-gabriels-rapture-part-two-2022-lk21-d21.jpg",
       "synopsis": "Cinta Gabriel dan Julia diuji oleh konspirasi mahasiswa dan intrik akademik. Ketika Gabriel berhadapan dengan ancaman pengusiran dari kampus, apakah ia akan menyerah seperti nasib Dante? Atau ia akan ...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        10749
+      ],
+      "genres": [
+        "Romance"
+      ],
+      "original_language": "en",
+      "tmdb_id": 953553
     },
     {
       "title": "Too Hot To Handle Germany",
@@ -616562,7 +616797,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/03/film-soo-2022-lk21-d21.jpg",
       "synopsis": "Toomas, seniman muda yang pulang dari Paris, tiba di pertanian rawa sepupunya. Di balik ketenangan alam, ia menemukan kisah cinta yang penuh misteri dan ketegangan tersembunyi. Setiap langkahnya mengu...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Noise",
@@ -616572,8 +616808,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/03/film-noise-2023-lk21-d21.jpg",
       "synopsis": "Seorang pria kembali ke rumah masa kecilnya, hanya untuk terseret dalam misteri kecelakaan pabrik yang melibatkan ayahnya. Semakin dalam ia menyelidiki, semakin gelap rahasia keluarganya terungkap. Bi...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        18,
+        53,
+        80
+      ],
+      "genres": [
+        "Drama",
+        "Thriller",
+        "Crime"
+      ],
+      "original_language": "ja",
+      "tmdb_id": 848298
     },
     {
       "title": "Rabia and Olivia",
@@ -616603,7 +616849,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/03/film-children-of-the-corn-2023-lk21-d21.jpg",
       "synopsis": "Di sebuah kota kecil di Nebraska, ketidakpedulian orang dewasa merusak panen dan masa depan anak-anak. Tapi mereka tidak akan diam saja—keganasan dimulai ketika anak-anak mengambil alih dengan cara ya...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Stalkers",
@@ -616722,8 +616969,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/04/film-monique-my-name-is-monique-2023-lk21-d21.jpg",
       "synopsis": "Mo'Nique membongkar hidupnya tanpa filter dalam spesial komedi yang blak-blakan ini. Dari pengalaman menghadapi rasisme hingga nasihat neneknya yang tak terlupakan, ia menertawakan segala hal dengan k...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        35
+      ],
+      "genres": [
+        "Comedy"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1107041
     },
     {
       "title": "Linkeroever",
@@ -616755,7 +617008,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/04/film-po-milosc-2022-lk21-d21.jpg",
       "synopsis": "Marlena terjebak dalam perkawinan yang hancur akibat alkoholisme suaminya, Zbigniew. Ketika Bruno, pria asal Nigeria, memberinya kembali rasa percaya diri dan feminitas, hidupnya seolah menemukan caha...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Paupahan",
@@ -616782,8 +617036,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/04/film-amigos-2023-lk21-d21.jpg",
       "synopsis": "Sebuah ledakan aksi dan ketegangan yang tak terduga! Dua sahabat terjebak dalam pusaran kriminal berbahaya ketika satu kesalahan kecil mengubah hidup mereka menjadi buruan maut. Dengan kejar-kejaran m...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        28,
+        53
+      ],
+      "genres": [
+        "Action",
+        "Thriller"
+      ],
+      "original_language": "te",
+      "tmdb_id": 1034587
     },
     {
       "title": "Burqa",
@@ -616869,8 +617131,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/04/film-ayodhi-2023-lk21-d21.jpg",
       "synopsis": "Terjebak dalam kasus kriminal yang bukan urusannya, seorang pria biasa harus berubah menjadi predator untuk bertahan hidup. Setiap langkahnya diawasi musuh yang tak terlihat, setiap keputusannya menen...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        10751,
+        18
+      ],
+      "genres": [
+        "Family",
+        "Drama"
+      ],
+      "original_language": "ta",
+      "tmdb_id": 901489
     },
     {
       "title": "Kabzaa",
@@ -617021,7 +617291,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/04/film-lovely-villain-chin-ai-huai-tan-2023-lk21-d21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "O Kala",
@@ -617051,7 +617322,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/04/film-eva-2023-lk21-d21.jpg",
       "synopsis": "Eva, seorang pengacara sukses, menyembunyikan rahasia mengerikan: dua alter ego—Mike dan Amy—yang lahir dari trauma masa kecilnya. Ketika masa lalunya yang gelap mulai mengejar, Elly (saudaranya) dan ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Girlfriend na pwede na",
@@ -617170,7 +617442,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/04/45pXEiCkfXBViItOdinM3qQ1lTn.jpg",
       "synopsis": "Moushmi dituduh membunuh sahabatnya sendiri, tapi dia bersikeras bahwa roh jahatlah yang memaksanya melakukannya. Sejak kematian adiknya, entitas mengerikan itu terus menghantuinya, merayap dalam baya...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Siew Lup",
@@ -617204,7 +617477,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/05/film-drunken-fist-2023-lk21-d21.jpg",
       "synopsis": "Su Can, pecinta seni bela diri, bermimpi meraih kemuliaan di ibukota. Tapi jebakan narkoba menghancurkan hidupnya. Kini, dengan gaya bertarung unik dan humor yang menghibur, dia bangkit dari keterpuru...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Beatrix",
@@ -617232,7 +617506,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/05/photo_2023-05-02_14-06-40.jpg",
       "synopsis": "Di era Tiancheng, Lin Jian dan Pakaian Merah \"Master Juggling\" menaklukkan Jiu Zhou, mengukuhkan sang Master sebagai guru nasional. Namun, ketika Lin Jian sakit, persekongkolan licik Lin Guang dan Lin...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Risque Business Japan",
@@ -617318,7 +617593,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/05/film-repeater-2023-lk21-d21.jpg",
       "synopsis": "Setelah misi gagal di Kolombia, seorang pembunuh bayaran mengambil pekerjaan terakhir yang bisa jadi bumerang. Kontrak berisiko tinggi ini tak hanya mengancam nyawanya, tapi juga semua orang di sekita...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Geocentric Crisis",
@@ -617478,8 +617754,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/05/film-c-s-i-sanatan-2023-lk21-d21.jpg",
       "synopsis": "Ketika CEO tewas secara brutal, agen CSI harus mengungkap motif di balik pembunuhan itu—dengan lima karyawan sebagai tersangka utama. Setiap pengakuan mengungkap rahasia baru, dan setiap bukti justru ...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        80,
+        53
+      ],
+      "genres": [
+        "Crime",
+        "Thriller"
+      ],
+      "original_language": "te",
+      "tmdb_id": 901277
     },
     {
       "title": "You & Me & Me (Thoe Kap Chan Kap Chan)",
@@ -617508,8 +617792,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/05/film-bear-man-2023-lk21-d21.jpg",
       "synopsis": "Aksi kocak dua beruang kembar yang tiba-tiba jadi manusia! Setelah makan mugwort dan bawang putih, mereka kabur dari laboratorium dan terjebak dalam kekacauan dunia manusia. Dari kejar-kejaran gila hi...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        35,
+        28,
+        14
+      ],
+      "genres": [
+        "Comedy",
+        "Action",
+        "Fantasy"
+      ],
+      "original_language": "ko",
+      "tmdb_id": 995063
     },
     {
       "title": "Legend of Detective Dee",
@@ -617519,8 +617813,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/05/rNRxBm_4c.jpg",
       "synopsis": "Streaming Legend of Detective Dee (2023) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Li Zhen An, Li Sheng Rong, Zheng Qing Wen, Chen Yi Ying",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28
+      ],
+      "genres": [
+        "Action"
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1111727
     },
     {
       "title": "Yaathisai",
@@ -617785,8 +618085,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/05/film-tid-noy-2023-lk21-d21.jpg",
       "synopsis": "Dalam kisah cinta yang memikat ini, dua jiwa yang terluka menemukan cahaya satu sama lain di tengah dunia yang kacau. Dengan chemistry yang memesona dan momen-momen intim yang menggugah, menjanjikan c...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        35,
+        10749
+      ],
+      "genres": [
+        "Comedy",
+        "Romance"
+      ],
+      "original_language": "th",
+      "tmdb_id": 963029
     },
     {
       "title": "Come Out Fighting",
@@ -617855,8 +618163,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/film-the-fist-of-the-condor-2023-lk21-d21.jpg",
       "synopsis": "Buku kuno berisi rahasia bela diri legendaris menjadi buruan para petarung dari seluruh dunia. Dalam film laga yang penuh gerakan memukau ini, darah, keringat, dan konspirasi bertemu saat mereka salin...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28
+      ],
+      "genres": [
+        "Action"
+      ],
+      "original_language": "es",
+      "tmdb_id": 1064517
     },
     {
       "title": "Nightmare Radio: The Night Stalker",
@@ -617904,8 +618218,20 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/film-ponniyin-selvan-part-two-2023-lk21-d21.jpg",
       "synopsis": "Dalam epik sejarah penuh intrik dan pertempuran, Arulmozhi Varman berjuang untuk mengklaim takhta sebagai Rajaraja I, penguasa legendaris kekaisaran Chola. Dengan dendam, persekongkolan, dan keagungan...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        12,
+        36,
+        18
+      ],
+      "genres": [
+        "Action",
+        "Adventure",
+        "History",
+        "Drama"
+      ],
+      "original_language": "ta",
+      "tmdb_id": 858082
     },
     {
       "title": "#Mute",
@@ -617916,7 +618242,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/film-mute-2023-lk21-d21.jpg",
       "synopsis": "- Seorang janda tunggal terjebak dalam permainan mematikan saat ia berusaha membongkar identitas orang yang menghancurkan hidupnya. Dengan waktu yang terus berkurang, bisakah ia mengungkap kebenaran s...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Wolf Garden",
@@ -617986,7 +618313,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/yg7GnkXlp0k3ernOJSLVBQxyIqo.jpg",
       "synopsis": "Streaming House Cleaning Master (2023) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Li Mengmeng, Xiang Yu, Wang Yanxin, Chunqing Awei, Li Ming",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Evil Spider: Soul Eating Spider",
@@ -617997,7 +618325,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/tuMVORnrT9iTdbMyZOmxfrLvybP-60x90.jpg",
       "synopsis": "Dunia terancam ketika laba-laba iblis bangkit dan racun mematikan menyebar! Fang Yuan, sang pemimpin Pengawal Longque, bersama jiwa suci Ji Xinye dan dokter jenius Zhang Lianhua, harus menghadapi kons...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The New God Erlang Shen",
@@ -618010,7 +618339,8 @@
       "tmdb_id": 1116894,
       "original_language": "zh",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "The Idol",
@@ -618055,7 +618385,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/film-swipe-2017-lk21-d21.jpg",
       "synopsis": "Kehidupan penghuni apartemen terungkap melalui lensa CCTV: Loida, penjaga wanita yang setia; Gloria yang patah hati setelah pernikahannya batal; Frank, pria berkeluarga yang hidup dalam rahasia; serta...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Ugram",
@@ -618158,8 +618489,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/film-culpa-mia-2023-lk21-d21.jpg",
       "synopsis": "Drama penuh gairah dan konflik! Nuh terpaksa meninggalkan hidup lamanya saat ibunya menikah dengan pria kaya. Di rumah baru, ia bertemu Nick, saudara tirinya yang memikat. Cinta terlarang pun mekar di...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        10749,
+        53
+      ],
+      "genres": [
+        "Drama",
+        "Romance",
+        "Thriller"
+      ],
+      "original_language": "es",
+      "tmdb_id": 1010581
     },
     {
       "title": "Pollen",
@@ -618269,7 +618610,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/film-spongebob-squarepants-presents-the-tidal-zone-2023-lk21-d21.jpg",
       "synopsis": "GrandPat terjebak dalam petualangan liar melintasi dimensi dan waktu, bertemu versi alternatif dirinya dan karakter-karakter unik dalam upaya pulang ke Bikini Bottom. Dengan animasi warna-warni, leluc...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Amy Schumer: Emergency Contact",
@@ -618296,8 +618638,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/XdjJ3X_4c.jpg",
       "synopsis": "Ketika kebun binatang tempat Sun De You bekerja seumur hidupnya terancam ditutup, putranya, Sun Xiao Hu, pulang dari kota besar dengan ide gila untuk menyelamatkannya. Bersama teman-temannya, mereka m...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        35
+      ],
+      "genres": [
+        "Comedy"
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1081990
     },
     {
       "title": "Thousand Faces of Qi Men",
@@ -618308,7 +618656,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/xJV4zGQ1mgClm50ZiZpDYVj8r79.jpg",
       "synopsis": "Di era Dinasti Tian, pasukan Dongying berusaha membangkitkan Chi You, dewa iblis yang terkunci ribuan tahun. Liu Zimo, pemuda berbakat, dipaksa memikul takdir besar setelah gurunya, Dong Guo, mengorba...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Great phantom",
@@ -618318,8 +618667,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/GigfbvSXX6wrwn727F2JZDW0Py.jpg",
       "synopsis": "Streaming Great phantom 2023 gratis subtitle indonesia kualitas HD. Saksikan aksi seru En Jing, Zeng Chen, Guo Fangzhou, Madina",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        14
+      ],
+      "genres": [
+        "Action",
+        "Fantasy"
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1115195
     },
     {
       "title": "Valeria",
@@ -618383,7 +618740,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/film-village-2023-lk21-d21.jpg",
       "synopsis": "Sebuah drama menyentuh tentang Yu Katayama, pemuda yang terperangkap di desa terpencil Kamonmura akibat trauma masa lalu. Hidupnya yang suram berubah ketika Misaki, gadis dari Tokyo, kembali ke desa. ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "I Love You",
@@ -618393,8 +618751,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/film-i-love-you-2023-lk21-d21.jpg",
       "synopsis": "Sebuah drama romantis dengan sentuhan thriller yang memacu adrenalin. Sathya, eksekutif sukses yang siap menikahi tunangannya, Vishal, tiba-tiba terjebak di kantornya sendiri dalam situasi mengerikan....",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        18
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1082048
     },
     {
       "title": "Sparta",
@@ -618512,7 +618876,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/film-victoria-2023-lk21-d21.jpg",
       "synopsis": "Hotel Victoria bukan sekadar tempat menginap—itu adalah rumah bagi teror yang tak terkatakan. Sepasang suami istri tiba dan disambut oleh pemilik yang misterius, satu-satunya penghuni di gedung megah ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Tayuan",
@@ -618523,7 +618888,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/film-tayuan-2023-lk21-d21.jpg",
       "synopsis": "Dalam film Tayuan (2023), seorang wanita bernama Ella bertemu dengan Rico, seorang kondektur bus, saat perjalanan ke tempat kerja. Meskipun mengetahui Rico sudah menikah, Ella tetap memburu cintanya. ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "See Hear Love",
@@ -618614,7 +618980,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/film-the-gruta-2020-lk21-d21.jpg",
       "synopsis": "Dalam film \"The Gruta\" (2020), seorang pria menjadi satu-satunya korban selamat setelah terjadi pembunuhan mengerikan di sebuah gua terlarang. Ia kehilangan istrinya, teman-temannya, dan pemandu, teta...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Sumpahan Syaitan",
@@ -618698,8 +619065,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/film-gabriels-redemption-part-one-2023-lk21-d21.jpg",
       "synopsis": "Streaming Gabriel's Redemption: Part One (2023) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Melanie Zanetti, Giulio Berruti, Linda Atkinson",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        10749
+      ],
+      "genres": [
+        "Drama",
+        "Romance"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1142615
     },
     {
       "title": "Pulau",
@@ -618710,7 +619085,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/06/film-pulau-2023-lk21-d21.jpg",
       "synopsis": "Apa yang awalnya liburan seru berubah menjadi mimpi buruk mengerikan ketika sekelompok anak muda terdampar di pulau terpencil. Desa misterius yang mereka temukan menyimpan kutukan kuno, dan satu per s...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Bangkok Storm",
@@ -618779,7 +619155,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/07/film-remainder-2023-lk21-d21.jpg",
       "synopsis": "Dongzi terperangkap dalam hutang untuk merawat ayahnya, dan satu-satunya pelariannya adalah Jiu'er. Namun, dalam satu malam tragis, ia kehilangan segalanya. Film ini menggali kedalaman keputusasaan da...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Prends ta bible et tire-toi",
@@ -618886,8 +619263,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/07/film-daughter-2023-lk21-d21.jpg",
       "synopsis": "Seorang wanita muda terperangkap dalam ritual keluarga misterius saat ia dipaksa menjadi \"putri pengganti\". Di balik senyum manis dan tradisi aneh, tersembunyi rawa gelap yang siap menelannya. Bisakah...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        18
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "original_language": "ja",
+      "tmdb_id": 1484472
     },
     {
       "title": "Sergeant",
@@ -618917,7 +619300,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/07/film-blind-2023-lk21-d21.jpg",
       "synopsis": "Badai mengamuk saat dua penjahat bersaudara bersembunyi di rumah pertanian terpencil. Mereka menyandera keluarga di dalamnya, tapi segera sadar: rumah itu lebih menyeramkan dari yang mereka kira. Deng...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Lola",
@@ -619022,8 +619406,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/07/film-carmen-2023-lk21-d21.jpg",
       "synopsis": "Dalam reinterpretasi sensual Benjamin Millepied, kisah Carmen terungkap melalui dreamscape magis yang dipadukan dengan musik menggugah. Dengan lagu orisinal dan koreografi memukau, film ini membawa pe...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        18
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "original_language": "en",
+      "tmdb_id": 763261
     },
     {
       "title": "The Resurrection of Charles Manson",
@@ -619072,7 +619462,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/07/film-bisyo-2023-lk21-d21.jpg",
       "synopsis": "Dalam film \"Bisyo!\" (2023), James terjebak dalam sindikat yang mengancam kehidupannya. Ia bermimpi memiliki usaha sendiri, namun keluar dari sindikat tidaklah mudah. James harus menghadapi konsekuensi...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Imaginur",
@@ -619102,7 +619493,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/07/film-darpok-2023-lk21-d21.jpg",
       "synopsis": "Streaming Darpok (2023) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Akhlesh K G Gaaur, Nikita Mene, Navneet Singh, Prahlad Tiwari",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Trapped in the Farmhouse",
@@ -619133,8 +619525,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/07/film-chakravyuham-the-trap-2023-lk21-d21.jpg",
       "synopsis": "Ketika Siri, wanita karir sekaligus ibu rumah tangga, ditemukan tewas dengan luka mengerikan, petugas investigasi terjebak dalam labirin kebohongan. Setiap petunjuk mengarah pada tersangka baru. Bisak...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        53,
+        9648
+      ],
+      "genres": [
+        "Thriller",
+        "Mystery"
+      ],
+      "original_language": "te",
+      "tmdb_id": 1134790
     },
     {
       "title": "Dream",
@@ -619144,8 +619544,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/07/film-dream-2023-lk21-d21.jpg",
       "synopsis": "Sekelompok pria tunawisma dengan semangat baja bertekad mengubah nasib mereka dengan berlatih keras untuk Piala Dunia Tunawisma, meski harus menghadapi pelatih rewel yang terus menguji kesabaran. Di t...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        35,
+        18
+      ],
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "original_language": "ko",
+      "tmdb_id": 636173
     },
     {
       "title": "Captive",
@@ -619284,8 +619692,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/07/film-nanmao-and-beima-2023-lk21-d21.jpg",
       "synopsis": "Streaming Nanmao and Beima (2023) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Du Zhiguo, Ge Shuai, Yu Jiachuan",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        9648,
+        53
+      ],
+      "genres": [
+        "Horror",
+        "Mystery",
+        "Thriller"
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1144745
     },
     {
       "title": "Jericho Ridge",
@@ -619477,7 +619895,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/07/film-badmaash-babes-2023-lk21-d21.jpg",
       "synopsis": "Setahun setelah bercerai, Helen memutuskan untuk mengikuti kursus bertahan hidup di hutan belantara—sebuah langkah nekat untuk memulai hidup baru. Di tengah tantangan alam liar, dia justru menemukan l...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "About him & her",
@@ -619585,7 +620004,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/07/film-heer-majno-2023-lk21-d21.jpg",
       "synopsis": "Di sebuah wisma tamu yang penuh kejutan, Sonia dan Sameer terpaksa berpura-pura sebagai pasangan menikah, meski awalnya mereka saling berseteru. Namun, seiring waktu, kebencian berubah jadi kehangatan...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Gui",
@@ -619596,7 +620016,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/07/cGyerhOadL0kgPuFq7N9H4MI0ZH.jpg",
       "synopsis": "Streaming Gui (2023) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Bell Ngasri, Azad Jazmin, Elly Mazlein, Dato' Seri Vida, Aries Kwan Li Hoong, David Teo",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Medal",
@@ -619623,8 +620044,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/08/film-the-river-wild-2023-lk21-d21.jpg",
       "synopsis": "Dalam \"The River Wild\" (2023), aksi petualangan seru dan menegangkan menanti! Sebuah kelompok kecil termasuk sepasang saudara kandung yang saling mencintai tapi juga curiga, memulai petualangan arum j...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        9648,
+        53,
+        12
+      ],
+      "genres": [
+        "Mystery",
+        "Thriller",
+        "Adventure"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1000475
     },
     {
       "title": "Two Souls",
@@ -619635,7 +620066,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/08/film-two-souls-2023-lk21-d21.jpg",
       "synopsis": "Dalam \"Two Souls\" (2023), seorang pemuda hampir kehilangan nyawa setelah dikhianati oleh kekasihnya. Namun, saat dirawat di rumah sakit, dia bertemu dengan seorang gadis yang mengubah hidupnya. Mereka...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Manyak",
@@ -619684,7 +620116,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/08/film-the-puppet-2023-lk21-d21.jpg",
       "synopsis": "Di balik tembok rumah mewah yang tersembunyi di antara kaktus gersang Kepulauan Canaria, keluarga Rosa dan Elio hidup dengan rahasia gelap. Ketika Fran tiba, setiap kedipan mata dan bisikan mulai meng...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Jaane Do",
@@ -619905,7 +620338,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/08/film-police-evolution-the-final-2023-lk21-d21.jpg",
       "synopsis": "Seorang penyelundup licik merancang jebakan rumit untuk mengincar belati langka bernilai tinggi. Tapi di dunia bawah tanah yang penuh pengkhianatan, siapa yang sebenarnya sedang dikorbankan? Balas den...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Mistress",
@@ -620111,7 +620545,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/08/film-tekuno-burazazu-2023-lk21-d21.jpg",
       "synopsis": "Techno Brothers, trio musisi eksentrik dengan manajer dingin, Himuro, berambisi menaklukkan Tokyo. Tapi nasib berkata lain—mereka justru terjebak di kampung halaman mereka, Otawara. Dengan humor kocak...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Judge Bao: Intrigues at Academy",
@@ -620159,8 +620594,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/08/film-city-on-the-river-2020-lk21-d21.jpg",
       "synopsis": "Di tengah rezim diktator, Ansis berbakat mempertaruhkan segalanya demi seni. Sebuah drama sejarah tentang pemberontakan diam-diam dan harga kebebasan....",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        36,
+        10749
+      ],
+      "genres": [
+        "Drama",
+        "History",
+        "Romance"
+      ],
+      "original_language": "lv",
+      "tmdb_id": 658895
     },
     {
       "title": "Streamer",
@@ -620296,7 +620741,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/09/film-choose-love-2023-lk21-d21.jpg",
       "synopsis": "Cami memiliki semua yang dia inginkan, tetapi merasa ada yang hilang. Lalu dia bertemu Rex, dan cinta lama kembali ke hidupnya. Pilihlah cinta yang benar dengan menonton Choose Love!...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Sa Muli",
@@ -620328,7 +620774,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/09/film-count-2023-lk21-d21.jpg",
       "synopsis": "Siapkah Anda untuk mengalami perjuangan dan keberhasilan di film \"Count\" (2023), sebuah drama olahraga yang mengisahkan seorang mantan atlet yang kini menjadi guru pendidikan jasmani pembuat onar? Den...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Love You Long Time",
@@ -620436,7 +620883,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/09/film-white-fox-2023-lk21-d21.jpg",
       "synopsis": "Streaming White Fox (2023) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Yi Huang, Li Mengmeng, Ye Xiangming, Chen Yelin, Benson Wang, Gao Shuyao",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Yung libro sa napanood ko",
@@ -620480,8 +620928,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/09/film-my-sex-doll-bodyguard-2020-lk21-d21.jpg",
       "synopsis": "Komedi yang tidak biasa! \"My Sex Doll Bodyguard\" (2020) mengisahkan seorang pria yang menerima boneka seks AI yang dapat mengembangkan dirinya menjadi manusia. Apa yang akan terjadi selanjutnya?...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        35,
+        10749,
+        878
+      ],
+      "genres": [
+        "Comedy",
+        "Romance",
+        "Science Fiction"
+      ],
+      "original_language": "th",
+      "tmdb_id": 759923
     },
     {
       "title": "Patikim-tikim",
@@ -620656,7 +621114,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/10/film-ahasss-2023-lk21-d21.jpg",
       "synopsis": "Dalam film \"Ahasss\" (2023), seorang pemuda muda bernama Jake bekerja sebagai pengasuh rumah tangga. Ia jatuh cinta dengan nyonya rumah yang mengalami kekerasan dalam rumah tangga. Ketika Jake membantu...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Kuch Pal Pyar Ke",
@@ -620910,7 +621369,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/11/film-the-river-2018-lk21-d21.jpg",
       "synopsis": "The River (2018) - Drama: Seorang remaja kota introvert harus menghadapi dunia yang penuh dengan kekerasan naturalisasi di peternakan kayu ayahnya. Apakah dia bisa menemukan tempatnya di dunia tersebu...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Salakab",
@@ -620938,7 +621398,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/11/film-sugar-baby-2023-lk21-d21.jpg",
       "synopsis": "Sugar Baby (2023) - Romance: Cinta yang manis dan berbahaya. Dua teman SMA yang menjadi sugar baby harus menghadapi konsekuensi dari pilihan mereka. Apakah cinta mereka cukup kuat untuk mengatasi semu...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Intimacy",
@@ -621031,7 +621492,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/12/film-higop-2023-lk21-d21.jpg",
       "synopsis": "Dalam film Higop (2023), seorang pria bernama Noah terus memendam rasa cintanya pada mantan kekasihnya, Ysa, yang kini bekerja di sebuah toko minuman teh susu. Saat Noah mencoba memenangkan kembali ha...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Hollywood",
@@ -621075,7 +621537,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2023/12/film-white-river-2023-lk21-d21.jpg",
       "synopsis": "Dalam \"White River\", seorang wanita yang hidupnya monoton terjebak dalam jaring erotis yang membangkitkan gairah dan ketegangan. Penasaran bagaimana dia akan menghadapi situasi ini?...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Pinoy Kamasutra",
@@ -621141,7 +621604,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/01/film-hibang-2023-lk21-d21.jpg",
       "synopsis": "Hibang (2023) - Thriller: Ternyata, ingatan bisa menjadi musuh terburuk. Seorang gadis mencoba mengingat kembali masa lalunya, tapi apa yang terlihat tidak selalu benar. Mau tahu kebenarannya?...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Swing",
@@ -621188,7 +621652,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/01/film-roadkill-2024-lk21-d21.jpg",
       "synopsis": "Vengeance di jalan terbuka! Seorang wanita muda bertemu drifter pemberontak dan terlibat pertarungan untuk hidupnya di \"Roadkill\" (2024). Tonton aksi seru dan petualangan penuh kejutan!...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Thank You for Coming",
@@ -621218,7 +621683,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/01/film-room-service-2024-lk21-d21.jpg",
       "synopsis": "Keinginan seksual yang tak terkendali, tamu misterius, dan kehidupan hotel yang penuh rahasia. Apakah seorang hotel room attendant akan dapat mengontrol keinginannya sendiri? Ataukah ini akan membawa ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "One More Shot",
@@ -621247,7 +621713,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/01/film-hazbin-hotel-2019-lk21-d21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Palipat-lipat, papalit-palit",
@@ -621295,8 +621762,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/01/film-hunt-for-the-dragon-king-2024-lk21-d21.jpg",
       "synopsis": "Hunt For The Dragon King (2024) - Fantasy, Sci-fi: Seorang pria aneh muncul di Qiandeng Town dengan rumor bahwa ada seekor naga di dalam tubuhnya. Apakah reporter Wei Yutong akan mengungkap kebenaran ...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        878,
+        14
+      ],
+      "genres": [
+        "Science Fiction",
+        "Fantasy"
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1225863
     },
     {
       "title": "The Beekeeper",
@@ -621327,7 +621802,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/01/film-ltns-2024-lk21-d21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Hanu Man",
@@ -621528,7 +622004,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/02/film-brutalni-vedro-2023-lk21-d21.jpg",
       "synopsis": "Di dunia yang terancam oleh pecahan matahari, seorang bocah lelaki terdampar dalam perjalanan ke pondok seorang teman. Apa yang akan terjadi selanjutnya? Tonton \"Brutalni Vedro\" untuk menemukan jawaba...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "ClearMind",
@@ -621678,7 +622155,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/02/film-salitan-2024-lk21-d21.jpg",
       "synopsis": "Salitan (2024) - Dalam drama yang penuh intrik, seorang istri mencurigai suaminya berselingkuh dan bertemu dengan orang asing yang menarik. Apakah dia akan memilih untuk mempertahankan hubungannya ata...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "A Cup of Flavor",
@@ -621729,7 +622207,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/02/film-iwaju-a-day-ahead-2024-lk21-d21.jpg",
       "synopsis": "Iwaju: A Day Ahead (2024) - Genre: Documentary, Family. Impian menjadi kenyataan! Pendiri perusahaan hiburan Pan-Afrika Kugali membuat serial animasi asli dengan Walt Disney Animation Studios. Tonton ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Sword E Flag",
@@ -621786,7 +622265,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/03/film-the-loncheng-mystery-case-2024-lk21-d21.jpg",
       "synopsis": "The Loncheng Mystery Case (2024) - Drama: Kematian Lu Sha, deputy leader of the secret guards, memicu kepanikan di istana. Apa yang akan terjadi selanjutnya dalam kasus misterius ini?...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Detective Dee and the Phantom of Waning Moon",
@@ -621833,8 +622313,20 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/03/film-alienoid-the-return-to-the-future-2024-lk21-d21.jpg",
       "synopsis": "Siap untuk perjalanan melalui ruang dan waktu? \"Alienoid: The Return To The Future\" (2024) mengisahkan Taois kuno yang mencari pedang ilahi. Dengan aksi dan fantasi yang luar biasa, film ini akan memb...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        14,
+        12,
+        878
+      ],
+      "genres": [
+        "Action",
+        "Fantasy",
+        "Adventure",
+        "Science Fiction"
+      ],
+      "original_language": "ko",
+      "tmdb_id": 626412
     },
     {
       "title": "Earworm",
@@ -621845,7 +622337,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/03/film-earworm-2024-lk21-d21.jpg",
       "synopsis": "Henry Adams, seorang pria canggung secara sosial yang mencari bantuan untuk kondisinya menerima undangan ke kelompok swadaya yang lebih dari yang terlihat. Bahaya ada di setiap sudut saat Henry masuk ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Question Mark (?)",
@@ -621894,7 +622387,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/03/film-the-art-of-love-2024-lk21-d21.jpg",
       "synopsis": "The Art Of Love (2024) - Cinta dan kejahatan, dua sisi yang sama-sama mematikan. Seorang petugas Interpol harus menangkap mantan kekasihnya, pencuri seni yang licik. Tonton untuk mengetahui akhirnya!...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Jonah",
@@ -621905,7 +622399,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/03/film-jonah-2024-lk21-d21.jpg",
       "synopsis": "Jonah (2024) - Seorang jurnalis yang tertekan menemukan trauma masa kecilnya kembali muncul saat menyelidiki kasus penculikan anak oleh alien. Apakah kebenaran di balik kasus ini akan menghancurkan hi...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Followers",
@@ -621916,7 +622411,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/03/film-followers-2024-lk21-d21.jpg",
       "synopsis": "Influencer media sosial harus melawan kultus web gelap yang tanpa henti! Apakah mereka bisa selamat lagi? Tonton \"Followers\" (2024) untuk mengetahui jawabannya!...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Devil",
@@ -621927,7 +622423,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/03/film-devil-2024-lk21-d21.jpg",
       "synopsis": "Jangan sendirian di malam hari! \"Devil\" membawa Anda ke dalam kisah horor yang menegangkan tentang Hema, Alex, dan Arun. Ketegangan dan ketakutan akan menghantui Anda, tetapi apakah Anda berani untuk ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Phantom Warrior",
@@ -621984,7 +622481,8 @@
       "tmdb_id": 1261415,
       "original_language": "en",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "The Prophecy II",
@@ -622058,7 +622556,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/03/film-nasi-lemak-kimchi-2024-lk21-d21.jpg",
       "synopsis": "Nasi Lemak Kimchi (2024) - Atiqah tidak pernah menyangka bahwa obsesinya pada artis Korea akan membawanya pada cinta yang tidak terduga. Ketika YouTuber Korea Woo Bin datang ke desanya, hidup Atiqah b...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Bardejov",
@@ -622087,8 +622586,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/03/film-105-minutes-2024-lk21-d21.jpg",
       "synopsis": "Dalam film \"105 Minutes\" (2024), seorang wanita muda yang hidup mandiri mulai mengalami kejadian mengerikan setelah berbelanja. Ketika ketegangan meningkat, penonton diajak untuk menyelami petualangan...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        53
+      ],
+      "genres": [
+        "Horror",
+        "Thriller"
+      ],
+      "original_language": "te",
+      "tmdb_id": 922636
     },
     {
       "title": "Snow Valley",
@@ -622371,7 +622878,8 @@
       "tmdb_id": 1271960,
       "original_language": "zh",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Stolen",
@@ -622595,7 +623103,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/05/film-firefly-2024-lk21-d21.jpg",
       "synopsis": "Firefly (2024) - Drama, Fantasy: Seorang anak kecil berpetualang untuk menemukan pulau dongeng kunang-kunang. Apa yang dia temukan di sana? Ikuti petualangan ajaib ini!...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "6 Hours Away",
@@ -622700,8 +623209,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/05/film-light-2024-lk21-d21.jpg",
       "synopsis": "Seorang ibu terdampar di planet yang gelap dan berkabut setelah mendarat darurat. Diburu oleh makhluk asing, dia harus menggunakan lampu untuk menemukan putranya yang hilang. Apakah Anda siap untuk te...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        878,
+        27,
+        53
+      ],
+      "genres": [
+        "Science Fiction",
+        "Horror",
+        "Thriller"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1265122
     },
     {
       "title": "House on Rockingham",
@@ -622864,7 +623383,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/05/film-vallavan-vaguthadhada-2024-lk21-d21.jpg",
       "synopsis": "Pencurian yang menakutkan menghubungkan 5 orang asing dalam Vallavan Vaguthadhada (2024). Apa yang terjadi pada malam itu?...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Teddiscare",
@@ -622913,7 +623433,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/06/film-die-hart-2-die-harter-2024-lk21-d21.jpg",
       "synopsis": "Die Hart 2: Die Harter (2024) - Action: Hart merencanakan film aksi inovatif, tetapi plot dendam dari masa lalunya mengancam untuk menghancurkannya. Siap untuk aksi yang tak terduga!...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Poolman",
@@ -623110,7 +623631,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/06/film-po-ke-wang-zhe-2024-lk21-d21.jpg",
       "synopsis": "Siap untuk komedi fantasi yang menghibur? \"Po Ke Wang Zhe\" (2024) mengisahkan tentang dua bintang poker yang tidak sengaja mentransfer bakatnya ke seorang penjahat kecil. Bagaimana mereka akan bekerja...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Northeast Folktales",
@@ -623174,7 +623696,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/06/film-inheritance-2024-lk21-d21.jpg",
       "synopsis": "Setelah kematian penemu eksentrik, keluarga berkumpul untuk mewarisi kekayaannya, tapi mereka harus melewati pertandingan terakhir yang menguji rekonsiliasi dan kerja tim. Siap-siap untuk tertawa dan ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Dearly Beloved",
@@ -623185,7 +623708,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/06/film-dearly-beloved-2024-lk21-d21.jpg",
       "synopsis": "\"Dearly Beloved\" - Cinta tanpa syarat dan kesempatan kedua, itu yang ditawarkan dalam kisah ini. Saksikan bagaimana pasangan dengan keluarga campuran menjaga hubungan mereka agar tidak berantakan....",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Agent Recon",
@@ -623254,7 +623778,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/06/film-addicted-to-you-2019-lk21-d21.jpg",
       "synopsis": "Addicted To You (2019) - Genre: Comedy. Luke berpose sebagai pecandu seks yang pulih untuk menghindari cinta, tapi apa yang terjadi ketika rencananya tidak berjalan sesuai keinginan? Tonton untuk meng...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Diane von Furstenberg: Woman in Charge",
@@ -623414,8 +623939,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/07/film-hitoribocchi-janai-2023-lk21-d21.jpg",
       "synopsis": "Seorang dokter gigi yang canggung dan sensitif, terganggu oleh cinta. Dalam film \"Hitoribocchi Janai\" (2023), Anda akan menyaksikan kisah cinta yang unik dan inspiratif. Tonton untuk mengetahui lebih ...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "original_language": "ja",
+      "tmdb_id": 1025442
     },
     {
       "title": "Parshawan - Punjabi Movie",
@@ -623426,7 +623957,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/07/film-parshawan-punjabi-movie-2024-lk21-d21.jpg",
       "synopsis": "Streaming Parshawan - Punjabi Movie (2024) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Raj Dhaliwal, Preet Baath, Sonpreet Jawandha",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Pagpag 24/7",
@@ -623630,7 +624162,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/07/film-the-caregiver-2024-lk21-d21.jpg",
       "synopsis": "Dalam \"The Caregiver\", Emma terjebak dalam rumah yang menyembunyikan rahasia menakutkan. Apakah dia bisa selamat dari teror yang mengancam?...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Leha",
@@ -623680,8 +624213,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/07/film-kill-2024-lk21-d21.jpg",
       "synopsis": "Kill (2024) - Action, Crime, Drama: Di atas kereta api yang melaju ke New Delhi, komando harus menghadapi pasukan bandit yang ganas. Apakah mereka akan berhasil menyelamatkan penumpang dan diri mereka...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        28,
+        80,
+        53
+      ],
+      "genres": [
+        "Action",
+        "Crime",
+        "Thriller"
+      ],
+      "original_language": "hi",
+      "tmdb_id": 1160018
     },
     {
       "title": "Visher",
@@ -623747,7 +624290,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/08/film-182-beyond-youthful-days-2024-lk21-d21.jpg",
       "synopsis": "Ami dan Jimmy terikat karena pekerjaan dan petualangan, tetapi Ami pergi tiba-tiba. Delapan belas tahun kemudian, Jimmy menemukan kartu pos dari Ami dan memicu perjalanan ke Jepang untuk menemukan pen...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Broken Lance",
@@ -623819,7 +624363,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/08/film-dandelion-2024-lk21-d21.jpg",
       "synopsis": "Dalam film \"Dandelion\" (2024), seorang penyanyi-penulis lagu terjebak dalam spiral ke bawah dan menemukan harapan baru dalam pertunjukan terakhirnya di sebuah reli sepeda motor di South Dakota. Apakah...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Girl Locked Upstairs: The Tanya Kach Story",
@@ -623966,8 +624511,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/08/film-drive-2024-lk21-d21.jpg",
       "synopsis": "Tidak ada plot yang tersedia, tetapi dengan Worldwide Gross sebesar $470,427, Drive (2024) tampaknya menjadi film thriller yang sangat menarik dan penuh aksi. Apa yang akan terjadi di balik kemudi?...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        28,
+        53
+      ],
+      "genres": [
+        "Action",
+        "Thriller"
+      ],
+      "original_language": "ko",
+      "tmdb_id": 838206
     },
     {
       "title": "Hotel Cocaine",
@@ -623994,7 +624547,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/08/film-kardes-takimi-2024-lk21-d21.jpg",
       "synopsis": "Kardes Takimi (2024) - Komedi Keluarga: Keluarga agen rahasia ini terjebak dalam perjalanan petualangan dengan robot! Dapatkan siap untuk tertawa dan berpetualang bersama mereka!...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Onmyoji Zero",
@@ -624005,7 +624559,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/08/film-onmyoji-zero-2024-lk21-d21.jpg",
       "synopsis": "Selama periode Heian, Seimei Abe berlatih sihir untuk memecahkan fenomena aneh. Ikuti petualangannya di \"Onmyoji Zero\"!...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Killer",
@@ -624055,8 +624610,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/08/film-ser-ser-salhi-city-of-wind-2024-lk21-d21.jpg",
       "synopsis": "Dalam \"Ser Ser Salhi (City Of Wind)\", seorang remaja 17 tahun bernama Ze menemukan cinta yang mengubah hidupnya di tengah masyarakat Mongolia modern yang dingin. Apakah cinta ini dapat menghangatkan h...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "original_language": "mn",
+      "tmdb_id": 730256
     },
     {
       "title": "La sudestada (Southern Storm)",
@@ -624086,7 +624647,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/08/film-dead-man-2024-lk21-d21.jpg",
       "synopsis": "Dalam \"Dead Man\" (2024), seorang pria yang dituduh menggelapkan 100 miliar won harus hidup sebagai \"Orang mati\" untuk membersihkan namanya. Tapi, apakah dia bisa mengungkap kebenaran di balik skandal ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Witch",
@@ -624118,7 +624680,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/08/film-evol-a-love-story-in-reverse-2024-lk21-d21.jpg",
       "synopsis": "Siap untuk sebuah film thriller romantis yang akan membuat Anda berada di tepi kursi? \"Evol: A Love Story In Reverse\" (2024) adalah film yang akan membawa Anda ke dalam perjalanan yang penuh tekanan d...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Chime",
@@ -624167,7 +624730,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/09/film-buddy-2024-lk21-d21.jpg",
       "synopsis": "Pilot dan boneka beruang, siap untuk petualangan epik! \"Buddy\" (2024) membawa kamu ke dalam sebuah misi penyelamatan yang tak terduga, di mana Aditya Ram dan Buddy, seekor boneka beruang, harus bekerj...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Rebel",
@@ -624178,7 +624742,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/09/film-rebel-2024-lk21-d21.jpg",
       "synopsis": "Siap untuk aksi dan drama yang kuat? \"Rebel\" (2024) mengisahkan Luka, seorang pemuda yang tumbuh di tengah kecanduan narkoba, prostitusi, dan gangsterisme, namun dia mencoba menjalani kehidupan normal...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Hostile Dimensions",
@@ -624207,8 +624772,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/09/film-snow-white-and-the-seven-samurai-2024-lk21-d21.jpg",
       "synopsis": "Dalam versi ulang dari kisah klasik, Putri Salju dilatih oleh Tujuh Samurai untuk melawan ibu tirinya yang kejam. Apakah dia akan berhasil membalas dendam dan menemukan kebahagiaan? (Snow White And Th...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        35
+      ],
+      "genres": [
+        "Action",
+        "Comedy"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1252168
     },
     {
       "title": "Kamen Rider 555 20th: Paradise Regained",
@@ -624261,7 +624834,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/09/film-the-forest-killer-lesni-vrah-2024-lk21-d21.jpg",
       "synopsis": "Dalam hutan yang gelap, kejahatan dan kematian mengintai. \"The Forest Killer\" (lesni Vrah) (2024) membawa Anda ke dalam kasus pembunuhan yang mengerikan, di mana Viktor Kalivoda menembak dan membunuh ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Fury 12 Hours",
@@ -624314,7 +624888,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/09/film-midas-2024-lk21-d21.jpg",
       "synopsis": "Dalam \"Midas\", seorang pria karismatik merekrut teman-temannya untuk mencuri ribuan orang, tapi mereka malah menemukan skema yang lebih gelap. Seberapa jauh mereka akan pergi untuk mencapai keserakaha...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Claws (Mong Vuot)",
@@ -624325,7 +624900,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2024/09/film-claws-mong-vuot-2024-lk21-d21.jpg",
       "synopsis": "Dalam film Claws (Mong Vuot), sekelompok teman mengadakan pesta piknik liar di hutan yang indah. Namun, pesta mereka berubah menjadi perjuangan bertahan hidup melawan predator ganas yang cepat dan sel...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Don't Turn Out the Lights",
@@ -624777,7 +625353,8 @@
       "tmdb_id": 1252979,
       "original_language": "ms",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Tim Dillon: This Is Your Country",
@@ -624902,8 +625479,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/01/film-life-of-belle-2025-lk21-d21.jpg",
       "synopsis": "Tahun 2018, Annabelle Starnes menghilang, dan rekaman pengawasan rumahnya menjadi satu-satunya petunjuk. Apa yang terjadi pada dirinya? Tonton \"Life Of Belle\" untuk mengetahui kebenaran yang menakutka...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        53
+      ],
+      "genres": [
+        "Horror",
+        "Thriller"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1135281
     },
     {
       "title": "The Bear Lake Murders",
@@ -625021,7 +625606,8 @@
       "tmdb_id": 1420161,
       "original_language": "ta",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Anaconda Island (Island Python)",
@@ -625032,7 +625618,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/02/film-anaconda-island-island-python-2025-lk21-d21.jpg",
       "synopsis": "Apakah Anda siap menghadapi teror di \"Anaconda Island\" (2025)? Film ini mengisahkan bencana biologis yang terjadi ketika spesimen laboratorium melarikan diri, dan seorang pria yang berjuang untuk meli...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Mouse of Horrors",
@@ -625078,8 +625665,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/02/film-game-changer-2025-lk21-d21.jpg",
       "synopsis": "Dalam \"Game Changer\", seorang petugas IAS jujur berjuang melawan sistem politik korup melalui pemilihan umum adil. Apakah dia bisa mengubah permainan?...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        28,
+        18
+      ],
+      "genres": [
+        "Action",
+        "Drama"
+      ],
+      "original_language": "te",
+      "tmdb_id": 811944
     },
     {
       "title": "Love Forever (Karlek farever)",
@@ -625149,7 +625744,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/03/film-kalan-2025-lk21-d21.jpg",
       "synopsis": "Streaming Kalan (2025) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Appukutty, Cheran Raj, Sampath Ram",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Golden Voice",
@@ -625176,8 +625772,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/03/film-papa-2025-lk21-d21.jpg",
       "synopsis": "Dalam \"Papa\", seorang ayah harus menghadapi saat-saat yang mengerikan ketika putrinya berperilaku aneh setelah insiden berkemah. Apakah ilmu hitam benar-benar ada di balik ini?...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        80,
+        18
+      ],
+      "genres": [
+        "Crime",
+        "Drama"
+      ],
+      "original_language": "cn",
+      "tmdb_id": 1178574
     },
     {
       "title": "Bidaah",
@@ -625383,7 +625987,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/03/film-b-r-i-2025-lk21-d21.jpg",
       "synopsis": "Mantan tentara tunawisma diculik dan dikirim ke ilmuwan gila untuk misi berbahaya melawan korupsi. Apakah mereka akan berhasil membalas dendam atau menjadi korban kegilaan ilmuwan? - B.r.i (2025)...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Jarnail: The Warrior",
@@ -625491,7 +626096,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/03/film-borderline-2025-lk21-d21.jpg",
       "synopsis": "Seorang pengawal yang tangguh dan setia harus melindungi seorang superstar pop dan pacarnya dari seorang penguntit yang gigih di Los Angeles pada tahun 1990-an. Dari aksi yang seru hingga ketegangan y...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Spy Puzzle",
@@ -625572,7 +626178,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/03/film-beat-the-tiger-chu-fei-2025-lk21-d21.jpg",
       "synopsis": "Beat The Tiger (chu Fei) (2025) - Dalam perang melawan bandit, seorang regu kecil dari Northeast Democratic Alliance Army harus menggunakan keberanian dan kecerdasan untuk menghadapi bahaya. Dari pert...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Red Blood Rescue",
@@ -625794,8 +626401,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/04/film-master-and-man-shining-modern-history-2019-lk21-d21.jpg",
       "synopsis": "Master And Man (shining Modern History) (2019) - Romance: Hyeon Dae dan Min Joo terjebak dalam hubungan yang rumit dan buruk, dengan keinginan yang tidak terkendali dan karakter masa lalu yang mempers...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        10749
+      ],
+      "genres": [
+        "Drama",
+        "Romance"
+      ],
+      "original_language": "ko",
+      "tmdb_id": 616219
     },
     {
       "title": "The Ranger",
@@ -625922,7 +626537,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/04/film-grace-point-2025-lk21-d21.jpg",
       "synopsis": "Seorang pria muda harus melawan penduduk setempat dan setan pribadinya sendiri di Grace Point (2025), sebuah film drama dan thriller yang akan membuat Anda merasa tegang dan penasaran....",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Black Spot",
@@ -626065,7 +626681,8 @@
       "tmdb_id": 1469709,
       "original_language": "ta",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Fair Rain",
@@ -626147,7 +626764,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/04/film-istanbul-encyclopedia-istanbul-ansiklopedisi-2025-lk21-d21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Wolf Girl",
@@ -626178,8 +626796,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/04/film-fights-break-sphere-4-battle-through-the-heavens-4-2025-lk21-d21.jpg",
       "synopsis": "Streaming Fights Break Sphere 4 (Battle Through the Heavens 4) (2025) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Victor Ma, Li Jiuxiao, Jiang Wu, Gao Shuguang, Wen Huang",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        14,
+        12
+      ],
+      "genres": [
+        "Action",
+        "Fantasy",
+        "Adventure"
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1469721
     },
     {
       "title": "Armed",
@@ -626254,7 +626882,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/05/film-ayashii-partner-2025-lk21-d21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Hoshiar Singh",
@@ -626282,7 +626911,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/05/film-money-games-2025-lk21-d21.jpg",
       "synopsis": "Zeng Miao Zhu dan timnya harus menyusup ke dalam permainan uang yang dikendalikan oleh Tang Gang. Dengan aksi yang cepat dan komedi yang tidak terduga, apakah mereka akan berhasil mengungkap konspiras...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Brighter Days",
@@ -626369,7 +626999,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/05/film-life-hangs-by-a-shot-the-old-way-2025-lk21-d21.jpg",
       "synopsis": "Di \"Life Hangs by a Shot (the old way)\" (2025), aksi dan drama berkobar dalam kisah Peng Yinan, seorang gangster yang memimpin kelompoknya melakukan perampokan di pegunungan untuk mengumpulkan kekayaa...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Demon Hunter",
@@ -626420,7 +627051,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/05/film-scissors-2025-lk21-d21.jpg",
       "synopsis": "'Scissors' adalah komedi horor yang seru! Influencer yang membuat film horor di rumah tua yang angker harus menghadapi kematian yang nyata. Siapa yang berada di balik topeng pembunuh? Tonton untuk men...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Seat",
@@ -626448,7 +627080,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/05/film-worlds-apart-2025-lk21-d21.jpg",
       "synopsis": "Worlds Apart (2025) - Sci-fi: Seorang pria harus menghadapi fenomena aneh dan tak dapat dijelaskan yang menjungkirbalikkan dunianya. Dapatkah dia menemukan kekuatan dalam dirinya untuk melindungi kelu...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Wanted",
@@ -626496,8 +627129,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/05/film-snow-white-2025-lk21-d21.jpg",
       "synopsis": "Siapkah kamu untuk memasuki dunia ajaib? Snow White (2025) adalah petualangan epik yang mengisahkan seorang putri cantik bergabung dengan tujuh kurcaci dan pemberontak untuk mengalahkan ibu tirinya, R...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        10751,
+        14
+      ],
+      "genres": [
+        "Family",
+        "Fantasy"
+      ],
+      "original_language": "en",
+      "tmdb_id": 447273
     },
     {
       "title": "Conan O'Brien: The Kennedy Center Mark Twain Prize for American Humor",
@@ -626508,7 +627149,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/05/film-conan-obrien-the-kennedy-center-mark-twain-prize-for-american-humor-2025-lk21-d21.jpg",
       "synopsis": "Conan O'Brien dianugerahi Penghargaan Mark Twain untuk Humor Amerika dan para bintang komedi bersatu untuk menghormatinya. Siap untuk tertawa dengan komedian terbaik?...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Mollie Project",
@@ -626727,7 +627369,8 @@
       "tmdb_id": 1463068,
       "original_language": "en",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Animal Within",
@@ -626909,7 +627552,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/05/film-rosario-2025-lk21-d21.jpg",
       "synopsis": "Rosario (2025) - Horror: Saat hujan salju lebat, Rosario terjebak dalam teror supernatural saat entitas dunia lain menguasai tubuh neneknya. Apakah dia bisa selamat?...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Ex Ex Lovers",
@@ -626978,8 +627622,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/05/film-confrontation-peak-jianfeng-duijue-2025-lk21-d21.jpg",
       "synopsis": "Confrontation Peak (jianfeng Duijue) - Dalam dunia yang penuh dengan intrik dan kekerasan, seorang gangster bernama Chu Tiankuo harus menghadapi musuh-musuhnya untuk memperebutkan mask emas. Dengan ak...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        28,
+        9648
+      ],
+      "genres": [
+        "Action",
+        "Mystery"
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1458131
     },
     {
       "title": "Happy Monday (Sawaddee Wan Jan) (s)",
@@ -627026,7 +627678,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/05/film-situationship-2025-lk21-d21.jpg",
       "synopsis": "Jatuh cinta tidak pernah terduga, terutama ketika hati masih terluka. \"Situationship\" (2025) membawa Anda ke dalam kisah romantis antara Nikki dan Jae, yang harus menghadapi cinta, kepercayaan, dan pe...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Arjun S/O Vyjayanthi",
@@ -627212,7 +627865,8 @@
       "tmdb_id": 1482082,
       "original_language": "zh",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "An Abundance of Dunes",
@@ -627260,8 +627914,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/06/film-hit-the-3rd-case-2025-lk21-d21.jpg",
       "synopsis": "Hit: The 3rd Case (2025) - Action, Crime, Thriller: Pembunuhan brutal dan kasus yang menguji batas kemampuan. Arjun Sarkaar harus menghadapi tantangan terbesar dalam hidupnya untuk membongkar kebenara...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        80,
+        53,
+        28
+      ],
+      "genres": [
+        "Crime",
+        "Thriller",
+        "Action"
+      ],
+      "original_language": "te",
+      "tmdb_id": 1060046
     },
     {
       "title": "Paramount",
@@ -627313,7 +627977,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/06/film-bleeding-2025-lk21-d21.jpg",
       "synopsis": "Bleeding (2025) - Horor: Dalam dunia di mana darah vampir dipanen sebagai obat, dua remaja putus asa menemukan seorang gadis yang sedang tidur terkunci di rumah kosong. Apa yang akan mereka temukan se...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Titan: The OceanGate Disaster",
@@ -627323,8 +627988,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/06/film-titan-the-oceangate-disaster-2025-lk21-d21.jpg",
       "synopsis": "Judul: Titan: The Oceangate Disaster (2025) - Dokumenter yang mengungkap kisah ambisi yang berakhir tragis di kedalaman lautan. Apakah harga kesuksesan sebanding dengan risiko yang diambil?...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        99,
+        18
+      ],
+      "genres": [
+        "Documentary",
+        "Drama"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1426306
     },
     {
       "title": "Girl's Troubles",
@@ -627335,7 +628008,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/06/film-girls-troubles-2025-lk21-d21.jpg",
       "synopsis": "Streaming Girl's Troubles (2025) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Chen Bing, Wu Yingzhe, Yang Junhan",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Snake Island Survival",
@@ -627346,7 +628020,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/06/film-snake-island-survival-2025-lk21-d21.jpg",
       "synopsis": "Streaming Snake Island Survival (2025) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Yu Lei, Zhu Hai Jun, Wu Hao",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Ant Mutation Crisis",
@@ -627377,8 +628052,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/06/film-the-snake-girl-2025-lk21-d21.jpg",
       "synopsis": "Di sebuah kota di Asia Tenggara, legenda wanita ular yang melahap manusia menjadi kenyataan. Apakah kamu berani menjelajah ke Hutan yang Hilang?...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        14,
+        28,
+        27
+      ],
+      "genres": [
+        "Fantasy",
+        "Action",
+        "Horror"
+      ],
+      "original_language": "zh",
+      "tmdb_id": 1478029
     },
     {
       "title": "Angry Rescue",
@@ -627444,7 +628129,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/06/film-blind-spot-2025-lk21-d21.jpg",
       "synopsis": "Blind Spot (2025) - Crime, Mystery: Ketika kejadian bunuh diri berubah menjadi kasus pembunuhan, Petugas Vikram harus menavigasi melalui para tersangka dan mengungkap rahasia yang tersembunyi. Dapatka...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "KaramSutra",
@@ -627472,7 +628158,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/06/film-all-out-with-aj-raval-2025-lk21-d21.jpg",
       "synopsis": "Dalam \"All Out with AJ Raval\", sebuah film drama yang mendebarkan, AJ Raval memerankan seorang bintang A-list yang tidak ragu menantang batas. Dengan aksi yang berani dan tak terduga, ia membawa penon...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Crown of Shadows",
@@ -627520,8 +628207,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/06/film-pihit-2025-lk21-d21.jpg",
       "synopsis": "Pihit (2025) - Seorang mantan penari kembali ke kelas tari tiang dan menemukan kegembiraan dalam kehidupan seksnya. Namun, apa yang akan terjadi ketika pacarnya yang konservatif mengetahui tentang hal...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "original_language": "de",
+      "tmdb_id": 1792873
     },
     {
       "title": "Tenu Ghodi Kinney Chadaya",
@@ -627548,8 +628241,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/06/film-alma-and-the-wolf-2025-lk21-d21.jpg",
       "synopsis": "Pantai Oregon yang sunyi dan misterius menjadi latar belakang Alma And The Wolf (2025), sebuah film horor yang penuh teka-teki. Seorang polisi bermasalah harus menyelidiki serangan serigala yang menge...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        9648,
+        53
+      ],
+      "genres": [
+        "Horror",
+        "Mystery",
+        "Thriller"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1328956
     },
     {
       "title": "DD Next Level",
@@ -627559,8 +628262,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/06/film-dd-next-level-2025-lk21-d21.jpg",
       "synopsis": "Ternyata, menjadi kritikus film tidak selalu mudah. Dd Next Level (2025) mengisahkan seorang kritikus film yang terjebak dalam film yang ia sukai untuk diejek. Bagaimana ia bisa keluar dari situasi in...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        35
+      ],
+      "genres": [
+        "Horror",
+        "Comedy"
+      ],
+      "original_language": "ta",
+      "tmdb_id": 1421019
     },
     {
       "title": "Absolute Dominion",
@@ -627782,7 +628493,8 @@
       "tmdb_id": 1482837,
       "original_language": "mr",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Stand Your Ground",
@@ -627814,7 +628526,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/07/film-ticha-posta-2025-lk21-d21.jpg",
       "synopsis": "Di \"Ticha Posta\" (2025), sekelompok anak-anak berani dan cerdas di Pegunungan Raksasa yang bersalju pada akhir masa pendudukan Jerman, menemukan seorang pilot Prancis yang jatuh. Mereka memutuskan unt...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Un-ex You",
@@ -628307,7 +629020,8 @@
       "type": "movie",
       "metadata_status": "sitemap_slug_unverified",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Guardians of Zhu Yin",
@@ -628457,7 +629171,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/07/film-the-fury-2025-lk21-d21.jpg",
       "synopsis": "Setelah diperkosa di sebuah pesta, aktris ini mengasingkan diri ketika saudara laki-lakinya, Adrian, meragukan ceritanya. Sementara dia mengatasinya melalui teater, berperan sebagai Medea, Adrian masu...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Miley Cyrus: Something Beautiful",
@@ -628550,7 +629265,8 @@
       "tmdb_id": 1514898,
       "original_language": "kn",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "The Fantastic Four: First Steps",
@@ -628560,8 +629276,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/07/film-the-fantastic-four-first-steps-2025-lk21-d21.jpg",
       "synopsis": "Dalam \"The Fantastic Four: First Steps\", empat pahlawan super harus menghadapi ancaman galaksi ketika dewa luar angkasa Galactus dan utusannya, Silver Surfer, mengancam Bumi. Dengan kekuatan luar bias...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        878,
+        12,
+        28
+      ],
+      "genres": [
+        "Science Fiction",
+        "Adventure",
+        "Action"
+      ],
+      "original_language": "en",
+      "tmdb_id": 617126
     },
     {
       "title": "Sword Rose",
@@ -628611,7 +629337,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/07/film-sunday-best-the-untold-story-of-ed-sullivan-2025-lk21-d21.jpg",
       "synopsis": "Menelaah karier pembawa acara televisi perintis Ed Sullivan, dengan fokus pada platformnya terhadap musisi kulit hitam selama era hak-hak sipil....",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Trainwreck: P.I. Moms",
@@ -628639,7 +629366,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/07/film-guard-revenge-for-love-2025-lk21-d21.jpg",
       "synopsis": "Pertemuan malam hari seorang penjaga keamanan dengan kekuatan gaib di Gedung M berujung pada percintaan dengan seorang dokter, hingga rahasia bangunan kuno mengancam nyawa mereka....",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Hal Harper",
@@ -628668,7 +629396,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/07/film-war-of-the-worlds-revival-2025-lk21-d21.jpg",
       "synopsis": "Film fiksi ilmiah yang membumi seperti District 9, yang menyentuh tema privasi versus pengawasan Soundtrack: Keep Your Head Up (Written by Wolfgang Valbrun, Adam Holgate, James Graham, Thierry Lemaitr...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Untold",
@@ -628698,7 +629427,8 @@
       "tmdb_id": 1512038,
       "original_language": "ms",
       "genre_sync_status": "no_genres",
-      "genre_retry_status": "no_genres"
+      "genre_retry_status": "no_genres",
+      "genre_third_status": "no_genres"
     },
     {
       "title": "Spermageddon",
@@ -628732,7 +629462,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/08/film-ji-dao-2025-lk21-d21.jpg",
       "synopsis": "Streaming Ji Dao (2025) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Simon Yam, Clara Lee, Henry Prince Mak",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Detective Dee: The Mystery of a Ghost Town",
@@ -628800,7 +629531,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/08/film-high-five-2025-lk21-d21.jpg",
       "synopsis": "Lima orang biasa, yang mengembangkan kekuatan super mereka setelah menerima transplantasi organ dari makhluk berkekuatan super sebelumnya, bertarung melawan cenayang lain, yang juga mendapatkan kekuat...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Abraham's Boys",
@@ -628811,7 +629543,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/08/film-abrahams-boys-2025-lk21-d21.jpg",
       "synopsis": "Abraham van Helsing memindahkan kedua putranya ke Amerika Serikat untuk melarikan diri dari masa lalu mereka. Worldwide Gross: $212,706...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Pickup",
@@ -628879,7 +629612,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/08/film-baida-2025-lk21-d21.jpg",
       "synopsis": "Seorang mantan mata-mata terjebak ke dalam dunia gelap seorang pria yang telah menentang siklus waktu dan kematian, yang memiliki kemampuan jahat....",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Four Bad Boys and Me",
@@ -628929,8 +629663,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/08/film-bait-2025-lk21-d21.jpg",
       "synopsis": "Ketika keluarga Herring terbangun di ruang bawah tanah setelah mengalami kecelakaan mobil, satu-satunya hal yang lebih menakutkan daripada tidak tahu bagaimana mereka bisa sampai di sana, adalah menya...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        53,
+        27,
+        14
+      ],
+      "genres": [
+        "Thriller",
+        "Horror",
+        "Fantasy"
+      ],
+      "original_language": "es",
+      "tmdb_id": 1651912
     },
     {
       "title": "Emanuelle - A Woman from a Hot Country",
@@ -629004,7 +629748,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/08/film-the-last-goodbye-2025-lk21-d21.jpg",
       "synopsis": "Film ini membawa kita kembali ke awal tahun 2000-an, di mana surat-surat tulisan tangan menyimpan emosi yang tak terucapkan, dan cinta adalah sesuatu yang indah sekaligus cepat berlalu. Mengisahkan du...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Jim Jefferies: Two Limb Policy",
@@ -629074,7 +629819,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/08/film-isolated-2025-lk21.jpg",
       "synopsis": "Di film \"Isolated\" (2025), seorang perawat berjuang melindungi pasiennya dari seorang penyerang brutal yang menginvasi rumah sakit terpencil. Dalam keadaan genting, mereka harus bekerja sama untuk ber...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Leprechaun: The Beginning",
@@ -629120,8 +629866,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/08/film-baireoseu-2025-lk21.jpg",
       "synopsis": "Baireoseu (2025) adalah drama yang mengisahkan kehidupan seorang pria yang terjebak dalam lingkaran waktu. Ia terus-menerus mengalami hari yang sama secara berulang-ulang, dan harus mencari cara untuk...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "original_language": "ko",
+      "tmdb_id": 607845
     },
     {
       "title": "A Deadly Ride",
@@ -629224,8 +629976,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/08/film-noijeu-2025-lk21.jpg",
       "synopsis": "Dalam \"Noijeu\" (2025), seorang wanita dengan gangguan pendengaran dihantui oleh suara-suara yang menghubungkan dengan hilangnya adiknya dan kehadiran roh jahat. Ia terjerumus dalam rahasia gelap dan m...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        53
+      ],
+      "genres": [
+        "Horror",
+        "Thriller"
+      ],
+      "original_language": "ko",
+      "tmdb_id": 1194963
     },
     {
       "title": "Kapata Nataka Sutradhari",
@@ -629273,8 +630033,16 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/08/film-night-werewolves-2025-lk21.jpg",
       "synopsis": "Dalam \"Night of the Werewolves\" (2025), ketika seorang wanita diberitakan diserang dan dibantai dengan kejam, rantai peristiwa mengerikan pun dimulai. Setiap bulan purnama, serangan brutal semakin esk...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        35
+      ],
+      "genres": [
+        "Horror",
+        "Comedy"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1470963
     },
     {
       "title": "Please Don't Feed the Children",
@@ -629304,7 +630072,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/08/film-gobaekeui-yeoksa-2025-lk21.jpg",
       "synopsis": "\"Gobaekeui yeoksa\" (2025) adalah kisah komedi romantis tentang Park Se-ri, remaja 19 tahun yang ingin meluruskan rambut keritingnya sebelum mengungkapkan perasaannya. Namun, kehidupannya menjadi rumit...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Players",
@@ -629372,7 +630141,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/09/film-bo-tu-bao-thu-2025-lk21.jpg",
       "synopsis": "\"Bo Tu Bao Thu\" (2025) merupakan film komedi romantis yang mengisahkan empat teman yang berencana untuk menyelesaikan segitiga cinta yang rumit. Mereka menciptakan rencana konyol untuk memecahkan masa...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "I Heart Willie",
@@ -629463,7 +630233,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/09/film-csongor-es-tunde-2025-lk21.jpg",
       "synopsis": "\"Csongor es Tunde\" (2025) adalah film animasi yang membawa kita ke dalam dunia fantasi yang mempesona. Seorang pangeran muda memulai petualangan ajaib untuk menemukan kebahagiaan, bertemu peri, penyih...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Thug CR 143/24",
@@ -629564,8 +630335,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/09/film-dracula-love-tale-2025-lk21.jpg",
       "synopsis": "Dracula: A Love Tale (2025) adalah kisah cinta abadi yang berbalut ketakutan. Seorang pangeran abad ke-15 menjadi vampir setelah kematian istrinya, ia kemudian menemukan seorang wanita yang mirip deng...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        27,
+        14,
+        10749
+      ],
+      "genres": [
+        "Horror",
+        "Fantasy",
+        "Romance"
+      ],
+      "original_language": "fr",
+      "tmdb_id": 1246049
     },
     {
       "title": "Sirenele: Secretul Medalionului",
@@ -629596,8 +630377,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/09/film-frank-2025-lk21.jpg",
       "synopsis": "Frank (2025) adalah film drama yang mengisahkan Paul, seorang pria yang melarikan diri dari kekerasan dalam rumah tangga dan tiba di kota yang tidak dikenal. Dalam pencariannya akan kebahagiaan, Paul ...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        99
+      ],
+      "genres": [
+        "Documentary"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1216110
     },
     {
       "title": "Captain Hook: The Cursed Tides",
@@ -629815,7 +630602,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/09/film-first-moon-2025-lk21.jpg",
       "synopsis": "Dalam \"First Moon\" (2025), seorang pelayan muda diculik oleh sekte keagamaan yang menganggapnya terjangkit virus werewolf menular seksual. Mereka akan melakukan apa saja untuk menyembuhkannya, bahkan ...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Kalaratri",
@@ -629843,7 +630631,8 @@
       "type": "movie",
       "metadata_status": "sitemap_slug_unverified",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Messy",
@@ -629872,8 +630661,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/11/film-babe-watch-forbidden-parody-1996-lk21.jpg",
       "synopsis": "Dalam \"Babe Watch: Forbidden Parody\", komedi yang penuh aksi ini menghadirkan model cantik yang mengenakan pakaian minim, melakukan aksi penyelamatan di pantai. Dengan gaya humor yang ceria dan adegan...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        35
+      ],
+      "genres": [
+        "Comedy"
+      ],
+      "original_language": "en",
+      "tmdb_id": 252066
     },
     {
       "title": "Trespasses",
@@ -629936,7 +630731,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/11/film-death-bunny-munro-2025-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Blood of the Werewolf's Claw",
@@ -629964,7 +630760,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/12/film-maria-azama-da-best-prn-star-2025-lk21.jpg",
       "synopsis": "Dalam \"Maria Azama: Da Best P*rn Star\", kehidupan seorang pria biasa berubah 180 derajat saat bintang film dewasa idolanya, Maria Azama, tiba-tiba muncul dari video. Awalnya, ini adalah keajaiban, tap...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Black Butterflies Zwarte Vlinders",
@@ -629974,7 +630771,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/12/film-black-butterflies-zwarte-vlinders-2011-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Salikmata",
@@ -630003,8 +630801,18 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/02/film-night-gaua-2025-lk21.jpg",
       "synopsis": "Di film The Night (2025), Kattalin memasuki hutan misterius yang dipenuhi makhluk mitos, mengungkap warisan folklor malam yang menakutkan dan takhayul abad ke-17. Ia harus menghadapi bayangan gelap ya...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_ids": [
+        18,
+        27,
+        14
+      ],
+      "genres": [
+        "Drama",
+        "Horror",
+        "Fantasy"
+      ],
+      "original_language": "eu",
+      "tmdb_id": 1367125
     },
     {
       "title": "Tell Me Lies",
@@ -630048,7 +630856,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/02/film-love-story-1970s-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "56 Days",
@@ -630100,7 +630909,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/03/film-vigilante-2026-lk21.jpg",
       "synopsis": "Dalam film Vigilante (2026), seorang pria misterius dengan kemampuan tempur luar biasa muncul di kota yang terancam kejahatan. Dengan kekuatan dan kecerdasan yang luar biasa, ia memburu penjahat dan m...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Perfect Crown1",
@@ -630110,7 +630920,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/04/film-perfect-crown-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Dog & Catfish",
@@ -630121,7 +630932,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/06/film-dog-catfish-2024-lk21.jpg",
       "synopsis": "Dalam \"The Dog & Catfish\" (2024), seorang pria bernama Yoshii keluar dari penjara setelah 10 tahun karena pembunuhan. Ia kemudian bertemu Yoko, seorang relawan yang membantunya memulai hidup baru. Sem...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Wicked Temptation",
@@ -630147,7 +630959,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/07/film-husband-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Soulm8te",
@@ -630179,7 +630992,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/08/film-just-two-us-lamour-et-la-foret-2023-lk21.jpg",
       "synopsis": "Just the Two of Us (2023) mengikuti kisah Blanche yang mengira telah menemukan pria impiannya saat bertemu dengan Grégoire, memicu jalinan asmara yang cepat dan keputusan untuk pindah jauh dari keluar...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Gail Daughtry and the Celebrity Sex Pass",
@@ -630225,8 +631039,14 @@
       "metadata_status": "sitemap_detail_verified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/08/film-peter-2026-lk21.jpg",
       "synopsis": "\"Peter\" (2026) adalah film dokumenter biografi yang mengungkap kisah luar biasa Alden Brown, seorang pemuda Kanada yang memulai perjalanan dari Nova Scotia ke Hollywood di awal 1980-an dan menjadi sal...",
-      "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_ids": [
+        99
+      ],
+      "genres": [
+        "Documentary"
+      ],
+      "original_language": "en",
+      "tmdb_id": 1736527
     },
     {
       "title": "The Stain",
@@ -630274,7 +631094,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/09/film-cycle-sin-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Teenage Sex and Death at Camp Miasma",
@@ -630305,7 +631126,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/09/film-scandal-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Fragmentos",
@@ -630316,7 +631138,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/09/film-fragmentos-2025-2-lk21.jpg",
       "synopsis": "Fragmentos - Diego memutuskan untuk berlibur ke Lanzarote bersama istrinya, Alba, sebagai upaya kesekian kalinya untuk menyelamatkan pernikahan mereka. Namun, hubungan toksik tanpa ikatan emosional ya...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Sultana",
@@ -630380,7 +631203,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-second-time-charm-2019-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Wild Journey",
@@ -630429,7 +631253,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-curse-humpty-dumpty-2-2022-lk21.jpg",
       "synopsis": "The Cult of Humpty Dumpty - Sekelompok gadis remaja yang bermasalah bersama guru mereka harus berjuang mati-matian demi bertahan hidup setelah menemukan fakta bahwa sebuah sekte sesat berhasil menghid...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "The Mentor",
@@ -630477,7 +631302,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-new-stanford-prison-experiment-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Adultery",
@@ -630520,7 +631346,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-filipinana-2026-lk21.jpg",
       "synopsis": "Filipiñana - Saat bekerja di sebuah country club elite di luar Manila, seorang pekerja berusia 17 tahun asal Ilocos bernama Ilocana mengungkap kebenaran yang kejam dan penuh kekerasan dari tempat kerj...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Minimum Wage",
@@ -630565,7 +631392,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-mob-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Suprema",
@@ -630633,7 +631461,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-ever-after-2025-lk21.jpg",
       "synopsis": "Ever After - Sekelompok sahabat wanita tiba di sebuah pondok di tengah hutan untuk merayakan sesuatu, namun situasi berubah menjadi mimpi buruk yang mengerikan ketika mereka menyadari bahwa hutan ters...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "The Teenage Vampire",
@@ -630678,7 +631507,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-verity-2026-2-lk21.jpg",
       "synopsis": "Verity - Lowen Ashleigh, seorang penulis yang disewa untuk menjadi penulis bayangan (ghostwriter) bagi penulis buku terlaris Verity Crawford, tanpa sengaja menemukan catatan-catatan autobiografi rahas...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Lost Hearts",
@@ -630688,7 +631518,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-lost-hearts-2017-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Not What You Think",
@@ -630716,7 +631547,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-doll-2025-lk21.jpg",
       "synopsis": "The Doll - Berlatar di Prancis bagian timur pada masa kini, Rémi yang belum sepenuhnya pulih dari kepedihan masa lalunya akibat patah hati memilih untuk menjalani hidup bersama sebuah boneka bernama A...",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_third_status": "ambiguous"
     },
     {
       "title": "Perfeitos Desconhecidos",
@@ -630778,7 +631610,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-rules-2026-lk21.jpg",
       "rating": 9.2,
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "This City Ours Crime Family Saga",
@@ -630788,7 +631621,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-this-city-ours-crime-family-saga-2025-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "When Lights Rise",
@@ -630799,7 +631633,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-when-lights-rise-2026-lk21.jpg",
       "rating": 10,
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Nocturne",
@@ -630829,7 +631664,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-perfect-lie-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Dead End Job",
@@ -630876,7 +631712,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-love-last-2017-lk21.jpg",
       "rating": 5.3,
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Obsess",
@@ -630903,7 +631740,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-rinnan-traitor-within-2026-lk21.jpg",
       "rating": 7.8,
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Secret Unrequited Love",
@@ -630948,7 +631786,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-story-yanxi-palace-2018-lk21.jpg",
       "rating": 8.2,
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Remarried Empress",
@@ -630959,7 +631798,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-remarried-empress-2026-lk21.jpg",
       "rating": 9,
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "World Love",
@@ -630970,7 +631810,8 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-world-love-2015-lk21.jpg",
       "rating": 8,
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     },
     {
       "title": "Cherchez La Femme",
@@ -631003,7 +631844,8 @@
       "metadata_status": "sitemap_slug_unverified",
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-when-i-meet-moon-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_third_status": "unmatched"
     }
   ]
 }
