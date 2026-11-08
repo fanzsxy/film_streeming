@@ -32,7 +32,8 @@
         "Documentary",
         "Thriller"
       ],
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genre_retry_status": "ambiguous"
     },
     {
       "title": "2050",
@@ -46,7 +47,8 @@
         "Drama",
         "Sci-fi"
       ],
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genre_retry_status": "ambiguous"
     },
     {
       "title": "Death Race 2050",
@@ -182,7 +184,8 @@
         "Animation",
         "Sci-fi"
       ],
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genre_retry_status": "unmatched"
     },
     {
       "title": "2037",
@@ -195,7 +198,12 @@
       "genres": [
         "Drama"
       ],
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genre_ids": [
+        18
+      ],
+      "original_language": "ko",
+      "tmdb_id": 833593
     },
     {
       "title": "2036 Origin Unknown",
@@ -295392,9 +295400,17 @@
       "rating": 5.8,
       "genres": [
         "Action",
-        "Adventure"
+        "Adventure",
+        "Science Fiction"
       ],
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genre_ids": [
+        28,
+        12,
+        878
+      ],
+      "original_language": "en",
+      "tmdb_id": 14161
     },
     {
       "title": "2012: Ice Age",
@@ -443269,7 +443285,12 @@
       "genres": [
         "Thriller"
       ],
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genre_ids": [
+        53
+      ],
+      "original_language": "en",
+      "tmdb_id": 1127217
     },
     {
       "title": "Shadow of a Doubt",
