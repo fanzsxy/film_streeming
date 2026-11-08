@@ -4,19 +4,22 @@ on:
   workflow_dispatch:
     inputs:
       limit:
-        description: 'TMDB detail requests per run (0 = cached-only)'
+        description: 'Maximum titles to check per batch'
         required: true
-        default: '100'
+        default: '1000'
         type: choice
         options:
-          - '0'
-          - '50'
-          - '100'
-          - '200'
+          - '1000'
           - '500'
+          - '100'
+          - '0'
+  # Recovery for transient TMDB or GitHub failures.
+  schedule:
+    - cron: '17 */2 * * *'
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: filmstream-metadata-write
@@ -25,24 +28,41 @@ concurrency:
 jobs:
   fill-genres:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 55
     env:
       TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
+          ref: main
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Fill genre IDs in filmstream_catalog.json
-        run: python tools/fill_catalog_genres.py --limit ${{ inputs.limit }} --delay 0.35
-      - name: Commit catalog only
+      - name: Enrich up to 1000 catalog titles
+        id: fill
+        env:
+          LIMIT: ${{ github.event.inputs.limit || '1000' }}
+        run: |
+          python tools/fill_catalog_genres.py --limit "$LIMIT" --delay 0.35 --github-output "$GITHUB_OUTPUT"
+      - name: Commit progress in original catalog
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/catalog/filmstream_catalog.json
           if ! git diff --cached --quiet; then
-            git commit -m "Populate verified genre IDs in main catalog"
-            git push
+            git commit -m "Enrich next genre batch in main catalog"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          else
+            echo "No new catalog metadata."
           fi
+      - name: Continue automatically with next 1000 titles
+        if: ${{ steps.fill.outputs.pending != '0' && steps.fill.outputs.processed != '0' && steps.fill.outputs.paused == 'false' }}
+        run: |
+          gh workflow run fill-catalog-genres.yml --ref main -f limit=1000
+          echo "Queued next batch of up to 1000 titles."
+      - name: Report end of automatic pass
+        if: ${{ steps.fill.outputs.pending == '0' }}
+        run: echo "All eligible titles were checked. Unmatched or genre-less TMDB titles remain marked in the main catalog."
