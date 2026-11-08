@@ -59,6 +59,43 @@ def title_score(item_titles, record_titles):
                 for x in a for y in b if x and y), default=0.0)
 
 
+
+def article_equivalent(source_titles, candidate_titles):
+    """Exact ordered title tokens after removing English articles (>=3 tokens)."""
+    def words_without_articles(value):
+        return [word for word in normalized(value).split()
+                if word not in ("a", "an", "the")]
+
+    for source in source_titles:
+        original = normalized(source).split()
+        a = words_without_articles(source)
+        if len(a) < 3:
+            continue
+        for candidate in candidate_titles:
+            b = words_without_articles(candidate)
+            if a == b and original != normalized(candidate).split():
+                return True
+    return False
+
+
+def article_search_queries(title):
+    """Conservative alternative search queries, including missing 'the'."""
+    tokens = str(title).split()
+    if not 3 <= len(tokens) <= 12:
+        return []
+    if any(re.fullmatch(r"[^A-Za-z]+", word) for word in tokens):
+        return []
+    queries = []
+    # 'When I Meet Moon' -> 'When I Meet the Moon'
+    if tokens[-2].casefold() not in ("a", "an", "the"):
+        queries.append(" ".join(tokens[:-1] + ["the", tokens[-1]]))
+    # 'When I Meet the Moon' -> 'When I Meet Moon'
+    no_articles = [word for word in tokens if word.casefold() not in ("a", "an", "the")]
+    if len(no_articles) >= 3 and len(no_articles) != len(tokens):
+        queries.append(" ".join(no_articles))
+    return queries
+
+
 def record_titles(media, detail, extra):
     keys = ("title", "original_title") if media == "movie" else ("name", "original_name")
     names = [detail.get(key) for key in keys]
@@ -84,7 +121,7 @@ def imdb_from_item(item):
     return None
 
 
-def search_candidates(item, media, token, delay):
+def search_candidates(item, media, token, delay, article_mode=False):
     found = {}
     imdb = imdb_from_item(item)
     if imdb:
@@ -94,7 +131,12 @@ def search_candidates(item, media, token, delay):
             if type(value.get("id")) is int:
                 found[value["id"]] = ("imdb", value)
     alt = variants(item)
-    for title in alt[:3]:
+    queries = alt[:3]
+    if article_mode:
+        for variant in article_search_queries(str(item.get("title") or "")):
+            if normalized(variant) not in {normalized(q) for q in queries}:
+                queries.append(variant)
+    for title in queries:
         # Search without year, since film metadata may use a different premiere year.
         result = api("search/" + media, token, {
             "query": title, "language": "en-US", "include_adult": "false",
@@ -106,7 +148,7 @@ def search_candidates(item, media, token, delay):
     return found
 
 
-def assess(item, media, token, delay):
+def assess(item, media, token, delay, article_mode=False):
     titles = variants(item)
     if not titles:
         return None, "unmatched"
@@ -115,7 +157,7 @@ def assess(item, media, token, delay):
     except (TypeError, ValueError):
         return None, "invalid_year"
 
-    records = search_candidates(item, media, token, delay)
+    records = search_candidates(item, media, token, delay, article_mode=article_mode)
     known = item.get("tmdb_id")
     if type(known) is int and known > 0:
         records.setdefault(known, ("known", {}))
@@ -155,6 +197,11 @@ def assess(item, media, token, delay):
         entries = extra.get("titles" if media == "movie" else "results", [])
         names = record_titles(media, detail, entries)
         score = title_score(titles, names)
+        is_article_match = (article_mode and candidate_year(item, detail, media)
+                            and year_of(detail, media) == int(item["year"])
+                            and article_equivalent(titles, names))
+        if is_article_match:
+            score = max(score, 0.99)
         plot = 0.0
         synopsis = item.get("synopsis") or ""
         if synopsis:
