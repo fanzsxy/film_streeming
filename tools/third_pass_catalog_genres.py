@@ -194,7 +194,7 @@ def fix_title_number_year(items):
         if item.get("type") not in ("movie", "series") or genre_ids(item.get("genre_ids")):
             continue
         title = str(item.get("title") or "")
-        match = re.match(r"^(\\d{4})(?!\\d)", title)
+        match = re.match(r"^(\d{4})(?!\d)", title)
         if not match:
             continue
         try:
@@ -207,7 +207,7 @@ def fix_title_number_year(items):
         if not url.hostname or not (url.hostname == "lk21official.cc" or url.hostname.endswith(".lk21official.cc")):
             continue
         slug = url.path.rstrip("/").rsplit("/", 1)[-1]
-        suffix = re.search(r"-(\\d{4})$", slug)
+        suffix = re.search(r"-(\d{4})$", slug)
         if not suffix:
             continue
         release_year = int(suffix.group(1))
