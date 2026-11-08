@@ -1,6 +1,8 @@
 """Offline tests for local visible-browser source metadata recovery."""
 import unittest
 from unittest.mock import patch
+from urllib.error import HTTPError
+import recover_genres_local_webview as local_browser
 
 from recover_genres_local_webview import browse_source, recover_item
 
@@ -59,6 +61,20 @@ class LocalBrowserTests(unittest.TestCase):
         self.assertEqual(self.item["genres"], ["Drama", "Romance"])
         self.assertNotIn("genre_ids", self.item)
         self.assertEqual(self.item["genre_data_source"], "lk21_source")
+
+    def test_tmdb_401_falls_back_to_source_genres(self):
+        with patch.object(local_browser, "TMDB_AUTH_FAILED", False):
+            with patch("recover_genres_local_webview.assess",
+                       side_effect=HTTPError("https://api.themoviedb.org/3/search/tv", 401,
+                                             "Unauthorized", None, None)):
+                status, corrected, from_tmdb, from_source = recover_item(
+                    self.item, "When I Meet the Moon", ["Drama", "Romance"],
+                    "verified", "invalid_token", 0)
+            self.assertEqual(status, "matched_source")
+            self.assertTrue(corrected)
+            self.assertFalse(from_tmdb)
+            self.assertTrue(from_source)
+            self.assertNotIn("genre_ids", self.item)
 
     def test_title_conflict_never_overwrites(self):
         with patch("recover_genres_local_webview.assess") as mock_assess:
