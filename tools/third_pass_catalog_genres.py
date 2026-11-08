@@ -86,9 +86,12 @@ def article_search_queries(title):
     if any(re.fullmatch(r"[^A-Za-z]+", word) for word in tokens):
         return []
     queries = []
-    # 'When I Meet Moon' -> 'When I Meet the Moon'
+    # 'When I Meet Moon' -> 'When I Meet the Moon'. Also try a/an,
+    # choosing one based on the last word's first letter to cap API calls.
     if tokens[-2].casefold() not in ("a", "an", "the"):
-        queries.append(" ".join(tokens[:-1] + ["the", tokens[-1]]))
+        article = "an" if tokens[-1][0].casefold() in "aeiou" else "a"
+        for word in ("the", article):
+            queries.append(" ".join(tokens[:-1] + [word, tokens[-1]]))
     # 'When I Meet the Moon' -> 'When I Meet Moon'
     no_articles = [word for word in tokens if word.casefold() not in ("a", "an", "the")]
     if len(no_articles) >= 3 and len(no_articles) != len(tokens):
