@@ -104,7 +104,7 @@ def main():
     )
     backup.write_bytes(raw)
     temp = CATALOG.with_suffix(".prepared.tmp")
-    temp.write_text(json.dumps(catalog, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    temp.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     temp.replace(CATALOG)
     print("Merged metadata into existing Flutter catalog:", counts)
     print("Series with verified active URL:", active_count)
