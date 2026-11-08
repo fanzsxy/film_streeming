@@ -165,6 +165,8 @@ class LocalCatalogMetadata {
     }
     if(entry.synopsis.isNotEmpty) data['overview']=entry.synopsis;
     if(entry.rating!=null) data['vote_average']=entry.rating;
+    if(entry.genreIds!=null) data['genre_ids']=entry.genreIds;
+    if(entry.originalLanguage!=null) data['original_language']=entry.originalLanguage;
     // Prefer a real TMDB poster from metadata; fall back to catalog artwork.
     data['title']=entry.title;
     data['name']=entry.title;
@@ -840,6 +842,8 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  String error='';
  final results=<Movie>[];
  final Set<String> seenResults=<String>{};
+ List<CatalogEntry>? _localMatches;
+ int _missingMetadata=0;
  final ScrollController scroll=ScrollController();
  @override void initState(){
    super.initState();
@@ -850,7 +854,8 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  @override void didUpdateWidget(covariant FilmstreamFilter old){super.didUpdateWidget(old);if(old.initialGenre!=widget.initialGenre){genre1=int.tryParse(widget.initialGenre)??0;_reset();}}
  @override void dispose(){scroll.dispose();super.dispose();}
  void _reset(){
-   epoch++;results.clear();seenResults.clear();page=0;visiblePage=1;
+   epoch++;results.clear();seenResults.clear();_localMatches=null;
+   _missingMetadata=0;page=0;visiblePage=1;
    more=true;error='';busy=false;fillingPage=false;
    if(scroll.hasClients)scroll.jumpTo(0);
    setState((){});
@@ -933,64 +938,55 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   final token=epoch;
   setState(()=>busy=true);
   try {
-    final incoming=<Movie>[];
-    final incomingKeys=<String>{};
-    // Scan catalog pages until enough metadata matches the chosen filters.
-    // A single page can contain zero matches without meaning end of catalog.
-    var scanned=0;
-    var ended=false;
-    final hasFilter=genre1>0||genre2>0||country.isNotEmpty;
-    // Filtered discovery can be sparse: collect multiple catalog matches
-    // before presenting a numbered page, without doing serial per-title
-    // poster/detail lookups on the UI critical path.
-    while(incoming.length<catalogPageSize && scanned<(hasFilter?3:2) && page<(hasFilter?100:500)) {
-      final nextPage=page+1;
-      // TMDB discovers genre/language candidates; only catalog matches survive.
-      // Without metadata filters, sort the entire local catalog before paging.
-      final batches=(!hasFilter && sort=='latest')
-        ? <List<Movie>>[await Tmdb.list('catalog/sorted',page:nextPage,
-            type:type,params:const {'sort':'latest'})]
-        : await Future.wait((type=='all'?const ['movie','tv']:[type]).map((k)=>
-          Tmdb.list(hasFilter?'discover/$k':'catalog/$k',page:nextPage,
-            type:k,params:hasFilter?{
-              ..._params(k),'fill_page':'true',
-            }:const {})));
-
+    if(_localMatches==null){
+      final source=await FilmStreamCatalog.load();
       if(!mounted||token!=epoch)return;
-      page=nextPage;
-      scanned++;
-      // Discover pages can contain no catalog matches even when later pages do.
-      if(batches.every((x)=>x.isEmpty) && !hasFilter){ended=true;break;}
-      for(final m in batches.expand((x)=>x)) {
-        // Never show a series in Film mode or a film in Series mode,
-        // even if a catalog item or enrichment metadata is mislabeled.
-        if(type!='all' && m.type!=type)continue;
-        if(genre1>0&&!m.genres.contains(genre1))continue;
-        if(genre2>0&&!m.genres.contains(genre2))continue;
-        // Search-result metadata exposes original_language. This is a language
-        // filter, not a claim about country of production.
-        if(country.isNotEmpty&&m.originalLanguage!=country)continue;
-        final key=m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}';
-        if(!seenResults.contains(key)&&incomingKeys.add(key)){
-          incoming.add(m);
-        }
+      final hasGenre=genre1>0||genre2>0;
+      var missing=0;
+      final matched=<CatalogEntry>[];
+      for(final entry in source){
+        if(type!='all'&&entry.type!=type)continue;
+        // Null means unknown, not an empty genre list. Never claim that
+        // records without metadata were checked and failed the filter.
+        if(hasGenre&&entry.genreIds==null){missing++;continue;}
+        if(country.isNotEmpty&&entry.originalLanguage==null){missing++;continue;}
+        if(genre1>0&&!(entry.genreIds?.contains(genre1)??false))continue;
+        if(genre2>0&&!(entry.genreIds?.contains(genre2)??false))continue;
+        if(country.isNotEmpty&&entry.originalLanguage!=country)continue;
+        matched.add(entry);
       }
+      // Cache once per selection: changing numbered pages never re-filters.
+      if(sort=='latest'){
+        matched.sort((a,b)=>b.year.compareTo(a.year));
+      }else if(sort=='popular'){
+        // The catalog has ratings but not TMDB popularity scores.
+        // Higher-rated entries come first until popularity is synchronized.
+        matched.sort((a,b)=>(b.rating??0).compareTo(a.rating??0));
+      }else{
+        matched.sort((a,b)=>a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+      }
+      _missingMetadata=missing;
+      _localMatches=matched;
     }
-    if(sort=='title')incoming.sort((a,b)=>a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-    else if(sort=='latest' && hasFilter)incoming.sort((a,b)=>b.release.compareTo(a.release));
-    else if(sort=='popular')incoming.sort((a,b)=>b.popularity.compareTo(a.popularity));
+    final matched=_localMatches!;
+    final nextPage=page+1;
+    final start=(nextPage-1)*catalogPageSize;
+    final entries=start<matched.length
+        ? matched.skip(start).take(catalogPageSize)
+        : const <CatalogEntry>[];
+    final next=entries.map((entry)=>LocalCatalogMetadata._withCollectedMetadata(
+      entry,{'id':entry.tmdbId??-LocalCatalogMetadata._stableId(entry.url)}
+    )).toList();
     if(!mounted||token!=epoch)return;
     setState((){
-      for(final m in incoming){
-        if(seenResults.add(m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}'))results.add(m);
-      }
-      // Keep previously displayed cards in place; never re-sort on scroll.
-      more=!ended&&page<(hasFilter?100:500);
+      results.addAll(next);
+      page=nextPage;
+      more=page*catalogPageSize<matched.length;
       error='';
     });
-  } catch(e) {
-    if(mounted&&token==epoch)setState(()=>error='Gagal mengambil katalog. Coba lagi.');
-  } finally {
+  }catch(e){
+    if(mounted&&token==epoch)setState(()=>error='Gagal membaca katalog lokal.');
+  }finally{
     if(mounted&&token==epoch)setState(()=>busy=false);
   }
  }
@@ -1063,6 +1059,10 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     ),
   ),
   if(!_optionsLoaded) const Padding(padding:EdgeInsets.all(8),child:LinearProgressIndicator()),
+  if(_missingMetadata>0)Padding(
+    padding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
+    child:Text('$_missingMetadata judul belum memiliki metadata filter. Jalankan sinkronisasi genre agar hasil lengkap.',
+      style:const TextStyle(color:Colors.amberAccent,fontSize:12))),
   Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:6),child:Align(alignment:Alignment.centerLeft,child:Text('Katalog ${type=='all'?'Film & Series':type=='tv'?'Series':'Film'}',style:const TextStyle(fontSize:19,fontWeight:FontWeight.w800)))),
   ])),
   if(visible.isEmpty) SliverFillRemaining(hasScrollBody:false,
