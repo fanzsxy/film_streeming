@@ -23,6 +23,7 @@ from retry_catalog_genres import CATALOG, genre_ids, normalized
 from third_pass_catalog_genres import assess
 
 PASS = "local_webview_v1"
+TMDB_AUTH_FAILED = False
 
 
 def browse_source(page, item, delay):
@@ -65,8 +66,19 @@ def recover_item(item, title, source_genres, source_status, token, delay):
     if genre_ids(item.get("genre_ids")):
         return "existing_tmdb_ids", corrected, False, False
 
+    global TMDB_AUTH_FAILED
     media = "tv" if item.get("type") == "series" else "movie"
-    result, reason = assess(item, media, token, delay)
+    result, reason = None, "tmdb_auth_required" if TMDB_AUTH_FAILED else "unmatched"
+    if not TMDB_AUTH_FAILED:
+        try:
+            result, reason = assess(item, media, token, delay)
+        except HTTPError as exc:
+            if exc.code != 401:
+                raise
+            TMDB_AUTH_FAILED = True
+            reason = "tmdb_auth_required"
+            print("TMDB returned 401 Unauthorized. Check TMDB API Read Access Token. "
+                  "Continuing with verified source-page genres only.", flush=True)
     if result and apply_only_if_empty(item, result):
         item["genre_data_source"] = "tmdb"
         return "matched_tmdb", corrected, True, False
@@ -139,7 +151,11 @@ def main():
                     status, title_fixed, from_tmdb, from_source = recover_item(
                         item, title, genres, source_status, token, args.delay)
                     item["genre_local_status"] = status
-                    item["genre_local_pass"] = PASS
+                    if status != "tmdb_auth_required":
+                        item["genre_local_pass"] = PASS
+                    else:
+                        # Keep incomplete record pending until TMDB works.
+                        print("No verified source genre; pending TMDB credential fix.", flush=True)
                     attempted += 1
                     corrected += int(title_fixed)
                     tmdb_filled += int(from_tmdb)
