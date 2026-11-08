@@ -33,7 +33,8 @@
         "Thriller"
       ],
       "genre_third_status": "ambiguous",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_sync_status": "unmatched"
     },
     {
       "title": "2050",
@@ -48,7 +49,8 @@
         "Sci-fi"
       ],
       "genre_third_status": "ambiguous",
-      "genre_retry_status": "ambiguous"
+      "genre_retry_status": "ambiguous",
+      "genre_sync_status": "unmatched"
     },
     {
       "title": "Death Race 2050",
@@ -185,7 +187,8 @@
         "Sci-fi"
       ],
       "genre_third_status": "unmatched",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_sync_status": "unmatched"
     },
     {
       "title": "2037",
