@@ -17,6 +17,31 @@ void main() {
     expect(FilmStreamIcons.favoritesSelected, PhosphorIconsFill.heart);
   });
 
+  test('Windows and Android navigation use the same tab index and icons', () {
+    final regular = [
+      FilmStreamIcons.home,
+      FilmStreamIcons.film,
+      FilmStreamIcons.series,
+      FilmStreamIcons.filter,
+      FilmStreamIcons.favorites,
+    ];
+    final selected = [
+      FilmStreamIcons.homeSelected,
+      FilmStreamIcons.filmSelected,
+      FilmStreamIcons.seriesSelected,
+      FilmStreamIcons.filterSelected,
+      FilmStreamIcons.favoritesSelected,
+    ];
+    expect(FilmStreamIcons.navigationLabels,
+        ['Beranda', 'Film', 'Series', 'Filter', 'Favorit']);
+    for (var index = 0; index < 5; index++) {
+      expect(FilmStreamIcons.navigationIcon(index), regular[index]);
+      expect(FilmStreamIcons.navigationIcon(index, selected: true),
+          selected[index]);
+    }
+    expect(() => FilmStreamIcons.navigationIcon(5), throwsRangeError);
+  });
+
   test('genre IDs remain distinct, including TV subgenres and fallback', () {
     expect(FilmStreamIcons.genre(28), PhosphorIconsFill.lightning);
     expect(FilmStreamIcons.genre(12), PhosphorIconsFill.compass);

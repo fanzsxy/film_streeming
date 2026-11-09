@@ -4,6 +4,8 @@ import 'search_suggestions.dart';
 import 'startup_catalog_check.dart';
 import 'catalog_sync_diagnostics.dart';
 import 'filmstream_icons.dart';
+import 'filmstream_detail_metadata.dart';
+import 'windows_navigation.dart';
 import 'windows_source_player.dart';
 import 'source_domain_config.dart';
 import 'source_manager.dart';
@@ -800,89 +802,41 @@ class _HomePageState extends State<HomePage> {
     _CinemaGenresState.invalidate();
     Tmdb.clearCatalogRails();
     setState(()=>catalogRefresh++);
-  }}),if(tab!=4)Padding(padding:const EdgeInsets.fromLTRB(14,8,14,8),child:TextField(controller:search,focusNode:searchFocus,decoration:InputDecoration(prefixIcon:const Icon(Icons.search_rounded),hintText:'Cari film atau series...',suffixIcon:ValueListenableBuilder<TextEditingValue>(valueListenable:search,builder:(context,value,_)=>value.text.isEmpty?const SizedBox.shrink():IconButton(icon:const Icon(Icons.close_rounded),onPressed:(){debounce?.cancel();suggestionDebounce?.cancel();search.clear();setState((){query='';suggestionText='';});})),filled:true,fillColor:const Color(0xff20252e),enabledBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(16),borderSide:BorderSide.none),focusedBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(16),borderSide:const BorderSide(color:Color(0xffe5aa55),width:1.4))),onChanged:(v){debounce?.cancel();suggestionDebounce?.cancel();
+  }}),if(tab!=4)Padding(padding:const EdgeInsets.fromLTRB(14,8,14,8),child:TextField(controller:search,focusNode:searchFocus,decoration:InputDecoration(prefixIcon:const Icon(FilmStreamIcons.search),hintText:'Cari film atau series...',suffixIcon:ValueListenableBuilder<TextEditingValue>(valueListenable:search,builder:(context,value,_)=>value.text.isEmpty?const SizedBox.shrink():IconButton(icon:const Icon(FilmStreamIcons.clear),onPressed:(){debounce?.cancel();suggestionDebounce?.cancel();search.clear();setState((){query='';suggestionText='';});})),filled:true,fillColor:const Color(0xff20252e),enabledBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(16),borderSide:BorderSide.none),focusedBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(16),borderSide:const BorderSide(color:Color(0xffe5aa55),width:1.4))),onChanged:(v){debounce?.cancel();suggestionDebounce?.cancel();
  suggestionDebounce=Timer(const Duration(milliseconds:180),(){if(mounted)setState(()=>suggestionText=v.trim());});
  debounce=Timer(const Duration(milliseconds:350),(){if(mounted)setState(()=>query=v.trim());});})),if(tab!=4)AnimatedBuilder(animation:Listenable.merge([search,searchFocus]),builder:(context,_)=>!searchFocus.hasFocus || suggestionText.isEmpty || suggestionText!=search.text.trim()?const SizedBox.shrink():FilmSearchSuggestions(key:ValueKey('suggestions:$catalogRefresh'),text:suggestionText,onSelected:selectSearchSuggestion)),Expanded(child:query.isNotEmpty?PagedGrid(key:ValueKey('search:$query:$catalogRefresh'),title:'Hasil pencarian: $query',endpoint:'search/multi',params:{'query':query,'include_adult':'false'},type:'movie',onTap:open):switch(tab){0=>ListView(key:const PageStorageKey('home-feed'),controller:homeScroll,children:[CinemaHero(key:ValueKey('hero:$catalogRefresh'),onTap:open),CinemaGenres(key:ValueKey('cinema-genres:$catalogRefresh'),onSelect:(id){setState((){tab=3;genre='$id';query='';search.clear();});}),const LastWatchedRail(),const Padding(padding:EdgeInsets.fromLTRB(16,24,16,2),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('JELAJAHI KOLEKSI',style:TextStyle(fontSize:11,letterSpacing:2,color:Color(0xffe5aa55),fontWeight:FontWeight.w800)),SizedBox(height:7),Text('Pilihan untuk kamu',style:TextStyle(fontSize:25,fontWeight:FontWeight.w800))])),MovieRail(key:ValueKey('rail-trending:$catalogRefresh'),title:'Sedang Trending',endpoint:'trending/all/week',type:'movie',onTap:open,onSeeAll:()=>openCollection('Sedang Trending','trending/all/week','movie')),MovieRail(key:ValueKey('rail-film-pop:$catalogRefresh'),title:'Film Populer',endpoint:'movie/popular',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Populer','movie/popular','movie')),MovieRail(key:ValueKey('rail-series-pop:$catalogRefresh'),title:'Series Populer',endpoint:'tv/popular',type:'tv',onTap:open,onSeeAll:()=>openCollection('Series Populer','tv/popular','tv')),MovieRail(key:ValueKey('rail-film-top:$catalogRefresh'),title:'Film Rating Tinggi',endpoint:'movie/top_rated',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Rating Tinggi','movie/top_rated','movie')),MovieRail(key:ValueKey('rail-series-top:$catalogRefresh'),title:'Series Rating Tinggi',endpoint:'tv/top_rated',type:'tv',onTap:open,onSeeAll:()=>openCollection('Series Rating Tinggi','tv/top_rated','tv')),ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,builder:(context,history,_)=>MovieRail(key:ValueKey('rail-home-recommend:$catalogRefresh'),title:'Rekomendasi Untukmu',endpoint:'home/recommended',type:'movie',onTap:open,onSeeAll:()=>openCollection('Rekomendasi Untukmu','home/recommended','movie'))),MovieRail(key:ValueKey('rail-home-latest:$catalogRefresh'),title:'Film Terbaru',endpoint:'home/latest',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Terbaru','home/latest','movie')),MovieRail(key:ValueKey('rail-home-family:$catalogRefresh'),title:'Nobar Sekeluarga',endpoint:'home/family',type:'movie',onTap:open,onSeeAll:()=>openCollection('Nobar Sekeluarga','home/family','movie')),MovieRail(key:ValueKey('rail-movie-week:$catalogRefresh'),title:'Film Trending Minggu Ini',endpoint:'trending/movie/week',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Trending Minggu Ini','trending/movie/week','movie')),MovieRail(key:ValueKey('rail-tv-week:$catalogRefresh'),title:'Series Trending Minggu Ini',endpoint:'trending/tv/week',type:'tv',onTap:open,onSeeAll:()=>openCollection('Series Trending Minggu Ini','trending/tv/week','tv')),const SizedBox(height:16)]),1=>PagedGrid(key:ValueKey('film:$catalogRefresh'),title:'Semua Film',endpoint:'catalog/movie',type:'movie',onTap:open),2=>PagedGrid(key:ValueKey('tv:$catalogRefresh'),title:'Semua Series',endpoint:'catalog/tv',type:'tv',onTap:open),3=>FilmstreamFilter(key:ValueKey('filter:$catalogRefresh'),initialGenre:genre,onTap:open),_=>favorites.isEmpty?const Center(child:Text('Belum ada favorit. Simpan dari halaman detail.')):GridView.builder(padding:const EdgeInsets.all(12),gridDelegate:filmstreamGridDelegate(context),itemCount:favorites.length,itemBuilder:(context,i)=>MovieTile(movie:favorites.values.elementAt(i),onTap:open))})])));
 }
 // Cinema Booking-inspired layout using FilmStream's own TMDB data and widgets.
 
-class DesktopShell extends StatefulWidget {
+// All catalog tabs use the same content and navigation callbacks on both
+// platforms. The desktop only replaces the bottom bar with a sidebar.
+class DesktopShell extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final Widget child;
-  const DesktopShell({super.key, required this.selectedIndex, required this.onSelected, required this.child});
 
-  @override
-  State<DesktopShell> createState() => _DesktopShellState();
-}
-
-class _DesktopShellState extends State<DesktopShell> {
-  bool _sidebarVisible = true;
-  static const _titles = ['Beranda', 'Film', 'Series', 'Filter', 'Favorit'];
-  static const _icons = [Icons.home_outlined, Icons.movie_outlined, Icons.tv_outlined, Icons.tune, Icons.favorite_outline];
+  const DesktopShell({
+    super.key,
+    required this.selectedIndex,
+    required this.onSelected,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (!Platform.isWindows) return widget.child;
+    if (!Platform.isWindows) return child;
     return ScrollConfiguration(
       behavior: const FilmstreamDesktopDragBehavior(),
-      child: LayoutBuilder(builder: (context, constraints) {
-        final fullWidth = constraints.maxWidth < 950 ? 76.0 : 232.0;
-        return Row(children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeInOut,
-            width: _sidebarVisible ? fullWidth : 52,
-            decoration: const BoxDecoration(
-              color: Color(0xff171b22),
-              border: Border(right: BorderSide(color: Color(0xff30343d))),
-            ),
-            child: Column(children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 14),
-                child: IconButton(
-                  tooltip: _sidebarVisible ? 'Sembunyikan menu' : 'Tampilkan menu',
-                  icon: Icon(_sidebarVisible ? Icons.menu_open_rounded : Icons.menu_rounded),
-                  color: const Color(0xffe5aa55),
-                  onPressed: () => setState(() => _sidebarVisible = !_sidebarVisible),
-                ),
-              ),
-              if (_sidebarVisible) ...[
-                if (constraints.maxWidth >= 950)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 26, top: 10),
-                    child: Text('FILM STREAMING', style: TextStyle(
-                      color: Color(0xffe5aa55), fontSize: 17, fontWeight: FontWeight.w800)),
-                  ),
-                for (var i = 0; i < _titles.length; i++)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 10, right: 10, bottom: 7),
-                    child: Material(
-                      color: widget.selectedIndex == i ? const Color(0xff493724) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      child: ListTile(
-                        leading: Icon(_icons[i], color: widget.selectedIndex == i
-                            ? const Color(0xffe5aa55) : Colors.white70),
-                        title: constraints.maxWidth >= 950 ? Text(_titles[i]) : null,
-                        selected: widget.selectedIndex == i,
-                        onTap: () => widget.onSelected(i),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                const Spacer(),
-                if (constraints.maxWidth >= 950)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 12),
-                    child: Text('Windows Desktop', style: TextStyle(color: Colors.white38, fontSize: 12)),
-                  ),
-              ],
-            ]),
+      child: LayoutBuilder(
+        builder: (context, constraints) => Row(children: [
+          WindowsNavigationRail(
+            selectedIndex: selectedIndex,
+            onSelected: onSelected,
+            availableWidth: constraints.maxWidth,
           ),
-          Expanded(child: widget.child),
-        ]);
-      }),
+          Expanded(child: child),
+        ]),
+      ),
     );
   }
 }
@@ -1047,7 +1001,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
       ),
       child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
         const Row(children:[
-          Icon(Icons.tune_rounded,size:20,color:Color(0xffD8A260)),
+          Icon(FilmStreamIcons.filter,size:20,color:Color(0xffD8A260)),
           SizedBox(width:9),
           Text('Sesuaikan Katalog',style:TextStyle(fontSize:17,fontWeight:FontWeight.w700)),
         ]),
@@ -1146,7 +1100,7 @@ class _CinemaHeroState extends State<CinemaHero> with AutomaticKeepAliveClientMi
    Row(mainAxisAlignment:MainAxisAlignment.center,children:[
      if(Platform.isWindows) IconButton(
        tooltip:'Banner sebelumnya',
-       icon:const Icon(Icons.chevron_left),
+       icon:const Icon(FilmStreamIcons.previous),
        onPressed:entries.length<2?null:(){
          if(pager.hasClients)pager.animateToPage((selected-1+entries.length)%entries.length,
            duration:const Duration(milliseconds:280),curve:Curves.easeOut);
@@ -1154,7 +1108,7 @@ class _CinemaHeroState extends State<CinemaHero> with AutomaticKeepAliveClientMi
      ...List.generate(entries.length,(i)=>AnimatedContainer(duration:const Duration(milliseconds:180),margin:const EdgeInsets.symmetric(horizontal:3),width:i==selected?16:5,height:5,decoration:BoxDecoration(color:i==selected?const Color(0xffe5aa55):Colors.white30,borderRadius:BorderRadius.circular(4)))),
      if(Platform.isWindows) IconButton(
        tooltip:'Banner berikutnya',
-       icon:const Icon(Icons.chevron_right),
+       icon:const Icon(FilmStreamIcons.next),
        onPressed:entries.length<2?null:(){
          if(pager.hasClients)pager.animateToPage((selected+1)%entries.length,
            duration:const Duration(milliseconds:280),curve:Curves.easeOut);
@@ -1195,9 +1149,9 @@ class _CinemaGenresState extends State<CinemaGenres> {
            style:TextStyle(letterSpacing:1.6,fontSize:11,color:Colors.white70,fontWeight:FontWeight.w700)))),
        if(Platform.isWindows)...[
          IconButton(tooltip:'Genre sebelumnya',onPressed:()=>_moveGenre(-320),
-           icon:const Icon(Icons.chevron_left)),
+           icon:const Icon(FilmStreamIcons.previous)),
          IconButton(tooltip:'Genre berikutnya',onPressed:()=>_moveGenre(320),
-           icon:const Icon(Icons.chevron_right)),
+           icon:const Icon(FilmStreamIcons.next)),
        ],
      ]),
      const SizedBox(height:12),
@@ -1321,9 +1275,9 @@ class _MovieRailState extends State<MovieRail> with AutomaticKeepAliveClientMixi
  @override void didUpdateWidget(covariant MovieRail old){super.didUpdateWidget(old);if(old.endpoint!=widget.endpoint||old.type!=widget.type){request=Tmdb.rail(widget.endpoint,widget.type);}}
  @override Widget build(BuildContext context){super.build(context);return FutureBuilder<List<Movie>>(future:request,builder:(context,s)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Padding(padding:const EdgeInsets.fromLTRB(16,18,12,12),child:Row(children:[Expanded(child:Text(widget.title,style:const TextStyle(fontSize:19,fontWeight:FontWeight.w700))),if(Platform.isWindows)...[
  IconButton(tooltip:'Geser ${widget.title} ke kiri',
-   onPressed:()=>_scrollRail(-500),icon:const Icon(Icons.chevron_left)),
+   onPressed:()=>_scrollRail(-500),icon:const Icon(FilmStreamIcons.previous)),
  IconButton(tooltip:'Geser ${widget.title} ke kanan',
-   onPressed:()=>_scrollRail(500),icon:const Icon(Icons.chevron_right)),
+   onPressed:()=>_scrollRail(500),icon:const Icon(FilmStreamIcons.next)),
 ],
 TextButton(onPressed:widget.onSeeAll,child:const Row(mainAxisSize:MainAxisSize.min,children:[Text('Lihat Lainnya',style:TextStyle(fontSize:12,fontWeight:FontWeight.w600)),SizedBox(width:2),Icon(Icons.chevron_right,size:17)]))])),if(s.hasError)Padding(padding:const EdgeInsets.all(16),child:Text('${s.error}')) else if(s.hasData && s.data!.isEmpty)
   const Padding(padding:EdgeInsets.symmetric(horizontal:16,vertical:10),
@@ -1822,7 +1776,11 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
           url: snapshot.data!,
           embedded: true,
           year: movie.year == '—' ? '' : movie.year,
-          genres: movie.genres.map((id) => _FilmstreamFilterState.genres[id]).whereType<String>().toList(),
+          genres: movie.genreNames.isNotEmpty
+            ? movie.genreNames
+            : movie.genres.map((id) => _FilmstreamFilterState.genres[id])
+                .whereType<String>().toList(),
+          catalogSynopsis: movie.overview,
           tmdbId: movie.id,
           mediaType: movie.type,
           onSynopsisFound: onSynopsisFound,
@@ -1850,7 +1808,11 @@ Future<void> openFocusedFilm(BuildContext context, Movie movie, {int season = 0,
     Navigator.push(context, MaterialPageRoute(builder: (_) => WindowsSourcePlayer(
       title: movie.title, url: page,
       year: movie.year == '—' ? '' : movie.year,
-      genres: movie.genres.map((id) => _FilmstreamFilterState.genres[id]).whereType<String>().toList(),
+      genres: movie.genreNames.isNotEmpty
+            ? movie.genreNames
+            : movie.genres.map((id) => _FilmstreamFilterState.genres[id])
+                .whereType<String>().toList(),
+          catalogSynopsis: movie.overview,
       tmdbId: movie.id,
       mediaType: movie.type,
     )));
@@ -1881,7 +1843,10 @@ class _DetailPageState extends State<DetailPage> {
  // Windows WebView2 does not expose reliable cross-origin video progress.
  // Record that a title/episode was opened, without inventing watch position.
  Future<void> _recordWindowsOpened(Uri uri, {int season=0,int episode=0}) async {
-   if(!Platform.isWindows || widget.movie.id<=0)return;
+   // The catalog has stable negative IDs for titles without TMDB IDs.
+   // They should appear in Windows history just as they do on Android.
+   if(!Platform.isWindows ||
+       !FilmStreamDetailMetadata.canRecordOpened(widget.movie.id, uri))return;
    final m=widget.movie;
    final key=m.type=='tv'?'tv:${m.id}:$season:$episode':'movie:${m.id}';
    final old=WatchStore.find(key);
@@ -2045,9 +2010,11 @@ class _DetailPageState extends State<DetailPage> {
                  final tmdbGenres=(snapshot.data?['genres'] as List? ?? const [])
                    .whereType<Map>().map((g)=>(g['name']??'').toString())
                    .where((g)=>g.isNotEmpty).toList();
-                 final genres=m.genreNames.isNotEmpty ? m.genreNames :
-                    tmdbGenres.isNotEmpty ? tmdbGenres :
-                   (Platform.isWindows ? sourceGenres : <String>[]);
+                 final genres = FilmStreamDetailMetadata.genres(
+                   catalog: m.genreNames,
+                   tmdb: tmdbGenres,
+                   source: sourceGenres,
+                 );
                  if(genres.isEmpty)return Platform.isWindows
                    ? const Padding(padding:EdgeInsets.symmetric(vertical:8),
                        child:Text('Genre belum tersedia dari TMDB atau LK21.',
@@ -2064,11 +2031,15 @@ class _DetailPageState extends State<DetailPage> {
                // Keep the synopsis section hidden until genuine source/catalog
                // text is available instead of flashing a placeholder.
                final fromCrawler=m.overview.trim();
-               // On Windows the synopsis must come directly from the source,
-               // not the catalog or TMDB; Android retains its prior behavior.
-               final description=Platform.isWindows ? sourceSynopsis :
-                 (sourceSynopsis.isNotEmpty?sourceSynopsis:fromCrawler);
-               if(description.isEmpty && !Platform.isWindows)return const SizedBox.shrink();
+               // Prefer page synopsis; catalog metadata is the shared
+               // offline fallback on Android and Windows.
+               final description = FilmStreamDetailMetadata.synopsis(
+                 source: sourceSynopsis,
+                 catalog: fromCrawler,
+               );
+               if (description.isEmpty && !Platform.isWindows) {
+                 return const SizedBox.shrink();
+               }
                return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
                  const SizedBox(height:14),
                  const Text('Sinopsis',style:TextStyle(fontSize:17,fontWeight:FontWeight.bold)),
@@ -2080,7 +2051,7 @@ class _DetailPageState extends State<DetailPage> {
                      SizedBox(width:12),
                      Expanded(child:Text('Memuat sinopsis dari halaman sumber...')),
                    ])
-                 else Text(description.isEmpty ? 'Sinopsis belum tersedia dari LK21.' : description),
+                 else Text(description.isEmpty ? 'Sinopsis belum tersedia.' : description),
                ]);
              }),
              if(m.type=='tv')...[

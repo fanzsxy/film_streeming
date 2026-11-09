@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter_windows/webview_flutter_windows.dart';
 
+import 'filmstream_icons.dart';
+
 /// Windows-only episode list: reads actual source links through WebView2.
 class WindowsSeasonPicker extends StatefulWidget {
   final Uri source;
@@ -309,7 +311,7 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
         Wrap(spacing:8,runSpacing:8,children:[
           for(final episode in numbers)OutlinedButton.icon(
             icon:Icon(_openedEpisodes.contains('$_selected:$episode')
-                ? Icons.check_circle : Icons.play_circle_outline),
+                ? FilmStreamIcons.completed : FilmStreamIcons.play),
             label:Text('Episode $episode'),
             onPressed:()=>_openEpisode(_selected!,episode,links[episode]!)),
         ]),
@@ -318,12 +320,12 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
         const SizedBox(height:8),
         TextButton.icon(
           onPressed:()=>_scan(),
-          icon:const Icon(Icons.refresh),
+          icon:const Icon(FilmStreamIcons.reload),
           label:const Text('Coba baca ulang episode'),
         ),
         TextButton.icon(
           onPressed:()=>setState(()=>_showPage=!_showPage),
-          icon:const Icon(Icons.article_outlined),
+          icon:const Icon(FilmStreamIcons.sourcePage),
           label:Text(_showPage?'Sembunyikan halaman sumber':'Lihat halaman sumber'),
         ),
       ],

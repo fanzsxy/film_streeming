@@ -1,0 +1,49 @@
+name: Validate Windows App Parity
+
+on:
+  pull_request:
+    paths:
+      - 'lib/main.dart'
+      - 'lib/filmstream_icons.dart'
+      - 'lib/windows_navigation.dart'
+      - 'lib/filmstream_detail_metadata.dart'
+      - 'lib/windows_source_player.dart'
+      - 'lib/windows_season_picker.dart'
+      - 'test/windows_navigation_test.dart'
+      - 'test/filmstream_detail_metadata_test.dart'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/build-windows.yml'
+      - '.github/workflows/validate-windows-app.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-compile:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Prepare Windows runner like production
+        shell: pwsh
+        run: |
+          flutter config --enable-windows-desktop
+          flutter create --platforms=windows --project-name filmstream_personal .
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Verify shared navigation and metadata
+        run: |
+          flutter test test/filmstream_icons_test.dart
+          flutter test test/windows_navigation_test.dart
+          flutter test test/filmstream_detail_metadata_test.dart
+      - name: Compile Windows desktop (no credentials or installer signing)
+        shell: pwsh
+        run: |
+          flutter build windows --debug --dart-define="TMDB_TOKEN=ci-only-placeholder"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
