@@ -4,7 +4,9 @@ on:
   pull_request:
     paths:
       - 'tools/auto_discover_lk21.py'
+      - 'tools/discover_new_titles_local_webview.py'
       - 'tests/test_auto_discovery.py'
+      - 'tests/test_local_latest_webview.py'
       - '.github/workflows/discover-new-lk21.yml'
       - '.github/workflows/validate-latest-catalog-scanner.yml'
   workflow_dispatch:
@@ -25,5 +27,6 @@ jobs:
         run: pip install -r crawler/requirements.txt
       - name: Compile and run offline metadata scanner tests
         run: |
-          python -m py_compile tools/auto_discover_lk21.py
+          python -m py_compile tools/auto_discover_lk21.py tools/discover_new_titles_local_webview.py
           python -m unittest discover -s tests -p 'test_auto_discovery.py' -v
+          python -m unittest discover -s tests -p 'test_local_latest_webview.py' -v
