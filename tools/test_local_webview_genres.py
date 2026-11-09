@@ -4,7 +4,7 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 import recover_genres_local_webview as local_browser
 
-from recover_genres_local_webview import browse_source, recover_item
+from recover_genres_local_webview import browse_source, recover_item, should_skip, PASS
 
 
 class FakeResponse:
@@ -13,19 +13,22 @@ class FakeResponse:
 
 
 class FakePage:
-    def __init__(self, status=200, html=""):
+    def __init__(self, status=200, html="", redirect=None):
         self.status = status
         self.html = html
+        self.redirect = redirect
         self.url = ""
+        self.content_reads = 0
 
     def goto(self, url, **_):
-        self.url = url
+        self.url = self.redirect or url
         return FakeResponse(self.status)
 
     def wait_for_timeout(self, _):
         pass
 
     def content(self):
+        self.content_reads += 1
         return self.html
 
 
@@ -51,6 +54,20 @@ class LocalBrowserTests(unittest.TestCase):
     def test_blocked_site_must_not_be_scraped(self):
         result = browse_source(FakePage(status=401), self.item, 0)
         self.assertEqual(result[2], "blocked_401")
+
+    def test_unexpected_redirect_is_not_read(self):
+        page = FakePage(html='<h1>Different Movie (2026)</h1><a>Drama</a>',
+                        redirect='https://example.com/redirected')
+        result = browse_source(page, self.item, 0)
+        self.assertEqual(result, (None, [], "invalid_redirect"))
+        self.assertEqual(page.content_reads, 0)
+
+    def test_skip_only_completed_or_deferred_auth_failures(self):
+        pending = {"genre_local_status": "tmdb_auth_required", "genres": []}
+        self.assertFalse(should_skip(pending))
+        self.assertTrue(should_skip(pending, skip_tmdb_pending=True))
+        self.assertFalse(should_skip({"genres": []}, skip_tmdb_pending=True))
+        self.assertTrue(should_skip({"genre_local_pass": PASS}))
 
     def test_source_fallback_does_not_invent_tmdb_ids(self):
         with patch("recover_genres_local_webview.assess", return_value=(None, "unmatched")):
