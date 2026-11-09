@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "The Greatest",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/greatest-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-greatest-2026-lk21.jpg.webp",
+      "rating": 7.5
+    },
+    {
+      "title": "Stick",
+      "year": 2025,
+      "url": "https://tv.lk21online.de/stick-2025",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-stick-2025-lk21.jpg.webp",
+      "rating": 7.3
+    },
+    {
+      "title": "The Forgotten Concubine's Revenge",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/forgotten-concubines-revenge-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-forgotten-concubines-revenge-2026-lk21.jpg.webp",
+      "rating": 8.5
+    }
+  ]
+}
