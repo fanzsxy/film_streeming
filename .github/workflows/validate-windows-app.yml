@@ -13,6 +13,7 @@ on:
       - 'test/filmstream_detail_metadata_test.dart'
       - 'pubspec.yaml'
       - 'pubspec.lock'
+      - '.github/workflows/build-windows.yml'
       - '.github/workflows/validate-windows-app.yml'
   workflow_dispatch:
 
