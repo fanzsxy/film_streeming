@@ -7,10 +7,12 @@ on:
       - 'lib/filmstream_catalog.dart'
       - 'lib/main.dart'
       - 'lib/startup_catalog_check.dart'
+      - 'lib/catalog_sync_diagnostics.dart'
       - 'lib/catalog_scan_helpers.dart'
       - 'lib/search_suggestions.dart'
       - 'test/catalog_query_test.dart'
       - 'test/catalog_scan_helpers_test.dart'
+      - 'test/catalog_sync_diagnostics_test.dart'
       - '.github/workflows/validate-catalog-ui.yml'
   workflow_dispatch:
 
@@ -30,7 +32,7 @@ jobs:
       - name: Get Flutter packages
         run: flutter pub get
       - name: Analyze changed Dart files
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/catalog_query.dart lib/filmstream_catalog.dart lib/main.dart lib/search_suggestions.dart lib/startup_catalog_check.dart lib/catalog_scan_helpers.dart
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/catalog_query.dart lib/filmstream_catalog.dart lib/main.dart lib/search_suggestions.dart lib/startup_catalog_check.dart lib/catalog_scan_helpers.dart lib/catalog_sync_diagnostics.dart
       - name: Test catalog search, categories, filter and pagination
         run: |
           flutter test test/catalog_query_test.dart
@@ -38,3 +40,4 @@ jobs:
           flutter test test/catalog_numbered_pagination_test.dart
           flutter test test/filter_completed_pages_test.dart
           flutter test test/catalog_scan_helpers_test.dart
+          flutter test test/catalog_sync_diagnostics_test.dart
