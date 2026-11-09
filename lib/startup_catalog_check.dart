@@ -58,14 +58,9 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   bool pageRejected = false;
   bool active = false;
   bool disposed = false;
-  String status = 'Menyiapkan scanner LK21...';
-
-  void _status(String value) {
-    if(mounted) setState(() => status = value);
-  }
-
+  // Scan/upload progress is intentionally not rendered on the Home screen.
+  // Logs remain available only in the explicitly opened diagnostics dialog.
   Future<void> _log(String value) async {
-    _status(value);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(diagnosticKey, value);
   }
@@ -74,7 +69,6 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(uploadStatusKey, value);
     await prefs.setInt(syncTimeKey, DateTime.now().millisecondsSinceEpoch);
-    _status(value);
   }
 
   void _completeNavigation(String? url) {
@@ -379,7 +373,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     var unavailableKinds = 0;
     for (final kind in hosts.keys) {
       if(!mounted) break;
-      _status('Memeriksa ' + (kind == 'movie' ? 'film' : 'series') +
+      await _log('Memeriksa ' + (kind == 'movie' ? 'film' : 'series') +
           ' terbaru LK21...');
       var available = 0;
       final candidates = <Map<String, dynamic>>[];
@@ -590,13 +584,8 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       } else {
         await _logSync('Backend menerima ${batch.length} judul dan '
             'membuat PR review: $prUrl');
-        if (mounted) {
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-            content: Text('${batch.length} judul dikirim ke GitHub; '
-                'review PR sebelum katalog utama bertambah.'),
-            duration: const Duration(seconds: 6),
-          ));
-        }
+        // The scanner runs silently. Confirmation is available only when
+        // the user opens the status dialog from the Info icon.
       }
     } catch (error) {
       await _logSync('Pengiriman backend gagal: '
@@ -610,26 +599,31 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   Widget build(BuildContext context) {
     final webview = controller;
     if (!active || webview == null) return const SizedBox.shrink();
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      SizedBox(height: 22, child: Row(children: [
-        const SizedBox(width: 14),
-        const SizedBox(width: 12, height: 12,
-            child: CircularProgressIndicator(strokeWidth: 2)),
-        const SizedBox(width: 8),
-        Expanded(child: Text(status, maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 11, color: Colors.white60))),
-      ])),
-      // The browser is a mounted Android platform view, not an HTTP scraper.
-      // Never overlay it on tap targets or bypass source verification pages.
-      SizedBox(width: 1, height: 1, child: ClipRect(child: OverflowBox(
-        alignment: Alignment.topLeft,
-        minWidth: 360, maxWidth: 360,
-        minHeight: 640, maxHeight: 640,
-        child: IgnorePointer(child: Opacity(opacity: 0.01,
-          child: SizedBox(width: 360, height: 640,
-            child: WebViewWidget(controller: webview)))),
-      ))),
-    ]);
+    // Keep the embedded WebView mounted for browser navigation/JavaScript
+    // without a visible "Memeriksa film terbaru..." bar, spinner or toast.
+    // The scanner must not steal gestures or shift the Home layout.
+    return SizedBox(
+      width: 1,
+      height: 1,
+      child: ClipRect(
+        child: OverflowBox(
+          alignment: Alignment.topLeft,
+          minWidth: 360,
+          maxWidth: 360,
+          minHeight: 640,
+          maxHeight: 640,
+          child: IgnorePointer(
+            child: Opacity(
+              opacity: 0.01,
+              child: SizedBox(
+                width: 360,
+                height: 640,
+                child: WebViewWidget(controller: webview),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
