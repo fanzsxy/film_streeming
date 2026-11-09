@@ -4,6 +4,7 @@ import 'search_suggestions.dart';
 import 'startup_catalog_check.dart';
 import 'catalog_sync_diagnostics.dart';
 import 'filmstream_icons.dart';
+import 'filmstream_detail_metadata.dart';
 import 'windows_navigation.dart';
 import 'windows_source_player.dart';
 import 'source_domain_config.dart';
@@ -1844,8 +1845,8 @@ class _DetailPageState extends State<DetailPage> {
  Future<void> _recordWindowsOpened(Uri uri, {int season=0,int episode=0}) async {
    // The catalog has stable negative IDs for titles without TMDB IDs.
    // They should appear in Windows history just as they do on Android.
-   if(!Platform.isWindows || widget.movie.id==0 ||
-       uri.scheme!='https' || uri.host.isEmpty)return;
+   if(!Platform.isWindows ||
+       !FilmStreamDetailMetadata.canRecordOpened(widget.movie.id, uri))return;
    final m=widget.movie;
    final key=m.type=='tv'?'tv:${m.id}:$season:$episode':'movie:${m.id}';
    final old=WatchStore.find(key);
@@ -2009,9 +2010,11 @@ class _DetailPageState extends State<DetailPage> {
                  final tmdbGenres=(snapshot.data?['genres'] as List? ?? const [])
                    .whereType<Map>().map((g)=>(g['name']??'').toString())
                    .where((g)=>g.isNotEmpty).toList();
-                 final genres=m.genreNames.isNotEmpty ? m.genreNames :
-                    tmdbGenres.isNotEmpty ? tmdbGenres :
-                   (Platform.isWindows ? sourceGenres : <String>[]);
+                 final genres = FilmStreamDetailMetadata.genres(
+                   catalog: m.genreNames,
+                   tmdb: tmdbGenres,
+                   source: sourceGenres,
+                 );
                  if(genres.isEmpty)return Platform.isWindows
                    ? const Padding(padding:EdgeInsets.symmetric(vertical:8),
                        child:Text('Genre belum tersedia dari TMDB atau LK21.',
@@ -2030,8 +2033,10 @@ class _DetailPageState extends State<DetailPage> {
                final fromCrawler=m.overview.trim();
                // Prefer page synopsis; catalog metadata is the shared
                // offline fallback on Android and Windows.
-               final description = sourceSynopsis.isNotEmpty
-                   ? sourceSynopsis : fromCrawler;
+               final description = FilmStreamDetailMetadata.synopsis(
+                 source: sourceSynopsis,
+                 catalog: fromCrawler,
+               );
                if (description.isEmpty && !Platform.isWindows) {
                  return const SizedBox.shrink();
                }
