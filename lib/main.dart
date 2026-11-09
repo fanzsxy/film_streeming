@@ -161,11 +161,16 @@ class LocalCatalogMetadata {
       data['original_language']=entry.originalLanguage;
     }
     if((data['backdrop_path']??'').toString().isEmpty) {
-      data['backdrop_path']=entry.tmdbPosterPath.isNotEmpty
-          ?entry.tmdbPosterPath:entry.posterUrl;
+      // When a real TMDB backdrop is unavailable, use the same
+      // TMDB-first poster as the card instead of unrelated source artwork.
+      data['backdrop_path']=data['poster_path'];
     }
-    if(entry.synopsis.isNotEmpty) data['overview']=entry.synopsis;
-    if(entry.rating!=null) data['vote_average']=entry.rating;
+    if(entry.synopsis.isNotEmpty && (data['overview']??'').toString().isEmpty) {
+      data['overview']=entry.synopsis;
+    }
+    if(data['vote_average'] is! num && entry.rating!=null) {
+      data['vote_average']=entry.rating;
+    }
     // Prefer a real TMDB poster from metadata; fall back to catalog artwork.
     data['title']=entry.title;
     data['name']=entry.title;
