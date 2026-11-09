@@ -28,8 +28,8 @@ jobs:
         run: pip install -r crawler/requirements.txt
       - name: Test catalog discovery parsing and access guard
         run: python -m unittest discover -s tests -p 'test_auto_discovery.py' -v
-      - name: Inspect newest public LK21 movie and series listings
-        run: python tools/auto_discover_lk21.py --pages 2 --delay 3
+      - name: Inspect newest LK21 listings and only new verified detail genres
+        run: python tools/auto_discover_lk21.py --pages 2 --delay 3 --detail-limit 30 --detail-delay 2
       - name: Upload discovery report
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,7 +49,11 @@ jobs:
           body: |
             Automatically detected public title metadata from LK21's newest listings.
 
-            **Review every addition** (title, year, type and URL) before merging.
-            The workflow only appends catalog entries. It does not download
+            **Review every addition** (title, year, type, source URL, source poster,
+            and genres verified from the title's detail page) before merging.
+            Empty genres remain empty if a source detail page is inaccessible
+            or cannot be matched to the exact listing title and release year.
+            The workflow only appends catalog entries and requests at most 30
+            detail pages for newly discovered titles. It does not download
             video, bypass site restrictions, replace ratings or alter existing items.
             Entries are available in the app after merging and building an updated APK.
