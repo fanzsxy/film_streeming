@@ -140,11 +140,10 @@ class _SuggestionPoster extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final raw = entry.posterUrl.startsWith('https://')
-        ? entry.posterUrl
-        : (entry.tmdbPosterPath.startsWith('/')
-            ? 'https://image.tmdb.org/t/p/w92${entry.tmdbPosterPath}'
-            : '');
+    final preferred=preferredCatalogPoster(entry);
+    final raw=preferred.startsWith('/')
+        ? 'https://image.tmdb.org/t/p/w92$preferred'
+        : preferred;
     final uri = Uri.tryParse(raw);
     final safe = uri != null && uri.scheme == 'https' && uri.host.isNotEmpty;
     return ClipRRect(
