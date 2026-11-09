@@ -19,6 +19,31 @@ class FilmStreamIcons {
   static const favorites = PhosphorIconsRegular.heart;
   static const favoritesSelected = PhosphorIconsFill.heart;
 
+  // One navigation definition for Android's bottom bar and Windows'
+  // desktop sidebar. The order matches the HomePage tab switch.
+  static const navigationLabels = <String>[
+    'Beranda', 'Film', 'Series', 'Filter', 'Favorit',
+  ];
+
+  static IconData navigationIcon(int index, {bool selected = false}) {
+    switch (index) {
+      case 0: return selected ? homeSelected : home;
+      case 1: return selected ? filmSelected : film;
+      case 2: return selected ? seriesSelected : series;
+      case 3: return selected ? filterSelected : filter;
+      case 4: return selected ? favoritesSelected : favorites;
+      default: throw RangeError.index(index, navigationLabels, 'index');
+    }
+  }
+
+  static const desktopMenu = PhosphorIconsRegular.list;
+  static const search = PhosphorIconsRegular.magnifyingGlass;
+  static const clear = PhosphorIconsRegular.x;
+  static const reload = PhosphorIconsRegular.arrowClockwise;
+  static const play = PhosphorIconsRegular.playCircle;
+  static const completed = PhosphorIconsFill.checkCircle;
+  static const sourcePage = PhosphorIconsRegular.fileText;
+
   // Header.
   static const brand = PhosphorIconsFill.filmStrip;
   static const history = PhosphorIconsRegular.clockCounterClockwise;
