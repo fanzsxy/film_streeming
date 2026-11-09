@@ -1,4 +1,5 @@
 import 'filmstream_catalog.dart';
+import 'catalog_query.dart';
 import 'search_suggestions.dart';
 import 'startup_catalog_check.dart';
 import 'windows_source_player.dart';
@@ -73,8 +74,8 @@ class FilmStream extends StatelessWidget {
     theme:ThemeData.dark(useMaterial3:true).copyWith(scaffoldBackgroundColor:const Color(0xff101218),cardColor:const Color(0xff20252e),appBarTheme:const AppBarTheme(backgroundColor:Color(0xff101218),surfaceTintColor:Colors.transparent),colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xffe5aa55),brightness:Brightness.dark),navigationBarTheme:NavigationBarThemeData(backgroundColor:const Color(0xff191c23),indicatorColor:const Color(0xff62492e),height:76)),home:const StartupGate());
 }
 class Movie {
- final int id; final String title,overview,poster,backdrop,release,type,sourceUrl,originalLanguage; final double rating,popularity; final List<int> genres;
- Movie.fromJson(Map<String,dynamic> j,{String fallback='movie'}):sourceUrl=(j['source_url']??'').toString(),originalLanguage=(j['original_language']??'').toString(),popularity=((j['popularity']??0) as num).toDouble(),id=(j['id'] as num?)?.toInt() ?? 0,title=(j['title']??j['name']??'Tanpa judul').toString(),overview=(j['overview']??'').toString(),poster=(j['poster_path']??'').toString(),backdrop=(j['backdrop_path']??'').toString(),release=(j['release_date']??j['first_air_date']??'').toString(),rating=((j['vote_average']??0) as num).toDouble(),type=(j['media_type']=='tv'||j['media_type']=='movie')?j['media_type'] as String:fallback,genres=(j['genre_ids'] as List? ?? []).whereType<num>().map((e)=>e.toInt()).toList();
+ final int id; final String title,overview,poster,backdrop,release,type,sourceUrl,originalLanguage; final double rating,popularity; final List<int> genres; final List<String> genreNames;
+ Movie.fromJson(Map<String,dynamic> j,{String fallback='movie'}):sourceUrl=(j['source_url']??'').toString(),originalLanguage=(j['original_language']??'').toString(),popularity=((j['popularity']??0) as num).toDouble(),id=(j['id'] as num?)?.toInt() ?? 0,title=(j['title']??j['name']??'Tanpa judul').toString(),overview=(j['overview']??'').toString(),poster=(j['poster_path']??'').toString(),backdrop=(j['backdrop_path']??'').toString(),release=(j['release_date']??j['first_air_date']??'').toString(),rating=((j['vote_average']??0) as num).toDouble(),type=(j['media_type']=='tv'||j['media_type']=='movie')?j['media_type'] as String:fallback,genres=(j['genre_ids'] as List? ?? []).whereType<num>().map((e)=>e.toInt()).toList(),genreNames=(j['genre_names'] as List? ?? []).whereType<String>().toList(growable:false);
  String get year => release.length>=4?release.substring(0,4):'—';
 }
 
@@ -163,6 +164,16 @@ class LocalCatalogMetadata {
         data['poster_path']='';
       }
     }
+    // Genres collected from LK21 are usable even without TMDB genre IDs.
+    data['genre_ids']=entry.genreIds;
+    data['genre_names']=entry.genres;
+    if(entry.originalLanguage.isNotEmpty) {
+      data['original_language']=entry.originalLanguage;
+    }
+    if((data['backdrop_path']??'').toString().isEmpty) {
+      data['backdrop_path']=entry.tmdbPosterPath.isNotEmpty
+          ?entry.tmdbPosterPath:entry.posterUrl;
+    }
     if(entry.synopsis.isNotEmpty) data['overview']=entry.synopsis;
     if(entry.rating!=null) data['vote_average']=entry.rating;
     // Prefer a real TMDB poster from metadata; fall back to catalog artwork.
@@ -182,13 +193,10 @@ class LocalCatalogMetadata {
   // upgrades. A page renders immediately, while missing TMDB artwork can
   // be resolved in individual cards without blocking navigation.
   static final Map<String,CatalogEntry> _pagePosterEntries={};
-  static Future<Movie?> catalogPosterUpgrade(Movie movie) {
-    final entry=_pagePosterEntries[movie.sourceUrl];
-    if(entry==null || entry.tmdbPosterPath.startsWith('/')) {
-      return Future.value(movie);
-    }
-    return enrich(entry);
-  }
+  // The catalog already stores poster URLs. Avoid an extra TMDB request
+  // for every visible tile on Home/Search/Filter/See All.
+  static Future<Movie?> catalogPosterUpgrade(Movie movie) =>
+      Future<Movie?>.value(movie);
 
   static Future<Movie?> enrich(CatalogEntry entry) {
     // Bound the in-memory TMDB resolver cache; do not retain thousands of
@@ -405,6 +413,19 @@ class LocalCatalogMetadata {
   }
 
   static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
+    // All public catalog-facing screens share one in-memory source of truth.
+    // No TMDB discovery/search calls on Home, See All, Filter or Search.
+    if (CatalogQueryIndex.handles(endpoint)) {
+      final index=await CatalogQueryIndex.load();
+      final slice=index.select(endpoint,page:page,type:type,params:params);
+      return slice.items.map((entry) {
+        final movie=_withCollectedMetadata(entry,{
+          'id':entry.tmdbId ?? -_stableId(entry.url),
+        });
+        _sourceByTmdb[_key(movie.type,movie.id)]=movie.sourceUrl;
+        return movie;
+      }).toList(growable:false);
+    }
     final source=await FilmStreamCatalog.load();
     // New home collections are filtered lists of actual catalog entries.
     if (endpoint == 'home/latest') {
