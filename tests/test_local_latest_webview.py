@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 
 from tools.discover_new_titles_local_webview import (
     load_robots, read_browser, select_new,
-    scan_listings, scan_details, write_json_atomic,
+    scan_listings, scan_details, write_json_atomic, valid_source_base,
 )
 
 BASE = "https://tv12.lk21official.cc"
@@ -20,6 +20,22 @@ def allowed():
 
 
 class LatestLocalWebviewTests(unittest.TestCase):
+    def test_only_configured_source_hosts_can_be_selected(self):
+        self.assertTrue(valid_source_base(
+            "https://tv12.lk21official.cc", "movie"))
+        self.assertTrue(valid_source_base(
+            "https://tv13.lk21official.cc", "movie"))
+        self.assertFalse(valid_source_base(
+            "https://other.example", "movie"))
+        self.assertFalse(valid_source_base(
+            "http://tv12.lk21official.cc", "movie"))
+        self.assertFalse(valid_source_base(
+            "https://tv12.lk21official.cc/latest", "movie"))
+        self.assertTrue(valid_source_base(
+            "https://tv.lk21online.de", "series", ["tv.lk21online.de"]))
+        self.assertFalse(valid_source_base(
+            "https://outside.example", "series", ["tv.lk21online.de"]))
+
     def test_existing_catalog_and_duplicate_page_cards_never_added(self):
         existing = [
             {"type": "movie", "title": "Existing", "year": 2026,
