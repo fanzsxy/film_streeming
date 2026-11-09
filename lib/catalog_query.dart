@@ -65,6 +65,7 @@ class CatalogSlice {
 /// One catalog index shared by Home, See All, Filter, and Search.
 /// Filtering scans cached strings locally; no TMDB request on page changes.
 class CatalogQueryIndex {
+  CatalogQueryIndex.fromEntries(List<CatalogEntry> entries) : this._(entries);
   CatalogQueryIndex._(List<CatalogEntry> source)
       : _entries = source,
         _year = List<CatalogEntry>.of(source),
@@ -121,7 +122,8 @@ class CatalogQueryIndex {
     if (endpoint == 'search/multi' || endpoint == 'catalog/sorted' ||
         endpoint == 'catalog/filter' || endpoint == 'trending/all/week' ||
         endpoint == 'home/recommended') {
-      selectedType = type == 'all' || endpoint == 'search/multi' ? null : type;
+      selectedType = type == 'all' || endpoint == 'search/multi' ||
+          endpoint == 'trending/all/week' ? null : type;
       if (endpoint == 'home/recommended') selectedType = null;
     }
     if (endpoint == 'home/latest' || endpoint == 'home/family' ||
