@@ -109,10 +109,10 @@ class CatalogQueryIndex {
     return names.toList()..sort();
   }
 
+  // The catalog owns genre filtering, Film/Series and search. TMDB owns
+  // Home's trending/popular/top-rated collections and their ordering.
   static bool handles(String endpoint) =>
-      endpoint.startsWith('catalog/') || endpoint == 'search/multi' ||
-      endpoint.startsWith('home/') || endpoint.startsWith('trending/') ||
-      endpoint.endsWith('/popular') || endpoint.endsWith('/top_rated');
+      endpoint.startsWith('catalog/') || endpoint == 'search/multi';
 
   CatalogSlice select(String endpoint, {
     int page = 1,
