@@ -1,7 +1,7 @@
 import 'package:filmstream_personal/filmstream_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 void main() {
   test('main tabs use one Phosphor family with solid selected states', () {
