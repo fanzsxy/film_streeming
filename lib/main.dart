@@ -1,4 +1,5 @@
 import 'filmstream_catalog.dart';
+import 'catalog_poster_display.dart';
 import 'catalog_query.dart';
 import 'search_suggestions.dart';
 import 'startup_catalog_check.dart';
@@ -194,6 +195,14 @@ class LocalCatalogMetadata {
   static final Map<String,Future<Movie?>> _posterUpgrades={};
   static int _activePosterRequests=0;
   static final List<Completer<void>> _posterQueue=[];
+
+  static bool waitsForVerifiedTmdbPoster(Movie movie) {
+    final entry = _pagePosterEntries[movie.sourceUrl];
+    return CatalogPosterDisplay.waitsForVerifiedTmdb(
+      poster: movie.poster,
+      tmdbId: entry?.tmdbId,
+    );
+  }
 
   static Future<Movie?> catalogPosterUpgrade(Movie movie) {
     // Already a TMDB image from the catalog or TMDB's ranked response.
@@ -1186,14 +1195,23 @@ class CatalogPosterTile extends StatefulWidget {
 }
 class _CatalogPosterTileState extends State<CatalogPosterTile> {
   late Future<Movie?> posterFuture;
+  late bool _tmdbFirst;
+
+  void _preparePoster() {
+    _tmdbFirst=LocalCatalogMetadata.waitsForVerifiedTmdbPoster(widget.movie);
+    posterFuture=LocalCatalogMetadata.catalogPosterUpgrade(widget.movie);
+  }
+
   @override void initState(){
     super.initState();
-    posterFuture=LocalCatalogMetadata.catalogPosterUpgrade(widget.movie);
+    _preparePoster();
   }
   @override void didUpdateWidget(covariant CatalogPosterTile old){
     super.didUpdateWidget(old);
-    if(old.movie.sourceUrl!=widget.movie.sourceUrl){
-      posterFuture=LocalCatalogMetadata.catalogPosterUpgrade(widget.movie);
+    if(old.movie.sourceUrl!=widget.movie.sourceUrl ||
+       old.movie.poster!=widget.movie.poster ||
+       old.movie.id!=widget.movie.id){
+      _preparePoster();
     }
   }
   @override Widget build(BuildContext context)=>FutureBuilder<Movie?>(
@@ -1202,9 +1220,15 @@ class _CatalogPosterTileState extends State<CatalogPosterTile> {
       final resolved=snapshot.data;
       final movie=resolved!=null && resolved.poster.isNotEmpty
         ?resolved:widget.movie;
+      // Match the Home -> Lihat Lainnya reveal: no LK21-to-TMDB
+      // poster swap on cards with a verified TMDB ID. The catalog image
+      // is still available if metadata or TMDB artwork fails.
+      final resolvingTmdb=_tmdbFirst &&
+          snapshot.connectionState!=ConnectionState.done;
       return MovieTile(
         movie:movie,
-        fallbackPoster: movie.poster!=widget.movie.poster
+        showPoster:!resolvingTmdb,
+        fallbackPoster:movie.poster!=widget.movie.poster
           ?widget.movie.poster:null,
         onTap:widget.onTap,
       );
@@ -1214,24 +1238,20 @@ class _CatalogPosterTileState extends State<CatalogPosterTile> {
 class MovieTile extends StatelessWidget {
  final Movie movie;
  final String? fallbackPoster;
+ final bool showPoster;
  final ValueChanged<Movie> onTap;
  const MovieTile({super.key,required this.movie,required this.onTap,
-   this.fallbackPoster});
+   this.fallbackPoster,this.showPoster=true});
  @override Widget build(BuildContext context)=>InkWell(
   borderRadius:BorderRadius.circular(16),onTap:()=>onTap(movie),
   child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
    Expanded(child:ClipRRect(borderRadius:BorderRadius.circular(16),child:Stack(fit:StackFit.expand,children:[
-    // Keep the catalog artwork in place until the official TMDB image
-    // actually has a decoded frame. Then fade in the new poster smoothly,
-    // without a spinner, a blank flash, or an artificial delay.
-    if(fallbackPoster!=null && fallbackPoster!.isNotEmpty)
-      Image.network(filmstreamImageUrl(fallbackPoster!),
-        fit:BoxFit.cover,gaplessPlayback:true,
-        errorBuilder:(_,__,___)=>const ColoredBox(
-          color:Color(0xff252a34)))
-    else const ColoredBox(color:Color(0xff252a34),
+    // The same placeholder -> 300ms fade as Home "Lihat Lainnya".
+    // The LK21 fallback must NOT flash underneath an official TMDB
+    // poster while that image is still downloading.
+    const ColoredBox(color:Color(0xff252a34),
       child:Center(child:Icon(Icons.movie_outlined,size:40))),
-    if(movie.poster.isNotEmpty)
+    if(showPoster && movie.poster.isNotEmpty)
       Image.network(filmstreamImageUrl(movie.poster),
         fit:BoxFit.cover,gaplessPlayback:true,
         frameBuilder:(context,child,frame,wasSynchronouslyLoaded){
@@ -1243,8 +1263,13 @@ class MovieTile extends StatelessWidget {
             child:child,
           );
         },
-        // Leave existing catalog artwork visible if TMDB fails.
-        errorBuilder:(_,__,___)=>const SizedBox.shrink()),
+        // Show the source artwork only if the TMDB image itself fails.
+        errorBuilder:(_,__,___)=>fallbackPoster!=null &&
+                fallbackPoster!.isNotEmpty
+          ?Image.network(filmstreamImageUrl(fallbackPoster!),
+              fit:BoxFit.cover,gaplessPlayback:true,
+              errorBuilder:(_,__,___)=>const SizedBox.shrink())
+          :const SizedBox.shrink()),
     Positioned(top:8,right:8,child:DecoratedBox(decoration:BoxDecoration(color:const Color(0xdd16191f),borderRadius:BorderRadius.circular(7)),child:Padding(padding:const EdgeInsets.symmetric(horizontal:6,vertical:4),child:Row(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.star_rounded,color:Color(0xffe5aa55),size:13),const SizedBox(width:3),Text(movie.rating.toStringAsFixed(1),style:const TextStyle(fontSize:11,fontWeight:FontWeight.bold))])))),
    ]))),
    const SizedBox(height:8),
