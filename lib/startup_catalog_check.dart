@@ -237,6 +237,67 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       return [];
     };
 
+    // LK21 puts the starred 0-10 score in the poster/card (e.g. ★ 7.7).
+    // Only scan rating-tagged elements belonging to this one film card.
+    const parseScore=(input)=>{
+      const text=String(input??'').trim().replace(/\s+/g,' ');
+      const match=text.match(
+        /^(?:[★☆⭐]\s*)?(10(?:\.0+)?|[0-9](?:\.\d{1,2})?)(?:\s*\/\s*10)?$/
+      );
+      if(!match)return null;
+      const value=Number(match[1]);
+      return value>0 && value<=10 && Number.isFinite(value)?value:null;
+    };
+    const ratingInside=(scope)=>{
+      const nodes=scope.querySelectorAll(
+        '[class*="rating"],[class*="Rating"],[class*="score"],' +
+        '[class*="Score"],[class*="imdb"],[class*="IMDB"],' +
+        '[data-rating],[itemprop="ratingValue"]'
+      );
+      for(const el of Array.from(nodes).slice(0,40)){
+        if(el.closest('header,nav,footer'))continue;
+        const candidates=[
+          el.getAttribute('data-rating'),
+          el.getAttribute('content'),
+          el.getAttribute('aria-label'),
+          el.getAttribute('title'),
+          el.textContent
+        ];
+        for(const text of candidates){
+          const value=parseScore(text);
+          if(value!==null)return value;
+        }
+        // A star icon may be a separate child from its number.
+        for(const child of Array.from(
+          el.querySelectorAll('span,b,strong,small')).slice(0,12)){
+          const value=parseScore(child.textContent);
+          if(value!==null)return value;
+        }
+      }
+      return null;
+    };
+    const ratingNear=(card,urlPath)=>{
+      let scope=card;
+      for(let depth=0;scope && depth<3;depth++,scope=scope.parentElement){
+        const titlePaths=new Set();
+        for(const link of scope.querySelectorAll('a[href]')){
+          try{
+            const href=new URL(link.getAttribute('href'),location.href);
+            if(href.host===location.host &&
+               /-(19\d{2}|20\d{2})\/?$/.test(href.pathname)){
+              titlePaths.add(href.pathname.replace(/\/$/,''));
+            }
+            if(titlePaths.size>1)break;
+          }catch(_){}
+        }
+        if(titlePaths.size>1 ||
+           (titlePaths.size===1 && !titlePaths.has(urlPath)))break;
+        const rating=ratingInside(scope);
+        if(rating!==null)return rating;
+      }
+      return null;
+    };
+
     const items=[];
     const used=new Set();
     for(const a of document.querySelectorAll('a[href]')) {
@@ -267,7 +328,8 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
         if(p.protocol==='https:')poster=p.href;}catch(_){}
       items.push({
         title:title,year:Number(match[1]),url:url.origin+url.pathname,
-        poster_url:poster,genres:genresNear(card,path)
+        poster_url:poster,genres:genresNear(card,path),
+        rating:ratingNear(card,path)
       });
       if(items.length>=100)break;
     }
@@ -309,7 +371,36 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     let poster='';
     try {const p=new URL(meta?.content||'',location.href);
       if(p.protocol==='https:')poster=p.href;}catch(_){}
-    return JSON.stringify({genres:genres.slice(0,10),poster_url:poster});
+    // Detail-page rating is a fallback if no score was present on the
+    // listing card. Do not infer ratings from unrelated movie links.
+    const parseScore=(input)=>{
+      const text=String(input??'').trim().replace(/\s+/g,' ');
+      const match=text.match(
+        /^(?:[★☆⭐]\s*)?(10(?:\.0+)?|[0-9](?:\.\d{1,2})?)(?:\s*\/\s*10)?$/
+      );
+      if(!match)return null;
+      const value=Number(match[1]);
+      return value>0 && value<=10 && Number.isFinite(value)?value:null;
+    };
+    let rating=null;
+    const ratingFields=document.querySelectorAll(
+      '[itemprop="ratingValue"],[data-rating],.rating,.rating-value,' +
+      '.imdb-rating,[class*="vote_average"]'
+    );
+    for(const field of Array.from(ratingFields).slice(0,25)){
+      if(field.closest('nav,header,footer'))continue;
+      for(const candidate of [
+        field.getAttribute('data-rating'),
+        field.getAttribute('content'),
+        field.textContent
+      ]){
+        rating=parseScore(candidate);
+        if(rating!==null)break;
+      }
+      if(rating!==null)break;
+    }
+    return JSON.stringify({genres:genres.slice(0,10),
+      poster_url:poster,rating:rating});
   })()''';
 
   Future<List<Map<String, dynamic>>?> _listPage(
@@ -407,10 +498,14 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
         if (!mounted) break;
         // LK21 /latest often prints comma-separated genres on the card.
         // Skip expensive detail-page navigation when those are available.
+        final cardHasGenres =
+            CatalogScanHelpers.parseGenreLabels(row['genres']).isNotEmpty;
+        if (cardHasGenres) fromListing++;
+        // Skip navigation when both genre and rating are already on the
+        // listing. A missing value can be checked on the detail page.
         if (!CatalogScanHelpers.needsDetail(row)) {
           enriched.add(row);
-          fromListing++;
-          totalGenres++;
+          if (cardHasGenres) totalGenres++;
           continue;
         }
         if (detailsChecked >= maxDetailPerKind) {
