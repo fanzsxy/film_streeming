@@ -27,7 +27,7 @@ class CatalogDiscoveryTests(unittest.TestCase):
         self.assertEqual(item["poster_url"], "https://cdn.example/poster.jpg")
         self.assertNotIn("genres", item)  # Genre is never guessed from a card.
 
-    def test_source_detail_genres_only_after_matching_h1(self):
+    def test_source_detail_genres_even_if_listing_title_or_year_differ(self):
         html = ("""<nav><a>Horror</a></nav>
             <h1>Arrival (2026)</h1>
             <p><a>Drama</a><a>Romance</a></p>
@@ -40,10 +40,12 @@ class CatalogDiscoveryTests(unittest.TestCase):
         detail = detail_metadata(html, entry)
         self.assertEqual(detail["genres"], ["Drama", "Romance"])
         self.assertEqual(detail["poster_url"], "https://cdn.example/detail.jpg")
-        wrong = {**entry, "title": "Different Movie"}
-        self.assertEqual(detail_metadata(html, wrong), {})
-        wrong_year = {**entry, "year": 2025}
-        self.assertEqual(detail_metadata(html, wrong_year), {})
+        # Original-language titles, shortened cards and year metadata
+        # can differ from the H1 despite pointing at the same detail URL.
+        alternative = {**entry, "title": "An Alternate Title", "year": 2025}
+        self.assertEqual(detail_metadata(html, alternative)["genres"],
+                         ["Drama", "Romance"])
+        self.assertEqual(detail_metadata("<nav><a>Action</a></nav>", entry), {})
 
     def test_no_genres_from_navigation_or_recommendations(self):
         html = ('<nav><a>Action</a></nav><h1>Arrival (2026)</h1>'
