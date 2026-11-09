@@ -528,17 +528,36 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       ).timeout(const Duration(seconds:30));
       if(response.statusCode==200){
         final result=jsonDecode(response.body);
-        if(result is! Map||result['status']!='review_required'){
-          await _log('Server tidak mengonfirmasi PR. Data tetap tersimpan.');
+        if (result is! Map ||
+            (result['status'] != 'review_required' &&
+             result['status'] != 'already_known')) {
+          await _log('Server tidak mengonfirmasi data di GitHub. '
+              'Antrean tetap tersimpan di HP.');
           return;
         }
+        final alreadyKnown = result['status'] == 'already_known';
         final oldSent=jsonDecode(prefs.getString(sentKey)??'[]');
         final sent=oldSent is List?oldSent.whereType<String>().toSet():<String>{};
         sent.addAll(batch.map(_recordId));
         await prefs.setString(sentKey,jsonEncode(sent.toList()));
         final remaining=decoded.skip(batch.length).toList();
         await prefs.setString(pendingKey,jsonEncode(remaining));
-        await _log('Berhasil mengirim ${batch.length} judul; PR: ${result['pull_request_url']}.');
+        final url = (result['pull_request_url'] ?? '').toString();
+        if (alreadyKnown) {
+          await _log('${batch.length} judul sudah dikenali oleh GitHub; '
+              'tidak perlu dikirim ulang.');
+        } else {
+          await _log('Berhasil mengirim ${batch.length} judul untuk review '
+              'GitHub. PR: $url');
+        }
+        if (mounted && !alreadyKnown) {
+          // An import PR has not yet updated the canonical catalog.
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+            content: Text('${batch.length} judul dikirim ke GitHub. '
+                'Gabungkan PR hasil scan untuk melanjutkan impor katalog.'),
+            duration: const Duration(seconds: 6),
+          ));
+        }
       } else {
         await _log('Pengiriman ke backend gagal: HTTP ${response.statusCode}. Data tetap tersimpan di HP.');
       }
