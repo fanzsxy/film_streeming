@@ -4,11 +4,17 @@ on:
   pull_request:
     paths:
       - 'backend/**'
+      - 'tools/import_phone_catalog.py'
+      - 'tests/test_phone_catalog_submission_dedup.py'
+      - 'tests/test_phone_catalog_import_genres.py'
       - '.github/workflows/check-backend.yml'
   push:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'tools/import_phone_catalog.py'
+      - 'tests/test_phone_catalog_submission_dedup.py'
+      - 'tests/test_phone_catalog_import_genres.py'
       - '.github/workflows/check-backend.yml'
   workflow_dispatch:
 
@@ -30,3 +36,8 @@ jobs:
           python -m pip install -r backend/requirements.txt
           cd backend
           python -c "from phone_catalog_sync import router; assert any(getattr(route, 'path', None) == '/catalog/submit' for route in router.routes)"
+      - name: Test phone catalog submissions, genres and approved imports
+        run: |
+          python -m py_compile tools/import_phone_catalog.py
+          python -m unittest discover -s tests -p 'test_phone_catalog_submission_dedup.py' -v
+          python -m unittest discover -s tests -p 'test_phone_catalog_import_genres.py' -v
