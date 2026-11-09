@@ -41,6 +41,18 @@ BLOCKED_MARKERS = re.compile(
 )
 
 
+def valid_source_base(value, kind, series_hosts=()):
+    """A manually selected base must be the configured source's own host."""
+    parsed = urlparse(value)
+    if parsed.scheme != "https" or parsed.username or parsed.password or parsed.port or (
+            parsed.path not in ("", "/") or parsed.query or parsed.fragment):
+        return False
+    hostname = parsed.hostname or ""
+    if kind == "movie":
+        return hostname == "lk21official.cc" or hostname.endswith(".lk21official.cc")
+    return kind == "series" and hostname in series_hosts
+
+
 def load_robots(page, base):
     """Fetch robots.txt via the same browser. Refuse unverified policies."""
     target = base.rstrip("/") + "/robots.txt"
@@ -196,6 +208,10 @@ def write_json_atomic(path, data, original=None):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--movie-base", default=MOVIE_BASE,
+                        help="Current LK21 movie source base (HTTPS on lk21official.cc)")
+    parser.add_argument("--series-base", default="",
+                        help="Current series base from configured allowed hosts")
     parser.add_argument("--pages", type=int, default=2,
                         help="Listing pages per source, 1-5")
     parser.add_argument("--max-new", type=int, default=100,
@@ -219,9 +235,14 @@ def main():
         raise SystemExit("Catalog is empty/invalid. No changes made.")
     config = json.loads(SERIES_CONFIG.read_text(encoding="utf-8"))
     bases = {
-        "movie": MOVIE_BASE,
-        "series": config["series"]["active_base_url"].rstrip("/"),
+        "movie": args.movie_base.rstrip("/"),
+        "series": (args.series_base or config["series"]["active_base_url"]).rstrip("/"),
     }
+    for kind, base in bases.items():
+        if not valid_source_base(
+                base, kind, config["series"].get("allowed_hosts", [])):
+            parser.error(f"Invalid {kind} source base: use HTTPS on a configured "
+                         f"LK21 source host with no path/query")
     paths = {"movie": "/latest", "series": "/latest-series"}
 
     try:
