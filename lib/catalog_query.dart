@@ -52,6 +52,51 @@ class CatalogGenres {
   }
 }
 
+
+ // LOCALIZED LANGUAGE DROPDOWN: only language codes we can name reliably.
+ // Order by how many catalogue titles actually use that language, not by code.
+class CatalogLanguageOptions {
+  static const names = <String,String>{
+    'af':'Afrikaans', 'ak':'Akan', 'am':'Amharik', 'ar':'Arab',
+    'az':'Azerbaijan', 'be':'Belarusia', 'bg':'Bulgaria',
+    'bn':'Bengali', 'bs':'Bosnia', 'ca':'Katalan', 'cs':'Ceko',
+    'cy':'Wales', 'da':'Denmark', 'de':'Jerman', 'el':'Yunani',
+    'en':'Inggris', 'es':'Spanyol', 'et':'Estonia', 'eu':'Basque',
+    'fa':'Persia', 'fi':'Finlandia', 'fil':'Filipina', 'fr':'Prancis',
+    'ga':'Irlandia', 'gl':'Galisia', 'gu':'Gujarati', 'he':'Ibrani',
+    'hi':'Hindi', 'hr':'Kroasia', 'hu':'Hungaria', 'hy':'Armenia',
+    'id':'Indonesia', 'is':'Islandia', 'it':'Italia', 'ja':'Jepang',
+    'jv':'Jawa', 'ka':'Georgia', 'kk':'Kazakh', 'km':'Khmer',
+    'kn':'Kannada', 'ko':'Korea', 'ky':'Kirgiz', 'lo':'Lao',
+    'lt':'Lituania', 'lv':'Latvia', 'mg':'Malagasi', 'mk':'Makedonia',
+    'ml':'Malayalam', 'mn':'Mongolia', 'mr':'Marathi', 'ms':'Melayu',
+    'my':'Burma', 'ne':'Nepali', 'nl':'Belanda', 'no':'Norwegia',
+    'pa':'Punjabi', 'pl':'Polandia', 'pt':'Portugis', 'ro':'Rumania',
+    'ru':'Rusia', 'si':'Sinhala', 'sk':'Slowakia', 'sl':'Slovenia',
+    'so':'Somalia', 'sq':'Albania', 'sr':'Serbia', 'su':'Sunda',
+    'sv':'Swedia', 'sw':'Swahili', 'ta':'Tamil', 'te':'Telugu',
+    'th':'Thailand', 'tl':'Tagalog', 'tr':'Turki', 'uk':'Ukraina',
+    'ur':'Urdu', 'uz':'Uzbek', 'vi':'Vietnam', 'xh':'Xhosa',
+    'yo':'Yoruba', 'zh':'Mandarin', 'zu':'Zulu',
+  };
+
+  static List<MapEntry<String,String>> available(
+      List<CatalogEntry> entries, {int limit=30}) {
+    if(limit<=0)return const [];
+    final counts=<String,int>{};
+    for(final entry in entries){
+      final code=entry.originalLanguage.trim().toLowerCase();
+      if(!names.containsKey(code))continue;
+      counts.update(code,(n)=>n+1,ifAbsent:()=>1);
+    }
+    final ranked=counts.keys.toList()..sort((a,b){
+      final frequency=counts[b]!.compareTo(counts[a]!);
+      return frequency!=0?frequency:names[a]!.compareTo(names[b]!);
+    });
+    return [for(final code in ranked.take(limit)) MapEntry(code,names[code]!)];
+  }
+}
+
 class CatalogSlice {
   final List<CatalogEntry> items;
   final int total;
@@ -98,6 +143,8 @@ class CatalogQueryIndex {
   final Map<CatalogEntry, Set<int>> _genres = {};
   late final List<MapEntry<int, String>> availableGenres =
       CatalogGenres.available(_entries);
+  late final List<MapEntry<String, String>> availableLanguageOptions =
+      CatalogLanguageOptions.available(_entries);
 
   List<String> get availableLanguages {
     final names = <String>{};
@@ -112,7 +159,8 @@ class CatalogQueryIndex {
   // The catalog owns genre filtering, Film/Series and search. TMDB owns
   // Home's trending/popular/top-rated collections and their ordering.
   static bool handles(String endpoint) =>
-      endpoint.startsWith('catalog/') || endpoint == 'search/multi';
+      endpoint.startsWith('catalog/') || endpoint == 'search/multi' ||
+      endpoint == 'home/latest';
 
   CatalogSlice select(String endpoint, {
     int page = 1,
@@ -148,12 +196,15 @@ class CatalogQueryIndex {
     final genre1 = int.tryParse(params['genre1'] ?? '') ?? 0;
     final genre2 = int.tryParse(params['genre2'] ?? '') ?? 0;
     final family = endpoint == 'home/family';
+    final newest = endpoint == 'home/latest';
+    final latestYearLimit = DateTime.now().year + 1;
     final first = (page - 1) * 20;
     final selected = <CatalogEntry>[];
     var matches = 0;
 
     for (final entry in order) {
       if (selectedType != null && entry.type != selectedType) continue;
+      if (newest && (entry.year < 1900 || entry.year > latestYearLimit)) continue;
       if (query.isNotEmpty && !_titles[entry]!.contains(query)) continue;
       if (language.isNotEmpty &&
           entry.originalLanguage.toLowerCase() != language) continue;

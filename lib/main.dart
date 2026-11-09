@@ -949,12 +949,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
    final index=await CatalogQueryIndex.load();
    if(!mounted)return;
    final available=index.availableGenres;
-   final languages=index.availableLanguages;
-   const knownLanguages=<String,String>{
-    'en':'Inggris','id':'Indonesia','ja':'Jepang',
-    'ko':'Korea','zh':'China (Mandarin)','hi':'India (Hindi)',
-    'fr':'Prancis','es':'Spanyol','de':'Jerman','th':'Thailand',
-   };
+   final languages=index.availableLanguageOptions;
    setState((){
     _genreOptions=[
      const DropdownMenuItem<int>(value:0,child:Text('Semua genre')),
@@ -967,8 +962,8 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
     }
     _languageOptions=[
      const DropdownMenuItem<String>(value:'',child:Text('Semua bahasa')),
-     ...languages.map((code)=>DropdownMenuItem<String>(
-       value:code,child:Text(knownLanguages[code]??code.toUpperCase()))),
+     ...languages.map((entry)=>DropdownMenuItem<String>(
+       value:entry.key,child:Text(entry.value))),
     ];
     _optionsLoaded=true;
    });
@@ -1006,6 +1001,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   }
  }
  Widget _pick<T>(String caption,T value,List<DropdownMenuItem<T>> options,ValueChanged<T?> update)=>DropdownButtonFormField<T>(
+  menuMaxHeight:380,
   value:value,
   isExpanded:true,
   dropdownColor:const Color(0xff252931),
@@ -1346,7 +1342,11 @@ class _MovieRailState extends State<MovieRail> with AutomaticKeepAliveClientMixi
  IconButton(tooltip:'Geser ${widget.title} ke kanan',
    onPressed:()=>_scrollRail(500),icon:const Icon(Icons.chevron_right)),
 ],
-TextButton(onPressed:widget.onSeeAll,child:const Row(mainAxisSize:MainAxisSize.min,children:[Text('Lihat Lainnya',style:TextStyle(fontSize:12,fontWeight:FontWeight.w600)),SizedBox(width:2),Icon(Icons.chevron_right,size:17)]))])),if(s.hasError)Padding(padding:const EdgeInsets.all(16),child:Text('${s.error}')) else SizedBox(height:267,child:!s.hasData?const Center(child:CircularProgressIndicator()):ListView.builder(controller:_railScroll,key:PageStorageKey('rail:${widget.endpoint}'),scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:12),itemCount:s.data!.length,itemBuilder:(context,i)=>SizedBox(width:153,child:Padding(padding:const EdgeInsets.symmetric(horizontal:4),child:MovieTile(movie:s.data![i],onTap:widget.onTap)))))]));}
+TextButton(onPressed:widget.onSeeAll,child:const Row(mainAxisSize:MainAxisSize.min,children:[Text('Lihat Lainnya',style:TextStyle(fontSize:12,fontWeight:FontWeight.w600)),SizedBox(width:2),Icon(Icons.chevron_right,size:17)]))])),if(s.hasError)Padding(padding:const EdgeInsets.all(16),child:Text('${s.error}')) else if(s.hasData && s.data!.isEmpty)
+  const Padding(padding:EdgeInsets.symmetric(horizontal:16,vertical:10),
+    child:Text('Belum ada judul yang cocok di katalog.',
+      style:TextStyle(color:Colors.white60,fontSize:13)))
+ else SizedBox(height:267,child:!s.hasData?const Center(child:CircularProgressIndicator()):ListView.builder(controller:_railScroll,key:PageStorageKey('rail:${widget.endpoint}'),scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:12),itemCount:s.data!.length,itemBuilder:(context,i)=>SizedBox(width:153,child:Padding(padding:const EdgeInsets.symmetric(horizontal:4),child:MovieTile(movie:s.data![i],onTap:widget.onTap)))))]));}
 }
 class LastWatchedRail extends StatelessWidget {
  const LastWatchedRail({super.key});
