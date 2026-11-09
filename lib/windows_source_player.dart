@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:webview_flutter_windows/webview_flutter_windows.dart';
 
 import 'filmstream_icons.dart';
+import 'filmstream_detail_metadata.dart';
 
 /// Windows WebView2 version of the Android focused source player.
 /// Keep the provider-owned iframe and its JS in the original document.
@@ -500,8 +501,10 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
   }
 
   Widget _informationPanel() {
-    final synopsis = _lk21Synopsis.isNotEmpty
-        ? _lk21Synopsis : widget.catalogSynopsis.trim();
+    final synopsis = FilmStreamDetailMetadata.synopsis(
+      source: _lk21Synopsis,
+      catalog: widget.catalogSynopsis,
+    );
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
