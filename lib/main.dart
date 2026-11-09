@@ -754,6 +754,8 @@ class _HomePageState extends State<HomePage> {
  void openCollection(String title,String endpoint,String type) => Navigator.push(context,MaterialPageRoute(builder:(_)=>Scaffold(appBar:AppBar(title:Text(title)),body:PagedGrid(title:title,endpoint:endpoint,type:type,onTap:open))));
  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Row(mainAxisSize:MainAxisSize.min,children:[Icon(Icons.local_movies_rounded,color:Color(0xffe5aa55),size:27),SizedBox(width:9),Text('FILM STREAMING',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:0.8,fontSize:19))]),actions:[IconButton(tooltip:'Riwayat tontonan',icon:const Icon(Icons.history_rounded),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const HistoryPage()))),IconButton(icon:const Icon(Icons.info_outline_rounded),onPressed:()=>showAboutDialog(context:context,applicationName:'FilmStream Personal',children:[const Text('Metadata menggunakan TMDB; bukan didukung atau disertifikasi oleh TMDB. Pemutaran video memerlukan sumber yang dapat digunakan secara sah.')]))]),bottomNavigationBar:Platform.isWindows?null:NavigationBar(selectedIndex:tab,onDestinationSelected:changeTab,destinations:const [NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home),label:'Beranda'),NavigationDestination(icon:Icon(Icons.movie_outlined),selectedIcon:Icon(Icons.movie),label:'Film'),NavigationDestination(icon:Icon(Icons.tv_outlined),selectedIcon:Icon(Icons.tv),label:'Series'),NavigationDestination(icon:Icon(Icons.tune_outlined),selectedIcon:Icon(Icons.tune),label:'Filter'),NavigationDestination(icon:Icon(Icons.favorite_border),selectedIcon:Icon(Icons.favorite),label:'Favorit')]),body:DesktopShell(selectedIndex:tab,onSelected:changeTab,child:Column(children:[StartupCatalogCheck(onCatalogUpdated:(){if(mounted){
     CatalogQueryIndex.invalidate();
+    CatalogSuggestionIndex.invalidate();
+    CinemaGenres.invalidate();
     Tmdb.clearCatalogRails();
     setState(()=>catalogRefresh++);
   }}),if(tab!=4)Padding(padding:const EdgeInsets.fromLTRB(14,8,14,8),child:TextField(controller:search,focusNode:searchFocus,decoration:InputDecoration(prefixIcon:const Icon(Icons.search_rounded),hintText:'Cari film atau series...',suffixIcon:ValueListenableBuilder<TextEditingValue>(valueListenable:search,builder:(context,value,_)=>value.text.isEmpty?const SizedBox.shrink():IconButton(icon:const Icon(Icons.close_rounded),onPressed:(){debounce?.cancel();suggestionDebounce?.cancel();search.clear();setState((){query='';suggestionText='';});})),filled:true,fillColor:const Color(0xff20252e),enabledBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(16),borderSide:BorderSide.none),focusedBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(16),borderSide:const BorderSide(color:Color(0xffe5aa55),width:1.4))),onChanged:(v){debounce?.cancel();suggestionDebounce?.cancel();
@@ -1018,7 +1020,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
         Row(children:[
           Expanded(child:_pick<String>('Urutkan',sort,const [
             DropdownMenuItem(value:'title',child:Text('Abjad A–Z')),
-            DropdownMenuItem(value:'popular',child:Text('Populer')),
+            DropdownMenuItem(value:'popular',child:Text('Rating tertinggi')),
             DropdownMenuItem(value:'latest',child:Text('Terbaru'))],(v){if(v!=null)sort=v;})),
           const SizedBox(width:10),
           Expanded(child:_pick<String>('Tipe',type,const [
@@ -1165,6 +1167,7 @@ class _CinemaGenresState extends State<CinemaGenres> {
  }
 
  static Future<List<MapEntry<int,String>>>? _cachedGenres;
+ static void invalidate() { _cachedGenres = null; }
  late final Future<List<MapEntry<int,String>>> genres = _cachedGenres ??= _loadGenres();
  static Future<List<MapEntry<int,String>>> _loadGenres() async =>
      (await CatalogQueryIndex.load()).availableGenres;
