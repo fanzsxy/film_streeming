@@ -1346,7 +1346,7 @@ TextButton(onPressed:widget.onSeeAll,child:const Row(mainAxisSize:MainAxisSize.m
   const Padding(padding:EdgeInsets.symmetric(horizontal:16,vertical:10),
     child:Text('Belum ada judul yang cocok di katalog.',
       style:TextStyle(color:Colors.white60,fontSize:13)))
- else SizedBox(height:267,child:!s.hasData?const Center(child:CircularProgressIndicator()):ListView.builder(controller:_railScroll,key:PageStorageKey('rail:${widget.endpoint}'),scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:12),itemCount:s.data!.length,itemBuilder:(context,i)=>SizedBox(width:153,child:Padding(padding:const EdgeInsets.symmetric(horizontal:4),child:MovieTile(movie:s.data![i],onTap:widget.onTap)))))]));}
+ else SizedBox(height:267,child:!s.hasData?const Center(child:CircularProgressIndicator()):ListView.builder(controller:_railScroll,key:PageStorageKey('rail:${widget.endpoint}'),scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:12),itemCount:s.data!.length,itemBuilder:(context,i)=>SizedBox(width:153,child:Padding(padding:const EdgeInsets.symmetric(horizontal:4),child:CatalogPosterTile(key:ValueKey('rail-poster:${s.data![i].sourceUrl}'),movie:s.data![i],onTap:widget.onTap)))))]));}
 }
 class LastWatchedRail extends StatelessWidget {
  const LastWatchedRail({super.key});
