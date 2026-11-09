@@ -22,6 +22,28 @@ jobs:
           test -s lib/main.dart
           test -f android/gradle/wrapper/gradle-wrapper.properties || { echo 'Struktur Android lengkap belum ada. Jalankan workflow migrasi satu kali dahulu.'; exit 1; }
           test -f android/app/build.gradle.kts -o -f android/app/build.gradle
+      - name: Cache Gradle wrapper distribution
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/wrapper/dists
+          key: gradle-wrapper-${{ runner.os }}-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Download Gradle before building (retry temporary HTTP 504)
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x android/gradlew
+          for attempt in 1 2 3; do
+            if (cd android && ./gradlew --version --no-daemon); then
+              echo "Gradle distribution downloaded and ready."
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "::warning::Gradle download failed on attempt $attempt/3; retrying."
+              sleep $((10 * attempt))
+            fi
+          done
+          echo "::error::Gradle download failed after three attempts. Check Gradle/GitHub distribution availability."
+          exit 1
       - name: Install dependensi dan cek sintaks
         run: |
           flutter pub get
