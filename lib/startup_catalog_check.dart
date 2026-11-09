@@ -395,7 +395,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
         if (!mounted) break;
         // LK21 /latest often prints comma-separated genres on the card.
         // Skip expensive detail-page navigation when those are available.
-        if (CatalogScanHelpers.parseGenreLabels(row['genres']).isNotEmpty) {
+        if (!CatalogScanHelpers.needsDetail(row)) {
           enriched.add(row);
           fromListing++;
           totalGenres++;
