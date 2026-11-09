@@ -3,6 +3,7 @@ import 'catalog_query.dart';
 import 'search_suggestions.dart';
 import 'startup_catalog_check.dart';
 import 'catalog_sync_diagnostics.dart';
+import 'filmstream_icons.dart';
 import 'windows_source_player.dart';
 import 'source_domain_config.dart';
 import 'source_manager.dart';
@@ -787,7 +788,13 @@ class _HomePageState extends State<HomePage> {
  }
  void selectSearchSuggestion(String title){debounce?.cancel();suggestionDebounce?.cancel();FocusScope.of(context).unfocus();search.value=TextEditingValue(text:title,selection:TextSelection.collapsed(offset:title.length));setState((){query=title;suggestionText='';});}
  void openCollection(String title,String endpoint,String type) => Navigator.push(context,MaterialPageRoute(builder:(_)=>Scaffold(appBar:AppBar(title:Text(title)),body:PagedGrid(title:title,endpoint:endpoint,type:type,onTap:open))));
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Row(mainAxisSize:MainAxisSize.min,children:[Icon(Icons.local_movies_rounded,color:Color(0xffe5aa55),size:27),SizedBox(width:9),Text('FILM STREAMING',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:0.8,fontSize:19))]),actions:[IconButton(tooltip:'Riwayat tontonan',icon:const Icon(Icons.history_rounded),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const HistoryPage()))),IconButton(tooltip:'Status scanner dan GitHub',icon:const Icon(Icons.info_outline_rounded),onPressed:()=>CatalogSyncDiagnostics.show(context))]),bottomNavigationBar:Platform.isWindows?null:NavigationBar(selectedIndex:tab,onDestinationSelected:changeTab,destinations:const [NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home),label:'Beranda'),NavigationDestination(icon:Icon(Icons.movie_outlined),selectedIcon:Icon(Icons.movie),label:'Film'),NavigationDestination(icon:Icon(Icons.tv_outlined),selectedIcon:Icon(Icons.tv),label:'Series'),NavigationDestination(icon:Icon(Icons.tune_outlined),selectedIcon:Icon(Icons.tune),label:'Filter'),NavigationDestination(icon:Icon(Icons.favorite_border),selectedIcon:Icon(Icons.favorite),label:'Favorit')]),body:DesktopShell(selectedIndex:tab,onSelected:changeTab,child:Column(children:[StartupCatalogCheck(onCatalogUpdated:(){if(mounted){
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Row(mainAxisSize:MainAxisSize.min,children:[Icon(FilmStreamIcons.brand,color:Color(0xffe5aa55),size:27),SizedBox(width:9),Text('FILM STREAMING',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:0.8,fontSize:19))]),actions:[IconButton(tooltip:'Riwayat tontonan',icon:const Icon(FilmStreamIcons.history,size:26),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const HistoryPage()))),IconButton(tooltip:'Status scanner dan GitHub',icon:const Icon(FilmStreamIcons.info,size:26),onPressed:()=>CatalogSyncDiagnostics.show(context))]),bottomNavigationBar:Platform.isWindows?null:NavigationBar(selectedIndex:tab,onDestinationSelected:changeTab,destinations:const [
+  NavigationDestination(icon:Icon(FilmStreamIcons.home,size:27),selectedIcon:Icon(FilmStreamIcons.homeSelected,size:27),label:'Beranda'),
+  NavigationDestination(icon:Icon(FilmStreamIcons.film,size:27),selectedIcon:Icon(FilmStreamIcons.filmSelected,size:27),label:'Film'),
+  NavigationDestination(icon:Icon(FilmStreamIcons.series,size:27),selectedIcon:Icon(FilmStreamIcons.seriesSelected,size:27),label:'Series'),
+  NavigationDestination(icon:Icon(FilmStreamIcons.filter,size:27),selectedIcon:Icon(FilmStreamIcons.filterSelected,size:27),label:'Filter'),
+  NavigationDestination(icon:Icon(FilmStreamIcons.favorites,size:27),selectedIcon:Icon(FilmStreamIcons.favoritesSelected,size:27),label:'Favorit'),
+]),body:DesktopShell(selectedIndex:tab,onSelected:changeTab,child:Column(children:[StartupCatalogCheck(onCatalogUpdated:(){if(mounted){
     CatalogQueryIndex.invalidate();
     CatalogSuggestionIndex.invalidate();
     _CinemaGenresState.invalidate();
@@ -1171,31 +1178,6 @@ class _CinemaGenresState extends State<CinemaGenres> {
    _genreScroll.animateTo(target,
      duration:const Duration(milliseconds:280),curve:Curves.easeOut);
  }
- static IconData iconFor(int id) {
-  switch(id) {
-   case 28: return Icons.bolt_outlined;
-   case 12: case 10759: return Icons.explore_outlined;
-   case 16: return Icons.animation_outlined;
-   case 35: return Icons.sentiment_satisfied_alt_outlined;
-   case 80: case 9648: return Icons.search_outlined;
-   case 99: return Icons.video_library_outlined;
-   case 18: return Icons.theater_comedy_outlined;
-   case 10751: return Icons.family_restroom_outlined;
-   case 14: case 10765: return Icons.auto_awesome_outlined;
-   case 36: case 10768: return Icons.history_edu_outlined;
-   case 27: return Icons.nights_stay_outlined;
-   case 10402: return Icons.music_note_outlined;
-   case 10749: return Icons.favorite_border_outlined;
-   case 878: return Icons.rocket_launch_outlined;
-   case 53: return Icons.visibility_outlined;
-   case 10752: return Icons.shield_outlined;
-   case 37: return Icons.landscape_outlined;
-   case 10762: return Icons.child_care_outlined;
-   case 10763: return Icons.chat_bubble_outline;
-   case 10764: return Icons.star_outline;
-   default: return Icons.movie_filter_outlined;
-  }
- }
 
  static Future<List<MapEntry<int,String>>>? _cachedGenres;
  static void invalidate() { _cachedGenres = null; }
@@ -1230,7 +1212,7 @@ class _CinemaGenresState extends State<CinemaGenres> {
        final g=data[i];
        return InkWell(onTap:()=>widget.onSelect(g.key),borderRadius:BorderRadius.circular(12),
         child:SizedBox(width:88,child:Column(children:[
-         Icon(iconFor(g.key),size:27,color:const Color(0xffe5aa55)),
+         Icon(FilmStreamIcons.genre(g.key),size:29,color:const Color(0xffe5aa55)),
          const SizedBox(height:8),
          Text(g.value,maxLines:2,textAlign:TextAlign.center,overflow:TextOverflow.ellipsis,
           style:const TextStyle(fontSize:11,color:Colors.white70)),
