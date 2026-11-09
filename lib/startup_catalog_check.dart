@@ -1,290 +1,454 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:http/http.dart' as http;
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+
+import 'catalog_scan_helpers.dart';
 import 'filmstream_catalog.dart';
 
-/// Two short, once-per-day on-device metadata checks. No hidden navigation
-/// around an access-denied page, no media requests, and no GitHub credentials.
+/// Each Android app launch checks newest LK21 listings through an embedded
+/// WebView. Only newly discovered URLs are visited for detail genres.
+/// Assets inside the APK are read-only: new catalog rows are saved in the
+/// existing on-device catalog overlay (SharedPreferences) and reloaded by
+/// FilmStreamCatalog, so Home/Film/Series/Filter/Search see the same records.
+///
+/// Ordinary WebView navigation is not an access-restriction bypass. If the
+/// source rejects a request or shows a verification page, stop that source.
 class StartupCatalogCheck extends StatefulWidget {
   final VoidCallback onCatalogUpdated;
   const StartupCatalogCheck({super.key, required this.onCatalogUpdated});
-  @override State<StartupCatalogCheck> createState() => _StartupCatalogCheckState();
+  @override State<StartupCatalogCheck> createState() =>
+      _StartupCatalogCheckState();
 }
 
 class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   static const storageKey = 'filmstream_local_catalog_v1';
-  static const timestampKey = 'filmstream_last_auto_scan_v1';
   static const pendingKey = 'filmstream_auto_sync_pending_v1';
   static const sentKey = 'filmstream_auto_sync_sent_v1';
   static const diagnosticKey = 'filmstream_auto_sync_status_v1';
-  String status = 'Memeriksa status scanner...';
-  String movieStatus = 'Belum diperiksa';
-  String seriesStatus = 'Belum diperiksa';
-  String backendStatus = 'Belum ada pengiriman';
-  bool statusExpanded = false;
-  bool scanFinished = false;
-
-  void _showStatus(String msg) {
-    if (!mounted) return;
-    setState(() {
-      status = msg;
-      if (msg.startsWith('Scan otomatis movie') ||
-          msg.startsWith('Scan movie')) movieStatus = msg;
-      if (msg.startsWith('Scan otomatis series') ||
-          msg.startsWith('Scan series')) seriesStatus = msg;
-      if (msg.contains('backend') || msg.contains('mengirim') ||
-          msg.contains('mengirim') || msg.contains('Berhasil mengirim') ||
-          msg.contains('Sinkronisasi tidak aktif') ||
-          msg.contains('Server tidak mengonfirmasi')) backendStatus = msg;
-    });
-  }
-
-  Future<void> _restoreStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final last = prefs.getString(diagnosticKey);
-    if (last != null && last.isNotEmpty) _showStatus(last);
-  }
-
-  Future<void> _log(String msg) async {
-    _showStatus(msg);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(diagnosticKey, msg);
-  }
-  // Set at build time via GitHub Actions secret, never commit a literal key.
+  // Never embed source cookies or TMDB credentials in scanning JS.
   static const syncKey = String.fromEnvironment('FILMSTREAM_SYNC_KEY');
-  static const hosts = {
+  static const hosts = <String, String>{
     'movie': 'tv12.lk21official.cc',
     'series': 'tv.lk21online.de',
   };
-  final controllers = <String, WebViewController>{};
-  final completed = <String>{};
+  static const paths = <String, String>{
+    'movie': '/latest',
+    'series': '/latest-series',
+  };
+  static const listingPages = 2;
+  static const newItemsPerKind = 10;
+  static const maxDetailPerKind = 10;
+  static const pageTimeout = Duration(seconds: 32);
+  static const betweenDetails = Duration(seconds: 2);
+  static const renderDelay = Duration(milliseconds: 1200);
+
+  WebViewController? controller;
+  Completer<String?>? pageFinished;
+  String? expectedUrl;
+  bool pageRejected = false;
   bool active = false;
-  bool saving = false;
-  bool anyScanSucceeded = false;
-  final successfulKinds = <String>{};
-  static const scanTimeout = Duration(seconds:45);
-  final scanTimers = <String, Future<void>>{};
-  final domRetryKinds = <String>{};
-  final diagnostics = <String,String>{};
+  bool disposed = false;
+  String status = 'Menyiapkan scanner LK21...';
+
+  void _status(String value) {
+    if(mounted) setState(() => status = value);
+  }
+
+  Future<void> _log(String value) async {
+    _status(value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(diagnosticKey, value);
+  }
+
+  void _completeNavigation(String? url) {
+    final waiting = pageFinished;
+    if (waiting != null && !waiting.isCompleted) waiting.complete(url);
+  }
 
   @override void initState() {
     super.initState();
-    _restoreStatus();
-    _startIfDue();
+    // Existing local additions are readable immediately; the scanner never
+    // delays startup navigation, posters or on-device search.
+    unawaited(_startOnLaunch());
   }
 
-  Future<void> _startIfDue() async {
-    final prefs = await SharedPreferences.getInstance();
-    final last = prefs.getInt(timestampKey) ?? 0;
-    final reviewed = await FilmStreamCatalog.syncReviewedCatalog();
-    if (reviewed > 0 && mounted) {
-      widget.onCatalogUpdated();
-      await _log('$reviewed judul baru dari katalog GitHub sudah tersedia dalam pencarian.');
-    }
-    // Windows has no Android WebView implementation. Keep remote catalog sync
-    // and search refresh, but do not start the Android-only page scanner.
-    if (Platform.isWindows) return;
-    // Backfill records saved in prior app versions by the manual scanner.
-    await _queueUnsyncedLocal();
-    await _sendPending();
-    if (DateTime.now().millisecondsSinceEpoch - last <
-        const Duration(hours: 24).inMilliseconds) {
-      await _log('Scan terakhir masih berlaku (24 jam). Tidak ada pemeriksaan baru saat ini.');
+  @override void dispose() {
+    disposed = true;
+    _completeNavigation(null);
+    super.dispose();
+  }
+
+  Future<void> _startOnLaunch() async {
+    if (!Platform.isAndroid) {
+      unawaited(_syncAfterScan());
       return;
     }
-    await _log('Pemeriksaan otomatis LK21 sedang berjalan.');
-    if (!mounted) return;
-    for (final kind in hosts.keys) {
-      final expectedHost = hosts[kind]!;
-      final controller = WebViewController()
+    try {
+      final browser = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setNavigationDelegate(NavigationDelegate(
           onNavigationRequest: (request) {
-            final uri = Uri.tryParse(request.url);
-            return uri != null && uri.scheme == 'https' &&
-                    uri.host == expectedHost
-                ? NavigationDecision.navigate
-                : NavigationDecision.prevent;
-          },
-          onPageFinished: (url) {
-            diagnostics[kind] = 'page finished: $url';
-            _scanOne(kind);
-          },
-          onWebResourceError: (error) {
-            if (error.isForMainFrame == true) {
-              _log('Scan $kind gagal memuat halaman: ${error.description}');
-              _finish(kind, false);
+            // Ignore subframe adverts/players. A blocked iframe is not an
+            // indication that the main listing/detail navigation failed.
+            if (!request.isMainFrame) return NavigationDecision.prevent;
+            final target = expectedUrl;
+            if (target == null) return NavigationDecision.prevent;
+            final host = Uri.tryParse(target)?.host ?? '';
+            if (!CatalogScanHelpers.authorizedPage(
+                target, request.url, host)) {
+              pageRejected = true;
+              _completeNavigation(null);
+              return NavigationDecision.prevent;
             }
+            return NavigationDecision.navigate;
+          },
+          onPageFinished: (url) => _completeNavigation(url),
+          onWebResourceError: (error) {
+            if (error.isForMainFrame == true) _completeNavigation(null);
           },
         ));
-      controllers[kind] = controller;
-    }
-    setState(() => active = true);
-    for (final kind in hosts.keys) {
-      final path = kind == 'movie' ? '/latest' : '/latest-series';
-      // Some Android WebViews never call onPageFinished (for example when
-      // blocked or offscreen). Do not leave scanner/timestamp stuck forever.
-      scanTimers[kind] = Future<void>.delayed(scanTimeout, () async {
-        if (!mounted || completed.contains(kind)) return;
-        await _log('Scan $kind timeout; akan dicoba lagi saat membuka aplikasi.');
-        await _finish(kind, false);
-      });
-      controllers[kind]!.loadRequest(Uri.https(hosts[kind]!, path));
+      controller = browser;
+      if (!mounted) return;
+      setState(() => active = true);
+      // The platform WebView has to enter the widget tree before loading.
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      await _scanAll();
+    } catch (error) {
+      await _log('Scanner LK21 gagal: ' + error.runtimeType.toString());
+    } finally {
+      if (mounted) setState(() => active = false);
+      // Reviewing existing GitHub catalog and optional backend submissions
+      // should not keep the WebView open or delay initial page rendering.
+      unawaited(_syncAfterScan());
     }
   }
 
-  Future<void> _scanOne(String kind) async {
-    if (!mounted || completed.contains(kind)) return;
-    while (saving && mounted) {
-      await Future<void>.delayed(const Duration(milliseconds: 150));
-    }
-    if (!mounted || completed.contains(kind)) return;
-    saving = true;
-    var success = false;
+  Future<bool> _navigate(String url, String host) async {
+    final browser = controller;
+    if (!mounted || browser == null || disposed) return false;
+    expectedUrl = url;
+    pageRejected = false;
+    final waiting = Completer<String?>();
+    pageFinished = waiting;
     try {
-      final current = Uri.tryParse(await controllers[kind]!.currentUrl() ?? '');
-      if (current == null || current.scheme != 'https' ||
-          current.host != hosts[kind]) {
-        await _log('Scan $kind berhenti: situs berpindah dari domain yang diizinkan.');
-        return;
+      await browser.loadRequest(Uri.parse(url));
+      final completedUrl = await waiting.future.timeout(
+        pageTimeout, onTimeout: () => null,
+      );
+      if (completedUrl == null || pageRejected || !mounted) return false;
+      await Future<void>.delayed(renderDelay);
+      final actual = await browser.currentUrl() ?? '';
+      if (!CatalogScanHelpers.authorizedPage(url, actual, host)) {
+        return false;
       }
-      final raw = await controllers[kind]!.runJavaScriptReturningResult(r'''(() => {
-        const records=[];
-        for(const a of document.querySelectorAll('a[href]')){
-          let uri;
-          try { uri=new URL(a.getAttribute('href'),location.href); } catch(_) { continue; }
-          if(uri.protocol!=='https:'||uri.host!==location.host||uri.search||uri.hash)continue;
-          const match=uri.pathname.replace(/\/$/,'').match(/-(19\d{2}|20\d{2})$/);
-          if(!match)continue;
-          const card=a.closest('article,li,.item,.poster,.movie,.series,.film');
-          if(!card||!card.querySelector('img,h2,h3,h4,.title,.poster-title'))continue;
-          const heading=card.querySelector('h2,h3,h4,.title,.poster-title');
-          const image=card.querySelector('img');
-          const title=(heading?.textContent||a.title||image?.alt||'').trim().replace(/\s+/g,' ');
-          if(!title||title.length>180)continue;
-          const src=image?.getAttribute('data-src')||image?.getAttribute('data-original')||
-            image?.getAttribute('data-lazy-src')||image?.currentSrc||image?.src||'';
-          let poster='';
-          try {const u=new URL(src,location.href);if(u.protocol==='https:')poster=u.href;}catch(_){}
-          const scoreText=(card.querySelector('.rating,.ratings,.imdb,.score,[class*="rating"]')?.textContent||'').trim();
-          const score=scoreText.match(/(?:^|\s)(10(?:\.0)?|[0-9](?:\.[0-9])?)(?=\s|$)/);
-          records.push({title,year:Number(match[1]),url:uri.origin+uri.pathname,
-            poster_url:poster,rating:score?Number(score[1]):null});
+      // Read only text visible to users, rather than script source, when
+      // checking for source-side verification and access-denied messages.
+      final visible = await browser.runJavaScriptReturningResult(
+        r'''(document.body ? document.body.innerText.slice(0,1800) : '')''',
+      );
+      if (CatalogScanHelpers.blockedPage(visible)) return false;
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      expectedUrl = null;
+      pageFinished = null;
+    }
+  }
+
+  static const listingScript = r'''(() => {
+    // Genres can be printed directly on each /latest card (above the title).
+    // Read them from the single card only; never from the site genre menu.
+    const allowed = new Set([
+      'action','adventure','animation','biography','comedy','crime',
+      'documentary','drama','family','fantasy','history','horror',
+      'musical','music','mystery','romance','sci-fi','science fiction',
+      'sport','short','thriller','war','western','reality','soap','kids',
+      'tv movie','war & politics','action & adventure','sci-fi & fantasy'
+    ]);
+    const parseGenreLine = (raw) => {
+      const text = (raw||'').replace(/\s+/g,' ').trim()
+        .replace(/^genres?\s*:\s*/i,'');
+      if(!text || text.length>110)return null;
+      const names = text.split(/\s*[,|•]\s*/).map(s=>s.trim());
+      if(names.length<1 || names.length>10 ||
+          !names.every(n=>allowed.has(n.toLowerCase())))return null;
+      return [...new Set(names)];
+    };
+    const genresInside = (container) => {
+      const nodes=container.querySelectorAll(
+        '[class*="genre"],[class*="Genre"],[class*="meta"],' +
+        '[class*="Meta"],small,p,span,div');
+      for(const el of Array.from(nodes).slice(0,90)) {
+        if(el.closest('nav,header,footer'))continue;
+        const fromText=parseGenreLine(el.textContent);
+        if(fromText)return fromText;
+        // Some cards present genre names as adjacent links rather than CSV.
+        if(el.className && typeof el.className==='string' &&
+           /genre/i.test(el.className)){
+          const anchors=Array.from(el.querySelectorAll('a'));
+          if(anchors.length>=1 && anchors.length<=10){
+            const names=anchors.map(x=>(x.textContent||'').trim());
+            if(names.every(x=>allowed.has(x.toLowerCase())))
+              return [...new Set(names)];
+          }
         }
-        return JSON.stringify(records.slice(0,100));
-      })()''');
-      dynamic data=raw;
-      if(data is String)data=jsonDecode(data);
-      if(data is String)data=jsonDecode(data);
-      if(data is! List || data.isEmpty){
-        // Pages often finish navigating before JS-rendered cards are ready.
-        // Retry one time on the same authorized page, without navigating
-        // elsewhere or bypassing restrictions.
-        if(domRetryKinds.add(kind) && !completed.contains(kind)) {
-          saving = false;
-          await Future<void>.delayed(const Duration(seconds: 3));
-          if(mounted && !completed.contains(kind)) await _scanOne(kind);
-          return;
-        }
-        await _log('Scan otomatis $kind: halaman termuat tetapi tidak ada kartu judul setelah dicoba ulang.');
-        return;
       }
-      final storage=await SharedPreferences.getInstance();
-      final catalog=await FilmStreamCatalog.load();
-      final saved=<Map<String,dynamic>>[];
+      return null;
+    };
+    const genresNear = (card,urlPath) => {
+      let scope=card;
+      for(let depth=0;scope && depth<3;depth++,scope=scope.parentElement){
+        // Moving up is safe only while the container includes a single
+        // dated title URL (the poster and title may link to that same URL).
+        const titlePaths=new Set();
+        for(const link of scope.querySelectorAll('a[href]')){
+          try {
+            const href=new URL(link.getAttribute('href'),location.href);
+            if(href.host===location.host &&
+               /-(19\d{2}|20\d{2})\/?$/.test(href.pathname))
+              titlePaths.add(href.pathname.replace(/\/$/,''));
+            if(titlePaths.size>1)break;
+          }catch(_){}
+        }
+        if(titlePaths.size>1 || (titlePaths.size===1 &&
+           !titlePaths.has(urlPath)))break;
+        const found=genresInside(scope);
+        if(found)return found;
+      }
+      return [];
+    };
+
+    const items=[];
+    const used=new Set();
+    for(const a of document.querySelectorAll('a[href]')) {
+      let url;
+      try {url=new URL(a.getAttribute('href'),location.href);}catch(_){continue;}
+      if(url.protocol!=='https:' || url.host!==location.host ||
+          url.search || url.hash)continue;
+      const path=url.pathname.replace(/\/$/,'');
+      const match=path.match(/-(19\d{2}|20\d{2})$/);
+      if(!match || used.has(path))continue;
+      const card=a.closest(
+        'article,li,.item,.poster,.movie,.series,.film,' +
+        '[class*="item"],[class*="poster"],[class*="movie"]');
+      if(!card)continue;
+      const heading=card.querySelector('h2,h3,h4,.title,.poster-title');
+      const picture=card.querySelector('img');
+      if(!heading && !picture)continue;
+      const title=(heading?.textContent||a.title||picture?.alt||'')
+        .trim().replace(/\s+/g,' ');
+      if(!title || title.length>180)continue;
+      used.add(path);
+      const src=picture?.getAttribute('data-src')||
+        picture?.getAttribute('data-original')||
+        picture?.getAttribute('data-lazy-src')||
+        picture?.getAttribute('src')||'';
+      let poster='';
+      try {const p=new URL(src,location.href);
+        if(p.protocol==='https:')poster=p.href;}catch(_){}
+      items.push({
+        title:title,year:Number(match[1]),url:url.origin+url.pathname,
+        poster_url:poster,genres:genresNear(card,path)
+      });
+      if(items.length>=100)break;
+    }
+    return JSON.stringify(items);
+  })()''';
+
+  static const detailScript = r'''(() => {
+    // Read genres beside the detail H1, not the header navigation, related
+    // movies, or sections after the playback controls.
+    const h1=document.querySelector('h1');
+    if(!h1 || !h1.textContent.trim()) return JSON.stringify({});
+    const allowed=new Set([
+      'Action','Adventure','Animation','Biography','Comedy','Crime',
+      'Documentary','Drama','Family','Fantasy','History','Horror',
+      'Musical','Music','Mystery','Romance','Sci-Fi','Science Fiction',
+      'Sport','Short','Thriller','War','Western','Reality','Soap','Kids',
+      'TV Movie','War & Politics','Action & Adventure','Sci-Fi & Fantasy'
+    ]);
+    const genres=[];
+    const walk=document.createTreeWalker(document.body,NodeFilter.SHOW_ELEMENT);
+    walk.currentNode=h1;
+    let node, count=0, anchors=0;
+    while((node=walk.nextNode()) && count++<200) {
+      const tag=node.tagName;
+      if(['H2','H3','IFRAME','VIDEO','FOOTER'].includes(tag)) break;
+      if(node.id && /player|related|recommend/i.test(node.id))break;
+      if(tag==='A') {
+        if(++anchors>25)break;
+        const label=(node.textContent||'').trim().replace(/\s+/g,' ');
+        if(/play awal|play terbaru|trailer/i.test(label))break;
+        if(allowed.has(label) && !genres.includes(label))genres.push(label);
+      }
+      if(node.children.length===0 &&
+          /play awal|play terbaru|beri rating film ini/i.test(
+            (node.textContent||'').slice(0,70)))break;
+    }
+    const meta=document.querySelector(
+      'meta[property="og:image"],meta[name="twitter:image"]');
+    let poster='';
+    try {const p=new URL(meta?.content||'',location.href);
+      if(p.protocol==='https:')poster=p.href;}catch(_){}
+    return JSON.stringify({genres:genres.slice(0,10),poster_url:poster});
+  })()''';
+
+  Future<List<Map<String, dynamic>>?> _listPage(
+      String kind, int pageNumber) async {
+    final host = hosts[kind]!;
+    final path = paths[kind]! +
+        (pageNumber == 1 ? '' : '/page/' + pageNumber.toString());
+    if (!await _navigate(Uri.https(host, path).toString(), host)) return null;
+    final browser = controller!;
+    for (var attempt=0; attempt<2; attempt++) {
       try {
-        final decoded=jsonDecode(storage.getString(storageKey)??'[]');
-        if(decoded is List){
-          for(final row in decoded.whereType<Map>()) {
-            saved.add(Map<String,dynamic>.from(row));
-          }
+        final raw = await browser.runJavaScriptReturningResult(listingScript);
+        final data = CatalogScanHelpers.decoded(raw);
+        if (data is List && data.isNotEmpty) {
+          final rows = [
+            for (final row in data)
+              if (CatalogScanHelpers.listingRow(
+                      row, kind, host, DateTime.now().year) case final found?)
+                found,
+          ];
+          if (rows.isNotEmpty) return rows;
         }
-      }catch(_){}
-      String cleanUrl(String u)=>u.endsWith('/')?u.substring(0,u.length-1):u;
-      String identity(String type,int year,String title)=>
-          '$type:$year:${title.toLowerCase().trim()}';
-      final seenUrls=catalog.map((e)=>'${e.type}:${cleanUrl(e.url)}').toSet();
-      final seenTitles=catalog.map((e)=>identity(e.type,e.year,e.title)).toSet();
-      final type=kind=='series'?'tv':'movie';
-      var changes=0;
-      final newRecords=<Map<String,dynamic>>[];
-      for(final row in data.whereType<Map>()){
-        final title=(row['title']??'').toString().trim();
-        final year=row['year'];
-        final url=(row['url']??'').toString();
-        final uri=Uri.tryParse(url);
-        if(title.isEmpty||title.length>180||year is! int||
-            year<1900||year>DateTime.now().year+2||uri==null||
-            uri.scheme!='https'||uri.host!=hosts[kind]||uri.hasPort||
-            uri.userInfo.isNotEmpty)continue;
-        final poster=(row['poster_url']??'').toString();
-        final posterUri=Uri.tryParse(poster);
-        final safePoster=posterUri!=null&&posterUri.scheme=='https'&&
-            posterUri.userInfo.isEmpty&&!posterUri.hasPort?poster:'';
-        final rating=row['rating'];
-        final safeRating=rating is num&&rating>0&&rating<=10?rating:null;
-        final index=saved.indexWhere((r)=>r['type']==kind&&
-            (cleanUrl((r['url']??'').toString())==cleanUrl(url)||
-             identity(type,year,(r['title']??'').toString())==
-                identity(type,year,title)));
-        if(index>=0){
-          final entry=saved[index];
-          if(safePoster.isNotEmpty&&(entry['poster_url']??'').toString().isEmpty){
-            entry['poster_url']=safePoster;changes++;
-          }
-          if(safeRating!=null&&entry['rating']==null){
-            entry['rating']=safeRating;changes++;
-          }
+      } catch (_) { /* One same-page DOM retry. */ }
+      if(attempt==0) {
+        await Future<void>.delayed(const Duration(seconds: 2));
+        if(!mounted || !CatalogScanHelpers.authorizedPage(
+            Uri.https(host,path).toString(),
+            await browser.currentUrl() ?? '', host)) return null;
+      }
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>> _detail(
+      String kind, Map<String, dynamic> row) async {
+    final host = hosts[kind]!;
+    final url = (row['url'] ?? '').toString();
+    if (!await _navigate(url, host)) return row;
+    try {
+      final raw = await controller!.runJavaScriptReturningResult(detailScript);
+      final detail = CatalogScanHelpers.decoded(raw);
+      return CatalogScanHelpers.withVerifiedDetail(row, detail);
+    } catch (_) {
+      return row;
+    }
+  }
+
+  Future<void> _scanAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    final catalog = await FilmStreamCatalog.load();
+    final oldLocal = prefs.getString(storageKey) ?? '[]';
+    final decoded = CatalogScanHelpers.decoded(oldLocal);
+    final saved = <Map<String, dynamic>>[
+      if(decoded is List)
+        for(final row in decoded)
+          if(row is Map) Map<String,dynamic>.from(row),
+    ];
+    final known = List<CatalogEntry>.of(catalog);
+    var totalAdded = 0;
+    var totalGenres = 0;
+    var unavailableKinds = 0;
+    for (final kind in hosts.keys) {
+      if(!mounted) break;
+      _status('Memeriksa ' + (kind == 'movie' ? 'film' : 'series') +
+          ' terbaru LK21...');
+      var available = 0;
+      final candidates = <Map<String, dynamic>>[];
+      for (var p=1; p<=listingPages; p++) {
+        if (!mounted) break;
+        final rows = await _listPage(kind,p);
+        if (rows == null) {
+          await _log('Scan ' + kind +
+              ': daftar tidak tersedia atau akses dibatasi.');
+          break;
+        }
+        available++;
+        candidates.addAll(rows);
+        if(p<listingPages) await Future<void>.delayed(betweenDetails);
+      }
+      if(available==0) {
+        unavailableKinds++;
+        continue;
+      }
+      final fresh = CatalogScanHelpers.onlyNew(
+        known,candidates,limit:newItemsPerKind,
+      );
+      if(fresh.isEmpty) {
+        await _log('Scan ' + kind + ': tidak ada judul baru.');
+        continue;
+      }
+      final enriched = <Map<String,dynamic>>[];
+      var fromListing = 0;
+      var detailsChecked = 0;
+      for (final row in fresh) {
+        if (!mounted) break;
+        // LK21 /latest often prints comma-separated genres on the card.
+        // Skip expensive detail-page navigation when those are available.
+        if (!CatalogScanHelpers.needsDetail(row)) {
+          enriched.add(row);
+          fromListing++;
+          totalGenres++;
           continue;
         }
-        if(seenUrls.contains('$type:${cleanUrl(url)}')||
-            seenTitles.contains(identity(type,year,title)))continue;
-        seenUrls.add('$type:${cleanUrl(url)}');
-        seenTitles.add(identity(type,year,title));
-        final newItem=<String,dynamic>{'type':kind,'title':title,'year':year,'url':url,
-          if(safePoster.isNotEmpty)'poster_url':safePoster,
-          if(safeRating!=null)'rating':safeRating};
-        saved.add(newItem);
-        newRecords.add(newItem);
-        changes++;
-      }
-      if(changes>0){
-        final written=await storage.setString(storageKey,jsonEncode(saved));
-        if(!written)return;
-        if(newRecords.isNotEmpty){
-          final pending=<dynamic>[];
-          try {
-            final old=jsonDecode(storage.getString(pendingKey)??'[]');
-            if(old is List)pending.addAll(old);
-          }catch(_){}
-          final known=pending.whereType<Map>().map((e)=>'${e['type']}:${e['url']}').toSet();
-          for(final entry in newRecords){
-            if(known.add('${entry['type']}:${entry['url']}'))pending.add(entry);
-          }
-          await storage.setString(pendingKey,jsonEncode(pending));
+        if (detailsChecked >= maxDetailPerKind) {
+          enriched.add(row); // Preserve a new title even if genre is absent.
+          continue;
         }
-        FilmStreamCatalog.refresh();
-        if(mounted)widget.onCatalogUpdated();
+        if (detailsChecked > 0) {
+          await Future<void>.delayed(betweenDetails);
+        }
+        detailsChecked++;
+        final checked = await _detail(kind, row);
+        enriched.add(checked);
+        if (CatalogScanHelpers.parseGenreLabels(
+            checked['genres']).isNotEmpty) totalGenres++;
       }
-      success=true;
-      anyScanSucceeded = true;
-      if(newRecords.isEmpty){
-        await _log('Scan otomatis $kind: ${data.length} kandidat, tidak ada judul baru.');
-      } else {
-        await _log('Scan otomatis $kind: ${newRecords.length} judul baru tersimpan. Mengirim ke backend.');
+      if(enriched.isEmpty)continue;
+      // Save after each source, so an error from the next source cannot
+      // discard already discovered titles.
+      saved.addAll(enriched);
+      final written=await prefs.setString(storageKey,jsonEncode(saved));
+      if(!written) {
+        saved.removeRange(saved.length-enriched.length,saved.length);
+        await _log('Penyimpanan katalog di HP gagal.');
+        continue;
       }
-      // Never block the catalog UI on a network request. Failed submissions
-      // remain queued for the next app launch.
+      known.addAll(enriched.map(CatalogEntry.fromJson));
+      totalAdded += enriched.length;
+      FilmStreamCatalog.refresh();
+      if(mounted)widget.onCatalogUpdated();
+      await _log('Scan ' + kind + ': ' + enriched.length.toString() +
+          ' judul baru, ' + fromListing.toString() +
+          ' genre dari daftar, ' + detailsChecked.toString() +
+          ' detail diperiksa.');
+    }
+    await _log((unavailableKinds == 0
+        ? 'Scan LK21 selesai: '
+        : 'Scan LK21 sebagian gagal (' + unavailableKinds.toString() +
+          ' sumber tidak tersedia): ') +
+        totalAdded.toString() + ' judul baru, ' +
+        totalGenres.toString() + ' memiliki genre.');
+  }
+
+  Future<void> _syncAfterScan() async {
+    try {
+      await _queueUnsyncedLocal();
       await _sendPending();
-    }catch(e){
-      await _log('Scan otomatis $kind gagal: ${e.runtimeType}. Akan dicoba lagi saat aplikasi dibuka.');
-      // Page may be denied, temporarily unavailable, or have changed markup.
-    }finally{
-      saving=false;
-      _finish(kind,success);
+      final reviewed = await FilmStreamCatalog.syncReviewedCatalog();
+      if(reviewed>0 && mounted) widget.onCatalogUpdated();
+    } catch (_) {
+      // Scanner additions remain available locally when offline.
     }
   }
 
@@ -364,17 +528,36 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       ).timeout(const Duration(seconds:30));
       if(response.statusCode==200){
         final result=jsonDecode(response.body);
-        if(result is! Map||result['status']!='review_required'){
-          await _log('Server tidak mengonfirmasi PR. Data tetap tersimpan.');
+        if (result is! Map ||
+            (result['status'] != 'review_required' &&
+             result['status'] != 'already_known')) {
+          await _log('Server tidak mengonfirmasi data di GitHub. '
+              'Antrean tetap tersimpan di HP.');
           return;
         }
+        final alreadyKnown = result['status'] == 'already_known';
         final oldSent=jsonDecode(prefs.getString(sentKey)??'[]');
         final sent=oldSent is List?oldSent.whereType<String>().toSet():<String>{};
         sent.addAll(batch.map(_recordId));
         await prefs.setString(sentKey,jsonEncode(sent.toList()));
         final remaining=decoded.skip(batch.length).toList();
         await prefs.setString(pendingKey,jsonEncode(remaining));
-        await _log('Berhasil mengirim ${batch.length} judul; PR: ${result['pull_request_url']}.');
+        final url = (result['pull_request_url'] ?? '').toString();
+        if (alreadyKnown) {
+          await _log('${batch.length} judul sudah dikenali oleh GitHub; '
+              'tidak perlu dikirim ulang.');
+        } else {
+          await _log('Berhasil mengirim ${batch.length} judul untuk review '
+              'GitHub. PR: $url');
+        }
+        if (mounted && !alreadyKnown) {
+          // An import PR has not yet updated the canonical catalog.
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+            content: Text('${batch.length} judul dikirim ke GitHub. '
+                'Gabungkan PR hasil scan untuk melanjutkan impor katalog.'),
+            duration: const Duration(seconds: 6),
+          ));
+        }
       } else {
         await _log('Pengiriman ke backend gagal: HTTP ${response.statusCode}. Data tetap tersimpan di HP.');
       }
@@ -386,45 +569,30 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     }
   }
 
-  Future<void> _finish(String kind,bool success) async {
-    if(!mounted||!completed.add(kind))return;
-    if(success)successfulKinds.add(kind);
-    if(completed.length==hosts.length){
-      // Only a complete Film + Series scan advances the daily timestamp.
-      // Never suppress retries for 24h after a partial or blocked scan.
-      if(success && anyScanSucceeded && completed.length==hosts.length &&
-          successfulKinds.length==hosts.length){
-        final prefs=await SharedPreferences.getInstance();
-        await prefs.setInt(timestampKey,DateTime.now().millisecondsSinceEpoch);
-      }
-      if (mounted) {
-        setState(() { active = false; scanFinished = true; });
-        await _log(successfulKinds.length == hosts.length
-            ? 'Scan Film dan Series selesai. Periksa hasil di detail.'
-            : 'Scan tidak berhasil untuk semua sumber. Periksa detail Film/Series.');
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Scanner and sync continue running, but the diagnostic banner is hidden.
-    // Keep the WebViews mounted while scanning so page loading still works.
-    if (!active) return const SizedBox.shrink();
-    return SizedBox(width: 1, height: 1, child: ClipRect(
-      child: OverflowBox(
+    final webview = controller;
+    if (!active || webview == null) return const SizedBox.shrink();
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      SizedBox(height: 22, child: Row(children: [
+        const SizedBox(width: 14),
+        const SizedBox(width: 12, height: 12,
+            child: CircularProgressIndicator(strokeWidth: 2)),
+        const SizedBox(width: 8),
+        Expanded(child: Text(status, maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 11, color: Colors.white60))),
+      ])),
+      // The browser is a mounted Android platform view, not an HTTP scraper.
+      // Never overlay it on tap targets or bypass source verification pages.
+      SizedBox(width: 1, height: 1, child: ClipRect(child: OverflowBox(
         alignment: Alignment.topLeft,
         minWidth: 360, maxWidth: 360,
         minHeight: 640, maxHeight: 640,
-        child: IgnorePointer(child: Opacity(
-          opacity: 0.01,
-          child: Stack(children: [
-            for (final controller in controllers.values)
-              SizedBox(width: 360, height: 640,
-                child: WebViewWidget(controller: controller)),
-          ]),
-        )),
-      ),
-    ));
+        child: IgnorePointer(child: Opacity(opacity: 0.01,
+          child: SizedBox(width: 360, height: 640,
+            child: WebViewWidget(controller: webview)))),
+      ))),
+    ]);
   }
 }

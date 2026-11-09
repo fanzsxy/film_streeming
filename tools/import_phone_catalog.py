@@ -5,6 +5,33 @@ from urllib.parse import urlsplit
 
 from unify_crawler_catalog import CATALOG, canonical, norm_title
 
+# Only a reviewed source-metadata list of known genre labels is imported.
+# The scanner's older records may not contain genres; they remain valid.
+GENRE_LABELS = frozenset({
+    "Action", "Adventure", "Animation", "Biography", "Comedy", "Crime",
+    "Documentary", "Drama", "Family", "Fantasy", "History", "Horror",
+    "Musical", "Music", "Mystery", "Romance", "Sci-Fi", "Science Fiction",
+    "Sport", "Short", "Thriller", "War", "Western", "Reality", "Soap", "Kids",
+    "TV Movie", "War & Politics", "Action & Adventure", "Sci-Fi & Fantasy",
+})
+_GENRE_BY_LOWER = {genre.casefold(): genre for genre in GENRE_LABELS}
+
+
+def reviewed_genres(row):
+    raw = row.get("genres")
+    if not isinstance(raw, list) or len(raw) > 20:
+        return []
+    result = []
+    for name in raw:
+        if isinstance(name, str):
+            label = _GENRE_BY_LOWER.get(name.strip().casefold())
+            if label and label not in result:
+                result.append(label)
+        if len(result) >= 10:
+            break
+    return result
+
+
 INPUT = Path("crawler/imports/phone_catalog.json")
 
 def main():
@@ -51,6 +78,10 @@ def main():
         rating = row.get("rating")
         if isinstance(rating, (float, int)) and not isinstance(rating, bool) and 0 < rating <= 10:
             item["rating"] = rating
+        genres = reviewed_genres(row)
+        if genres:
+            item["genres"] = genres
+            item["genre_data_source"] = "lk21_source"
         urls.add(urlkey)
         identities.add(identity)
         original.append(item)

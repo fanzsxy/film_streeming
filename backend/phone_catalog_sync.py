@@ -18,6 +18,32 @@ router = APIRouter()
 REPO = "fanzsxy/film_streeming"
 HOSTS = {"movie": {"tv12.lk21official.cc"},
          "series": {"tv.lk21online.de", "tv9.nontondrama.my", "tv.nontondrama.vip"}}
+# Source genres are passed through to reviewed GitHub import files only.
+# This whitelist deliberately mirrors the Android catalog scanner.
+GENRE_LABELS = frozenset({
+    "Action", "Adventure", "Animation", "Biography", "Comedy", "Crime",
+    "Documentary", "Drama", "Family", "Fantasy", "History", "Horror",
+    "Musical", "Music", "Mystery", "Romance", "Sci-Fi", "Science Fiction",
+    "Sport", "Short", "Thriller", "War", "Western", "Reality", "Soap", "Kids",
+    "TV Movie", "War & Politics", "Action & Adventure", "Sci-Fi & Fantasy",
+})
+_GENRE_BY_LOWER = {value.casefold(): value for value in GENRE_LABELS}
+
+
+def valid_source_genres(raw):
+    """Keep only supported source-page labels, in their observed order."""
+    if not isinstance(raw, list) or len(raw) > 20:
+        return []
+    cleaned = []
+    for value in raw:
+        if not isinstance(value, str):
+            continue
+        label = _GENRE_BY_LOWER.get(value.strip().casefold())
+        if label and label not in cleaned:
+            cleaned.append(label)
+        if len(cleaned) >= 10:
+            break
+    return cleaned
 
 
 class PhoneImport(BaseModel):
@@ -137,7 +163,7 @@ def submit_catalog(payload: PhoneImport, x_filmstream_sync_key: str = Header(def
         kind = row.get("type")
         if kind not in HOSTS:
             continue
-        title = re.sub(r"\\s+", " ", str(row.get("title") or "")).strip()
+        title = re.sub(r"\s+", " ", str(row.get("title") or "")).strip()
         url = str(row.get("url") or "").strip()
         try:
             year = int(row.get("year"))
@@ -169,6 +195,10 @@ def submit_catalog(payload: PhoneImport, x_filmstream_sync_key: str = Header(def
         rating = row.get("rating")
         if isinstance(rating, (int, float)) and not isinstance(rating, bool) and 0 < rating <= 10:
             item["rating"] = rating
+        genres = valid_source_genres(row.get("genres"))
+        if genres:
+            item["genres"] = genres
+            item["genre_data_source"] = "lk21_source"
         result.append(item)
     if not result:
         raise HTTPException(422, "No valid catalog entries")
@@ -192,6 +222,6 @@ def submit_catalog(payload: PhoneImport, x_filmstream_sync_key: str = Header(def
     pr = github("POST", f"/repos/{REPO}/pulls", token,
         json={"title": f"Review {len(result)} scanned FilmStream catalog titles",
               "head": branch, "base": "main",
-              "body": "Phone scanner metadata submission. Review title, year, type, URLs and posters before merging. After merging, run Unify FilmStream crawler catalog to import these entries."})
+              "body": "Phone scanner metadata submission. Review title, year, type, URLs, posters and source genres before merging. After the import PR is merged, the catalog unification workflow opens a follow-up catalog PR automatically; merge that PR to update the canonical JSON."})
     return {"status": "review_required", "submitted": len(result),
             "skipped": skipped, "pull_request_url": pr["html_url"]}
