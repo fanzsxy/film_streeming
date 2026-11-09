@@ -22,7 +22,6 @@ SERIES_CONFIG = Path("config/source_domains.json")
 UA = "FilmStreamPublicCatalogUpdater/1.0"
 YEAR_SLUG = re.compile(r"-(19\d{2}|20\d{2})$")
 CARD_CLASS = re.compile(r"item|movie|series|poster|film", re.I)
-DETAIL_TITLE = re.compile(r"^(.+?)\s*\((\d{4})\)\s*$")
 GENRE_NAMES = frozenset({
     "Action", "Adventure", "Animation", "Biography", "Comedy", "Crime",
     "Documentary", "Drama", "Family", "Fantasy", "History", "Horror",
@@ -74,10 +73,6 @@ def read_listing(session, base, path, robots_cache=None):
     return html
 
 
-def normalized_title(value):
-    return re.sub(r"[^a-z0-9]+", "", str(value).casefold())
-
-
 def safe_poster_url(raw, base):
     if not isinstance(raw, str) or not raw.strip():
         return ""
@@ -88,21 +83,16 @@ def safe_poster_url(raw, base):
 
 
 def detail_metadata(html, entry):
-    """Only trust genres beside a verified H1 of the same title and year.
+    """Read genre labels next to the detail H1 of the verified source URL.
 
-    Never read global menu, related-title/footer genres, or redirected pages.
+    Listing titles may be abbreviated, translated, or use alternative years.
+    We trust the URL reached from the listing after read_listing() verifies
+    exact HTTPS host/path and handles redirects; no title/year string match.
+    Avoid global menu, unrelated recommendations and playback links.
     """
     soup = BeautifulSoup(html, "html.parser")
     heading = soup.find("h1")
-    if heading is None:
-        return {}
-    match = DETAIL_TITLE.fullmatch(heading.get_text(" ", strip=True))
-    if not match or int(match.group(2)) != entry["year"]:
-        return {}
-    title = match.group(1).strip()
-    if normalized_title(title) != normalized_title(entry["title"]):
-        # A source title can have punctuation differences, but different
-        # names must be reviewed instead of attaching another film's genres.
+    if heading is None or not heading.get_text(" ", strip=True):
         return {}
     genres = []
     links = 0
