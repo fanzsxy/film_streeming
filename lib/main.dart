@@ -905,114 +905,63 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
  Future<void> _goFilterPage(int target)=>_fillThrough(target);
  Future<void> _loadOptions() async {
   try {
-   final responses=await Future.wait([Tmdb.get('genre/movie/list'),Tmdb.get('genre/tv/list')]);
-   final genresById=<int,String>{};
-   for(final response in responses) {
-    for(final raw in (response['genres'] as List? ?? const [])) {
-     if(raw is Map && raw['id'] is num && raw['name'] is String) {
-      genresById[(raw['id'] as num).toInt()] = (raw['name'] as String);
-     }
-    }
-   }
+   final index=await CatalogQueryIndex.load();
    if(!mounted)return;
+   final available=index.availableGenres;
+   final languages=index.availableLanguages;
+   const knownLanguages=<String,String>{
+    'en':'Inggris','id':'Indonesia','ja':'Jepang',
+    'ko':'Korea','zh':'China (Mandarin)','hi':'India (Hindi)',
+    'fr':'Prancis','es':'Spanyol','de':'Jerman','th':'Thailand',
+   };
    setState((){
-    _genreOptions=[const DropdownMenuItem<int>(value:0,child:Text('Semua genre')),
-      ...genresById.entries.map((e)=>DropdownMenuItem<int>(value:e.key,child:Text(e.value)))];
-    _languageOptions=const [DropdownMenuItem<String>(value:'',child:Text('Semua bahasa')),
-    DropdownMenuItem<String>(value:'ja',child:Text('Jepang')),
-    DropdownMenuItem<String>(value:'ko',child:Text('Korea')),
-    DropdownMenuItem<String>(value:'zh',child:Text('China (Mandarin)')),
-    DropdownMenuItem<String>(value:'hi',child:Text('India (Hindi)'))];
-    // Keep genre selection usable if TMDB no longer exposes a legacy ID.
-    if(genre1>0 && !genresById.containsKey(genre1)){
-     _genreOptions.add(DropdownMenuItem(value:genre1,child:Text('Genre $genre1')));
+    _genreOptions=[
+     const DropdownMenuItem<int>(value:0,child:Text('Semua genre')),
+     ...available.map((entry)=>DropdownMenuItem<int>(
+       value:entry.key,child:Text(entry.value))),
+    ];
+    if(genre1>0 && !available.any((entry)=>entry.key==genre1)) {
+     _genreOptions.add(DropdownMenuItem<int>(
+       value:genre1,child:Text('Genre $genre1')));
     }
+    _languageOptions=[
+     const DropdownMenuItem<String>(value:'',child:Text('Semua bahasa')),
+     ...languages.map((code)=>DropdownMenuItem<String>(
+       value:code,child:Text(knownLanguages[code]??code.toUpperCase()))),
+    ];
     _optionsLoaded=true;
    });
-  }catch(_){
-   if(!mounted)return;
-   setState((){
-    _genreOptions=[const DropdownMenuItem<int>(value:0,child:Text('Semua genre')),
-      ...genres.entries.where((e)=>e.key!=0).map((e)=>
-        DropdownMenuItem<int>(value:e.key,child:Text(e.value)))];
-    _languageOptions=const [DropdownMenuItem<String>(value:'',child:Text('Semua bahasa')),
-    DropdownMenuItem<String>(value:'ja',child:Text('Jepang')),
-    DropdownMenuItem<String>(value:'ko',child:Text('Korea')),
-    DropdownMenuItem<String>(value:'zh',child:Text('China (Mandarin)')),
-    DropdownMenuItem<String>(value:'hi',child:Text('India (Hindi)'))];
-    _optionsLoaded=true;
-   });
+  } catch (_) {
+   if(mounted)setState(()=>_optionsLoaded=true);
   }
- }
- Map<String,String> _params(String media) {
-  final both=[genre1,genre2].where((g)=>g>0).toSet().join(',');
-  final sortField=sort=='popular'?'popularity.desc':sort=='latest'?(media=='tv'?'first_air_date.desc':'primary_release_date.desc'):(media=='tv'?'original_name.asc':'original_title.asc');
-  return {'sort_by':sortField,'include_adult':'false','include_video':'false',if(both.isNotEmpty)'with_genres':both,if(country.isNotEmpty)'with_original_language':country};
  }
  Future<void> _fetch() async {
   if(busy||!more)return;
   final token=epoch;
   setState(()=>busy=true);
   try {
-    final incoming=<Movie>[];
-    final incomingKeys=<String>{};
-    // Scan catalog pages until enough metadata matches the chosen filters.
-    // A single page can contain zero matches without meaning end of catalog.
-    var scanned=0;
-    var ended=false;
-    final hasFilter=genre1>0||genre2>0||country.isNotEmpty;
-    // Filtered discovery can be sparse: collect multiple catalog matches
-    // before presenting a numbered page, without doing serial per-title
-    // poster/detail lookups on the UI critical path.
-    while(incoming.length<catalogPageSize && scanned<(hasFilter?3:2) && page<(hasFilter?100:500)) {
-      final nextPage=page+1;
-      // TMDB discovers genre/language candidates; only catalog matches survive.
-      // Without metadata filters, sort the entire local catalog before paging.
-      final batches=(!hasFilter && sort=='latest')
-        ? <List<Movie>>[await Tmdb.list('catalog/sorted',page:nextPage,
-            type:type,params:const {'sort':'latest'})]
-        : await Future.wait((type=='all'?const ['movie','tv']:[type]).map((k)=>
-          Tmdb.list(hasFilter?'discover/$k':'catalog/$k',page:nextPage,
-            type:k,params:hasFilter?{
-              ..._params(k),'fill_page':'true',
-            }:const {})));
-
-      if(!mounted||token!=epoch)return;
-      page=nextPage;
-      scanned++;
-      // Discover pages can contain no catalog matches even when later pages do.
-      if(batches.every((x)=>x.isEmpty) && !hasFilter){ended=true;break;}
-      for(final m in batches.expand((x)=>x)) {
-        // Never show a series in Film mode or a film in Series mode,
-        // even if a catalog item or enrichment metadata is mislabeled.
-        if(type!='all' && m.type!=type)continue;
-        if(genre1>0&&!m.genres.contains(genre1))continue;
-        if(genre2>0&&!m.genres.contains(genre2))continue;
-        // Search-result metadata exposes original_language. This is a language
-        // filter, not a claim about country of production.
-        if(country.isNotEmpty&&m.originalLanguage!=country)continue;
-        final key=m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}';
-        if(!seenResults.contains(key)&&incomingKeys.add(key)){
-          incoming.add(m);
-        }
-      }
-    }
-    if(sort=='title')incoming.sort((a,b)=>a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-    else if(sort=='latest' && hasFilter)incoming.sort((a,b)=>b.release.compareTo(a.release));
-    else if(sort=='popular')incoming.sort((a,b)=>b.popularity.compareTo(a.popularity));
-    if(!mounted||token!=epoch)return;
-    setState((){
-      for(final m in incoming){
-        if(seenResults.add(m.sourceUrl.isNotEmpty?m.sourceUrl:'${m.type}:${m.id}'))results.add(m);
-      }
-      // Keep previously displayed cards in place; never re-sort on scroll.
-      more=!ended&&page<(hasFilter?100:500);
-      error='';
-    });
-  } catch(e) {
-    if(mounted&&token==epoch)setState(()=>error='Gagal mengambil katalog. Coba lagi.');
+   // All filtering and pagination happens locally on catalog records.
+   // Never request 3-5 TMDB discovery pages just to fill one UI page.
+   final nextPage=page+1;
+   final incoming=await Tmdb.list('catalog/filter',page:nextPage,
+      type:type,params:{
+       'sort':sort,
+       'genre1':'$genre1',
+       'genre2':'$genre2',
+       'language':country,
+      });
+   if(!mounted||token!=epoch)return;
+   setState((){
+    page=nextPage;
+    results.addAll(incoming);
+    more=incoming.length==catalogPageSize;
+    error='';
+   });
+  } catch (_) {
+   if(mounted&&token==epoch)setState(
+     ()=>error='Gagal membaca filter katalog. Coba lagi.');
   } finally {
-    if(mounted&&token==epoch)setState(()=>busy=false);
+   if(mounted&&token==epoch)setState(()=>busy=false);
   }
  }
  Widget _pick<T>(String caption,T value,List<DropdownMenuItem<T>> options,ValueChanged<T?> update)=>DropdownButtonFormField<T>(
@@ -1212,19 +1161,8 @@ class _CinemaGenresState extends State<CinemaGenres> {
 
  static Future<List<MapEntry<int,String>>>? _cachedGenres;
  late final Future<List<MapEntry<int,String>>> genres = _cachedGenres ??= _loadGenres();
- static Future<List<MapEntry<int,String>>> _loadGenres() async {
-  final responses=await Future.wait([Tmdb.get('genre/movie/list'),Tmdb.get('genre/tv/list')]);
-  final names=<int,String>{};
-  for(final response in responses) {
-   for(final raw in (response['genres'] as List? ?? const [])) {
-    if(raw is Map && raw['id'] is num && raw['name'] is String) {
-     names[(raw['id'] as num).toInt()]=raw['name'] as String;
-    }
-   }
-  }
-  final entries=names.entries.toList()..sort((a,b)=>a.value.compareTo(b.value));
-  return entries;
- }
+ static Future<List<MapEntry<int,String>>> _loadGenres() async =>
+     (await CatalogQueryIndex.load()).availableGenres;
  @override Widget build(BuildContext context)=>FutureBuilder<List<MapEntry<int,String>>>(
   future:genres,builder:(context,s) {
    final data=s.data??const <MapEntry<int,String>>[];
@@ -1242,11 +1180,11 @@ class _CinemaGenresState extends State<CinemaGenres> {
        ],
      ]),
      const SizedBox(height:12),
-     if(s.hasError) const Padding(padding:EdgeInsets.symmetric(horizontal:16),child:Text('Genre TMDB tidak tersedia. Cek koneksi.'))
+     if(s.hasError) const Padding(padding:EdgeInsets.symmetric(horizontal:16),child:Text('Genre katalog belum tersedia.'))
      else if(!s.hasData) const SizedBox(height:77,child:Center(child:CircularProgressIndicator()))
      else SizedBox(height:77,child:ScrollConfiguration(behavior:const FilmstreamDesktopDragBehavior(),child:ListView.separated(
       controller:_genreScroll,
-      key:const PageStorageKey('tmdb-genre-list'),scrollDirection:Axis.horizontal,
+      key:const PageStorageKey('catalog-genre-list'),scrollDirection:Axis.horizontal,
       padding:const EdgeInsets.symmetric(horizontal:16),itemCount:data.length,
       separatorBuilder:(_,__)=>const SizedBox(width:14),
       itemBuilder:(context,i) {
