@@ -18,18 +18,15 @@ class CatalogGenres {
   static String normalize(String name) => name.toLowerCase()
       .replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
 
-  static int? idForName(String value) {
-    final name = normalize(value);
-    if (name == 'sci fi' || name == 'sci fi movie') return 878;
-    if (name == 'romantic') return 10749;
-    if (name == 'science fiction') return 878;
-    if (name == 'sports') return 900002;
-    if (name == 'music' || name == 'musical drama') return 10402;
-    for (final entry in labels.entries) {
-      if (normalize(entry.value) == name) return entry.key;
-    }
-    return null;
-  }
+  // Build aliases once instead of normalizing every genre label for
+  // every one of the 34k catalog entries at startup.
+  static final Map<String, int> _idsByName = {
+    for (final entry in labels.entries) normalize(entry.value): entry.key,
+    'sci fi': 878, 'sci fi movie': 878,
+    'romantic': 10749, 'sports': 900002,
+    'musical drama': 10402,
+  };
+  static int? idForName(String value) => _idsByName[normalize(value)];
 
   static Set<int> idsFor(CatalogEntry entry) {
     final ids = <int>{...entry.genreIds};
@@ -99,7 +96,8 @@ class CatalogQueryIndex {
   final List<CatalogEntry> _year, _title, _rated;
   final Map<CatalogEntry, String> _titles = {};
   final Map<CatalogEntry, Set<int>> _genres = {};
-  List<MapEntry<int, String>> get availableGenres => CatalogGenres.available(_entries);
+  late final List<MapEntry<int, String>> availableGenres =
+      CatalogGenres.available(_entries);
 
   List<String> get availableLanguages {
     final names = <String>{};
