@@ -10,6 +10,7 @@ Writes only assets/catalog/filmstream_catalog.json after each batch.
 import argparse
 import json
 import os
+import ssl
 import time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -24,6 +25,8 @@ from third_pass_catalog_genres import assess
 
 PASS = "local_webview_v1"
 TMDB_AUTH_FAILED = False
+TMDB_UNAVAILABLE = False
+RETRYABLE_TMDB_STATUSES = {"tmdb_auth_required", "tmdb_network_error", "source_only_pending"}
 
 
 def should_skip(item, skip_tmdb_pending=False):
@@ -31,7 +34,7 @@ def should_skip(item, skip_tmdb_pending=False):
     if item.get("genre_local_pass") == PASS:
         return True
     return (skip_tmdb_pending
-            and item.get("genre_local_status") == "tmdb_auth_required")
+            and item.get("genre_local_status") in RETRYABLE_TMDB_STATUSES)
 
 
 
@@ -61,7 +64,8 @@ def browse_source(page, item, delay):
     return (title, genres, "verified") if title else (None, [], "no_source_title")
 
 
-def recover_item(item, title, source_genres, source_status, token, delay):
+def recover_item(item, title, source_genres, source_status, token, delay,
+                 source_only=False):
     """Apply verified metadata to one blank-genre catalog item."""
     old_title = str(item.get("title") or "")
     if source_status == "verified" and not safe_title_upgrade(item, title):
@@ -75,19 +79,42 @@ def recover_item(item, title, source_genres, source_status, token, delay):
     if genre_ids(item.get("genre_ids")):
         return "existing_tmdb_ids", corrected, False, False
 
-    global TMDB_AUTH_FAILED
+    global TMDB_AUTH_FAILED, TMDB_UNAVAILABLE
     media = "tv" if item.get("type") == "series" else "movie"
-    result, reason = None, "tmdb_auth_required" if TMDB_AUTH_FAILED else "unmatched"
-    if not TMDB_AUTH_FAILED:
+    result, reason = None, "unmatched"
+    if source_only:
+        reason = "source_only_pending"
+    elif TMDB_AUTH_FAILED:
+        reason = "tmdb_auth_required"
+    elif TMDB_UNAVAILABLE:
+        reason = "tmdb_network_error"
+    else:
         try:
             result, reason = assess(item, media, token, delay)
         except HTTPError as exc:
-            if exc.code != 401:
+            if exc.code == 401:
+                TMDB_AUTH_FAILED = True
+                reason = "tmdb_auth_required"
+                print("TMDB returned HTTP 401. Check the API Read Access Token. "
+                      "Continuing with verified source genres.", flush=True)
+            elif exc.code in (408, 429, 500, 502, 503, 504):
+                # Do not retry rate-limited responses or hammer an unavailable API.
+                TMDB_UNAVAILABLE = True
+                reason = "tmdb_network_error"
+                print(f"TMDB API unavailable (HTTP {exc.code}); "
+                      "continuing with source genres only for this batch.",
+                      flush=True)
+            else:
                 raise
-            TMDB_AUTH_FAILED = True
-            reason = "tmdb_auth_required"
-            print("TMDB returned 401 Unauthorized. Check TMDB API Read Access Token. "
-                  "Continuing with verified source-page genres only.", flush=True)
+        except (URLError, TimeoutError, ssl.SSLError, ConnectionError) as exc:
+            # urllib raises URLError for SSL handshake timeouts; treat the
+            # entire TMDB path as temporarily unavailable for this batch.
+            # Browser/source errors remain independently handled by main().
+            TMDB_UNAVAILABLE = True
+            reason = "tmdb_network_error"
+            print(f"TMDB HTTPS connection failed ({type(exc).__name__}); "
+                  "continuing with source genres only for this batch.",
+                  flush=True)
     if result and apply_only_if_empty(item, result):
         item["genre_data_source"] = "tmdb"
         return "matched_tmdb", corrected, True, False
@@ -110,6 +137,11 @@ def main():
                         help="1-1000 titles per batch; 0 audits without opening the browser")
     parser.add_argument("--delay", type=float, default=0.8)
     parser.add_argument(
+        "--source-only", action="store_true",
+        help="Use visible Chromium and verified source genres only. "
+             "Does not call TMDB or require TMDB_TOKEN.",
+    )
+    parser.add_argument(
         "--skip-tmdb-pending", action="store_true",
         help="Defer empty titles already checked while TMDB was unauthorized; "
              "they remain pending and can be retried after fixing TMDB token",
@@ -127,8 +159,9 @@ def main():
         return
 
     token = os.environ.get("TMDB_TOKEN", "").strip()
-    if not token:
-        parser.error("TMDB_TOKEN is required (PowerShell: $env:TMDB_TOKEN = Read-Host 'TMDB token')")
+    if not token and not args.source_only:
+        parser.error("TMDB_TOKEN is required unless using --source-only "
+                     "(PowerShell: $env:TMDB_TOKEN = Read-Host 'TMDB token')")
     try:
         from playwright.sync_api import sync_playwright, Error as BrowserError
     except ImportError:
@@ -172,15 +205,17 @@ def main():
                             print(f"Source page unavailable: {source_status} "
                                   f"({item.get('title')!r})", flush=True)
                         status, title_fixed, from_tmdb, from_source = recover_item(
-                            item, title, genres, source_status, token, args.delay)
+                            item, title, genres, source_status, token, args.delay,
+                            source_only=args.source_only)
                         item["genre_local_status"] = status
-                        if status != "tmdb_auth_required":
+                        if status not in RETRYABLE_TMDB_STATUSES:
                             item["genre_local_pass"] = PASS
                         else:
-                            # Revisit later once the user supplies valid
-                            # TMDB credentials, without losing progress.
-                            print("No verified source genre; pending TMDB credential fix.",
-                                  flush=True)
+                            # Keep this empty item pending. No genre is
+                            # fabricated when TMDB cannot be verified.
+                            item.pop("genre_local_pass", None)
+                            print("No verified source genre; kept pending "
+                                  "for later TMDB retry.", flush=True)
                         attempted += 1
                         corrected += int(title_fixed)
                         tmdb_filled += int(from_tmdb)

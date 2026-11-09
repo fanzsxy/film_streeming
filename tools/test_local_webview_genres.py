@@ -1,7 +1,7 @@
 """Offline tests for local visible-browser source metadata recovery."""
 import unittest
 from unittest.mock import patch
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 import recover_genres_local_webview as local_browser
 
 from recover_genres_local_webview import browse_source, recover_item, should_skip, PASS
@@ -92,6 +92,60 @@ class LocalBrowserTests(unittest.TestCase):
             self.assertFalse(from_tmdb)
             self.assertTrue(from_source)
             self.assertNotIn("genre_ids", self.item)
+
+    def test_ssl_handshake_timeout_falls_back_to_source_genres(self):
+        with patch.object(local_browser, "TMDB_UNAVAILABLE", False):
+            with patch.object(local_browser, "TMDB_AUTH_FAILED", False):
+                with patch("recover_genres_local_webview.assess",
+                           side_effect=URLError(TimeoutError(
+                               "The handshake operation timed out"))):
+                    status, corrected, from_tmdb, from_source = recover_item(
+                        self.item, "When I Meet the Moon", ["Drama"],
+                        "verified", "token", 0)
+                self.assertEqual(status, "matched_source")
+                self.assertTrue(corrected)
+                self.assertFalse(from_tmdb)
+                self.assertTrue(from_source)
+                self.assertEqual(self.item["genres"], ["Drama"])
+                self.assertTrue(local_browser.TMDB_UNAVAILABLE)
+
+    def test_tmdb_network_outage_keeps_empty_items_pending(self):
+        with patch.object(local_browser, "TMDB_UNAVAILABLE", False):
+            with patch.object(local_browser, "TMDB_AUTH_FAILED", False):
+                with patch("recover_genres_local_webview.assess",
+                           side_effect=URLError(TimeoutError("ssl timeout"))) as mock:
+                    status, fixed, from_tmdb, from_source = recover_item(
+                        self.item, "When I Meet the Moon", [],
+                        "verified", "token", 0)
+                self.assertEqual(status, "tmdb_network_error")
+                self.assertFalse(from_tmdb)
+                self.assertFalse(from_source)
+                with patch("recover_genres_local_webview.assess") as second:
+                    status2, _, _, _ = recover_item(
+                        self.item, "When I Meet the Moon", [], "verified", "token", 0)
+                    self.assertEqual(status2, "tmdb_network_error")
+                    second.assert_not_called()
+                mock.assert_called_once()
+        self.assertTrue(should_skip({"genre_local_status": "tmdb_network_error"},
+                                    skip_tmdb_pending=True))
+        self.assertFalse(should_skip({"genre_local_status": "tmdb_network_error"}))
+
+    def test_source_only_does_not_contact_tmdb(self):
+        with patch("recover_genres_local_webview.assess") as mock:
+            status, _, from_tmdb, from_source = recover_item(
+                self.item, "When I Meet the Moon", ["Romance"],
+                "verified", "", 0, source_only=True)
+            self.assertEqual(status, "matched_source")
+            self.assertFalse(from_tmdb)
+            self.assertTrue(from_source)
+            mock.assert_not_called()
+        self.item["genres"] = []
+        with patch("recover_genres_local_webview.assess") as mock:
+            status, _, _, _ = recover_item(
+                self.item, "When I Meet the Moon", [],
+                "verified", "", 0, source_only=True)
+            self.assertEqual(status, "source_only_pending")
+            mock.assert_not_called()
 
     def test_title_conflict_never_overwrites(self):
         with patch("recover_genres_local_webview.assess") as mock_assess:
