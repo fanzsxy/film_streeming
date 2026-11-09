@@ -36,6 +36,20 @@ class CatalogScanHelpers {
     return parsed;
   }
 
+  /// LK21 score is printed on each card, e.g. "★ 8.1", "8.1", "8.1/10".
+  /// Never interpret release years or runtime as ratings.
+  static double? parseRating(Object? input) {
+    if (input == null || input is bool) return null;
+    final text = input.toString().trim();
+    final match = RegExp(
+      r'^(?:[★☆⭐]\s*)?(10(?:\.0+)?|[0-9](?:\.\d{1,2})?)(?:\s*/\s*10)?$',
+    ).firstMatch(text);
+    if (match == null) return null;
+    final value = double.tryParse(match.group(1)!);
+    return value != null && value.isFinite && value > 0 && value <= 10
+        ? value : null;
+  }
+
   static Object? decoded(Object? value) {
     for (var i = 0; i < 2 && value is String; i++) {
       try {
@@ -101,7 +115,7 @@ class CatalogScanHelpers {
         .firstMatch(uri.path.replaceFirst(RegExp(r'/$'), ''));
     if (pathYear == null || int.parse(pathYear.group(1)!) != year) return null;
     final poster = validPoster(raw['poster_url']);
-    final rating = raw['rating'];
+    final rating = parseRating(raw['rating']);
     final listingGenres = parseGenreLabels(raw['genres']);
     return {
       'type': kind,
@@ -109,16 +123,17 @@ class CatalogScanHelpers {
       'year': year,
       'url': cleanUrl(url),
       if (poster.isNotEmpty) 'poster_url': poster,
-      if (rating is num && rating > 0 && rating <= 10) 'rating': rating,
+      if (rating != null) 'rating': rating,
       if (listingGenres.isNotEmpty) 'genres': listingGenres,
       if (listingGenres.isNotEmpty) 'genre_data_source': 'lk21_source',
       'scan_added_v2': true,
     };
   }
 
-  /// A verified card genre is sufficient; detail pages are fallback only.
+  /// Detail visits are only needed for missing genre or score.
   static bool needsDetail(Map<String, dynamic> row) =>
-      parseGenreLabels(row['genres']).isEmpty;
+      parseGenreLabels(row['genres']).isEmpty ||
+      parseRating(row['rating']) == null;
 
   static String keyFor(Map<String, dynamic> row) {
     final type = (row['type'] ?? '') == 'series' ? 'tv' : 'movie';
@@ -161,6 +176,10 @@ class CatalogScanHelpers {
     if (names.isNotEmpty && !alreadyHasGenres) {
       result['genres'] = names;
       result['genre_data_source'] = 'lk21_source';
+    }
+    final detailRating = parseRating(rawDetail['rating']);
+    if (parseRating(result['rating']) == null && detailRating != null) {
+      result['rating'] = detailRating;
     }
     final poster = validPoster(rawDetail['poster_url']);
     if ((result['poster_url'] ?? '').toString().isEmpty && poster.isNotEmpty) {
