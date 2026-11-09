@@ -116,6 +116,10 @@ class CatalogScanHelpers {
     };
   }
 
+  /// A verified card genre is sufficient; detail pages are fallback only.
+  static bool needsDetail(Map<String, dynamic> row) =>
+      parseGenreLabels(row['genres']).isEmpty;
+
   static String keyFor(Map<String, dynamic> row) {
     final type = (row['type'] ?? '') == 'series' ? 'tv' : 'movie';
     return '$type:' + (row['year'] ?? '').toString() + ':' +
