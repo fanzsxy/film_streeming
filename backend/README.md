@@ -14,49 +14,49 @@ In Vercel Swagger, use `POST /inspect/player-html` with JSON body `{ "html": "..
 The Android app scans *new* LK21 titles via its embedded WebView, then
 stores title, year, movie/series, source URL, source poster, and genre labels
 in the local catalog overlay. It can also submit newly discovered metadata to
-the **FilmStream backend** at \`POST /catalog/submit\`.
+the **FilmStream backend** at `POST /catalog/submit`.
 
 **Do not put a GitHub token in the APK or a Dart source file.**
 The GitHub credential belongs only in server-side Vercel environment variables:
 
-- \`FILMSTREAM_GITHUB_TOKEN\`: fine-grained GitHub credential restricted to
-  \`fanzsxy/film_streeming\`, with **Contents (read/write)** and
+- `FILMSTREAM_GITHUB_TOKEN`: fine-grained GitHub credential restricted to
+  `fanzsxy/film_streeming`, with **Contents (read/write)** and
   **Pull requests (read/write)**. Keep it out of logs and version control.
-- \`FILMSTREAM_SYNC_KEY\`: server-side API submission key; set the same value
-  as a **GitHub Actions repository secret** named \`FILMSTREAM_SYNC_KEY\`.
-  The existing \`.github/workflows/build-apk.yml\` passes that value to Flutter
-  via \`--dart-define\` at build time. **Rebuild the APK after changing it.**
+- `FILMSTREAM_SYNC_KEY`: server-side API submission key; set the same value
+  as a **GitHub Actions repository secret** named `FILMSTREAM_SYNC_KEY`.
+  The existing `.github/workflows/build-apk.yml` passes that value to Flutter
+  via `--dart-define` at build time. **Rebuild the APK after changing it.**
   This app-embedded key is extractable, so it is *not* a GitHub credential or
   strong proof of identity. Keep the PR review gate on the server.
 - Redeploy the backend after changing Vercel environment variables or
-  \`backend/phone_catalog_sync.py\`.
+  `backend/phone_catalog_sync.py`.
 
 ### Review workflow
 
 1. Open the newly built Android app. Its WebView reads new movie/series
    listing cards and genre tags; it stores additions immediately on-device.
 2. If the backend is configured and online, the app sends the queued additions
-   to \`/catalog/submit\`. The server validates source URLs and genre labels
+   to `/catalog/submit`. The server validates source URLs and genre labels
    and checks the **main catalog and open submissions** for duplicates.
-3. A GitHub PR named \`Review N scanned FilmStream catalog titles\` is
-   created on an \`automation/phone-catalog-*\` branch. Review and **merge**
-   that PR. It contains a \`crawler/imports/phone_*.json\` file, not a direct
+3. A GitHub PR named `Review N scanned FilmStream catalog titles` is
+   created on an `automation/phone-catalog-*` branch. Review and **merge**
+   that PR. It contains a `crawler/imports/phone_*.json` file, not a direct
    modification of the main catalog. The app logs the PR URL.
 4. Merging the review PR triggers the existing workflow
    **Unify FilmStream crawler catalog**, which automatically imports new
    titles and source genres, then opens a **second catalog PR**.
 5. Review and merge that catalog PR; this updates
-   \`assets/catalog/filmstream_catalog.json\` on main. Devices can later
+   `assets/catalog/filmstream_catalog.json` on main. Devices can later
    download reviewed additions via the app's GitHub catalog sync.
 
-If the server responds \`already_known\`, the app clears that submission from
+If the server responds `already_known`, the app clears that submission from
 its retry queue. On HTTP failures, it **retains the local data and queue** for
 a future launch. Incoming metadata is never automatically merged to main
 without a reviewed PR.
 
 ### Troubleshooting
 
-- \`Sinkronisasi tidak aktif\`: the APK did not receive \`FILMSTREAM_SYNC_KEY\`.
+- `Sinkronisasi tidak aktif`: the APK did not receive `FILMSTREAM_SYNC_KEY`.
 - HTTP 401: backend key mismatch. Recheck Vercel and GitHub Actions secrets.
 - HTTP 503: backend token/key missing or GitHub upstream unavailable.
 - No GitHub PR yet: check backend logs and Android local sync status. A source
