@@ -77,6 +77,54 @@ void main() {
     expect(CatalogScanHelpers.onlyNew(known, rows, limit:1).length,1);
   });
 
+  test('genre text on LK21 latest cards is saved directly', () {
+    final row = CatalogScanHelpers.listingRow({
+      'title': 'Concessions',
+      'year': 2025,
+      'url': 'https://tv12.lk21official.cc/concessions-2025',
+      'genres': 'Comedy, Drama',
+    }, 'movie', host, 2026)!;
+    expect(row['genres'], ['Comedy','Drama']);
+    expect(row['genre_data_source'], 'lk21_source');
+    expect(CatalogScanHelpers.needsDetail(row), isFalse);
+    final fresh = CatalogScanHelpers.onlyNew(known,[row]);
+    expect(fresh.single['genres'],['Comedy','Drama']);
+    expect(CatalogEntry.fromJson(fresh.single).genres,['Comedy','Drama']);
+  });
+
+  test('LK21 listing genres accept Sci-fi, Short and optional label prefix', () {
+    expect(CatalogScanHelpers.parseGenreLabels('Crime, Sci-fi'),
+        ['Crime','Sci-Fi']);
+    expect(CatalogScanHelpers.parseGenreLabels('Animation, Short'),
+        ['Animation','Short']);
+    expect(CatalogScanHelpers.parseGenreLabels('Genre: Action, Adventure'),
+        ['Action','Adventure']);
+    expect(CatalogScanHelpers.parseGenreLabels(
+        ['Drama, Romance','Drama','Horror']),['Drama','Romance','Horror']);
+    expect(CatalogScanHelpers.parseGenreLabels('Not a genre'), isEmpty);
+    expect(CatalogScanHelpers.parseGenreLabels('Play Awal'), isEmpty);
+    expect(CatalogScanHelpers.needsDetail({'genres': 'Comedy, Drama'}),isFalse);
+    expect(CatalogScanHelpers.needsDetail({'genres': []}),isTrue);
+    expect(CatalogScanHelpers.needsDetail({'genres': '???'}),isTrue);
+  });
+
+  test('detail fallback never overwrites genres collected from listing', () {
+    final card = {
+      'type': 'movie', 'title': 'Known Card', 'year': 2026,
+      'url': 'https://tv12.lk21official.cc/known-card-2026',
+      'genres': ['Action', 'Adventure'],
+      'genre_data_source': 'lk21_source',
+      'poster_url': 'https://cdn.example/poster.jpg',
+    };
+    final result = CatalogScanHelpers.withVerifiedDetail(card, {
+      'genres': ['Drama', 'Horror'],
+      'poster_url': 'https://cdn.example/different.jpg',
+    });
+    expect(result['genres'],['Action','Adventure']);
+    expect(result['poster_url'],'https://cdn.example/poster.jpg');
+    expect(result['genre_data_source'],'lk21_source');
+  });
+
   test('genre metadata from verified page only and never guessed', () {
     final row = {
       'type': 'movie', 'title': 'Another Listing Title',
