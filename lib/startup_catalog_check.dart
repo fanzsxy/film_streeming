@@ -163,6 +163,68 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   }
 
   static const listingScript = r'''(() => {
+    // Genres can be printed directly on each /latest card (above the title).
+    // Read them from the single card only; never from the site genre menu.
+    const allowed = new Set([
+      'action','adventure','animation','biography','comedy','crime',
+      'documentary','drama','family','fantasy','history','horror',
+      'musical','music','mystery','romance','sci-fi','science fiction',
+      'sport','short','thriller','war','western','reality','soap','kids',
+      'tv movie','war & politics','action & adventure','sci-fi & fantasy'
+    ]);
+    const parseGenreLine = (raw) => {
+      const text = (raw||'').replace(/\s+/g,' ').trim()
+        .replace(/^genres?\s*:\s*/i,'');
+      if(!text || text.length>110)return null;
+      const names = text.split(/\s*[,|•]\s*/).map(s=>s.trim());
+      if(names.length<1 || names.length>10 ||
+          !names.every(n=>allowed.has(n.toLowerCase())))return null;
+      return [...new Set(names)];
+    };
+    const genresInside = (container) => {
+      const nodes=container.querySelectorAll(
+        '[class*="genre"],[class*="Genre"],[class*="meta"],' +
+        '[class*="Meta"],small,p,span,div');
+      for(const el of Array.from(nodes).slice(0,90)) {
+        if(el.closest('nav,header,footer'))continue;
+        const fromText=parseGenreLine(el.textContent);
+        if(fromText)return fromText;
+        // Some cards present genre names as adjacent links rather than CSV.
+        if(el.className && typeof el.className==='string' &&
+           /genre/i.test(el.className)){
+          const anchors=Array.from(el.querySelectorAll('a'));
+          if(anchors.length>=1 && anchors.length<=10){
+            const names=anchors.map(x=>(x.textContent||'').trim());
+            if(names.every(x=>allowed.has(x.toLowerCase())))
+              return [...new Set(names)];
+          }
+        }
+      }
+      return null;
+    };
+    const genresNear = (card,urlPath) => {
+      let scope=card;
+      for(let depth=0;scope && depth<3;depth++,scope=scope.parentElement){
+        // Moving up is safe only while the container includes a single
+        // dated title URL (the poster and title may link to that same URL).
+        const titlePaths=new Set();
+        for(const link of scope.querySelectorAll('a[href]')){
+          try {
+            const href=new URL(link.getAttribute('href'),location.href);
+            if(href.host===location.host &&
+               /-(19\d{2}|20\d{2})\/?$/.test(href.pathname))
+              titlePaths.add(href.pathname.replace(/\/$/,''));
+            if(titlePaths.size>1)break;
+          }catch(_){}
+        }
+        if(titlePaths.size>1 || (titlePaths.size===1 &&
+           !titlePaths.has(urlPath)))break;
+        const found=genresInside(scope);
+        if(found)return found;
+      }
+      return [];
+    };
+
     const items=[];
     const used=new Set();
     for(const a of document.querySelectorAll('a[href]')) {
@@ -170,17 +232,20 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       try {url=new URL(a.getAttribute('href'),location.href);}catch(_){continue;}
       if(url.protocol!=='https:' || url.host!==location.host ||
           url.search || url.hash)continue;
-      const match=url.pathname.replace(/\/$/,'').match(/-(19\d{2}|20\d{2})$/);
-      if(!match)continue;
-      const card=a.closest('article,li,.item,.poster,.movie,.series,.film');
+      const path=url.pathname.replace(/\/$/,'');
+      const match=path.match(/-(19\d{2}|20\d{2})$/);
+      if(!match || used.has(path))continue;
+      const card=a.closest(
+        'article,li,.item,.poster,.movie,.series,.film,' +
+        '[class*="item"],[class*="poster"],[class*="movie"]');
       if(!card)continue;
       const heading=card.querySelector('h2,h3,h4,.title,.poster-title');
       const picture=card.querySelector('img');
       if(!heading && !picture)continue;
       const title=(heading?.textContent||a.title||picture?.alt||'')
         .trim().replace(/\s+/g,' ');
-      if(!title || title.length>180 || used.has(url.pathname))continue;
-      used.add(url.pathname);
+      if(!title || title.length>180)continue;
+      used.add(path);
       const src=picture?.getAttribute('data-src')||
         picture?.getAttribute('data-original')||
         picture?.getAttribute('data-lazy-src')||
@@ -188,8 +253,10 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       let poster='';
       try {const p=new URL(src,location.href);
         if(p.protocol==='https:')poster=p.href;}catch(_){}
-      items.push({title:title,year:Number(match[1]),
-        url:url.origin+url.pathname,poster_url:poster});
+      items.push({
+        title:title,year:Number(match[1]),url:url.origin+url.pathname,
+        poster_url:poster,genres:genresNear(card,path)
+      });
       if(items.length>=100)break;
     }
     return JSON.stringify(items);
@@ -204,7 +271,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       'Action','Adventure','Animation','Biography','Comedy','Crime',
       'Documentary','Drama','Family','Fantasy','History','Horror',
       'Musical','Music','Mystery','Romance','Sci-Fi','Science Fiction',
-      'Sport','Thriller','War','Western','Reality','Soap','Kids',
+      'Sport','Short','Thriller','War','Western','Reality','Soap','Kids',
       'TV Movie','War & Politics','Action & Adventure','Sci-Fi & Fantasy'
     ]);
     const genres=[];
