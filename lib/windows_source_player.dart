@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:webview_flutter_windows/webview_flutter_windows.dart';
 
+import 'filmstream_icons.dart';
+
 /// Windows WebView2 version of the Android focused source player.
 /// Keep the provider-owned iframe and its JS in the original document.
 class WindowsSourcePlayer extends StatefulWidget {
@@ -13,13 +15,14 @@ class WindowsSourcePlayer extends StatefulWidget {
   final bool embedded;
   final List<String> genres;
   final String year;
+  final String catalogSynopsis;
   final int tmdbId;
   final String mediaType;
   final ValueChanged<String>? onSynopsisFound;
   final ValueChanged<List<String>>? onGenresFound;
   const WindowsSourcePlayer({
     super.key, required this.title, required this.url, this.embedded = false,
-    this.genres = const [], this.year = '', this.tmdbId = 0,
+    this.genres = const [], this.year = '', this.catalogSynopsis = '', this.tmdbId = 0,
     this.mediaType = 'movie',
     this.onSynopsisFound, this.onGenresFound,
   });
@@ -253,7 +256,9 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
   ''';
 
   Future<void> _loadTmdbGenres() async {
-    if (widget.tmdbId <= 0 || _tmdbToken.isEmpty) return;
+    // Verified catalog genres are already displayed by Android; reuse them
+    // on Windows instead of fetching another TMDB detail response.
+    if (_tmdbGenres.isNotEmpty || widget.tmdbId <= 0 || _tmdbToken.isEmpty) return;
     try {
       final media = widget.mediaType == 'tv' || widget.mediaType == 'series'
           ? 'tv' : 'movie';
@@ -495,7 +500,8 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
   }
 
   Widget _informationPanel() {
-    final synopsis = _lk21Synopsis;
+    final synopsis = _lk21Synopsis.isNotEmpty
+        ? _lk21Synopsis : widget.catalogSynopsis.trim();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
@@ -519,7 +525,7 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
         const Text('Sinopsis', style: TextStyle(
           fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xffe5aa55))),
         const SizedBox(height: 7),
-        Text(synopsis.isNotEmpty ? synopsis : 'Sinopsis belum tersedia dari LK21 untuk judul ini.',
+        Text(synopsis.isNotEmpty ? synopsis : 'Sinopsis belum tersedia untuk judul ini.',
           style: const TextStyle(fontSize: 14, height: 1.55, color: Colors.white70)),
       ]),
     );
@@ -557,7 +563,7 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
           IconButton(
             tooltip: 'Muat ulang',
             onPressed: _ready ? () => _controller.loadUrl(widget.url.toString()) : null,
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(FilmStreamIcons.reload),
           ),
 
         ],
