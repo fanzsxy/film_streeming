@@ -22,6 +22,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 
+from bs4 import BeautifulSoup
+
 if __package__:
     from .auto_discover_lk21 import (
         CATALOG, REPORT, MOVIE_BASE, SERIES_CONFIG, UA,
@@ -81,7 +83,13 @@ def read_browser(page, robots, url, render_wait_ms=850):
     html = page.content()
     if len(html) > 1_500_000:
         return None, "oversized_html"
-    if BLOCKED_MARKERS.search(html):
+    # Check visible page text, not JavaScript source that may mention
+    # captcha handlers on otherwise usable listing pages.
+    doc = BeautifulSoup(html, "html.parser")
+    for element in doc(["script", "style", "noscript"]):
+        element.decompose()
+    visible = doc.get_text(" ", strip=True)[:1800]
+    if BLOCKED_MARKERS.search(visible):
         return None, "verification_required"
     return html, "ok"
 
