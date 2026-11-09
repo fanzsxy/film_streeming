@@ -53,7 +53,6 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   bool pageRejected = false;
   bool active = false;
   bool disposed = false;
-  bool sending = false;
   String status = 'Menyiapkan scanner LK21...';
 
   void _status(String value) {
