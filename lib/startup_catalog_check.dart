@@ -389,12 +389,30 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
         continue;
       }
       final enriched = <Map<String,dynamic>>[];
-      for(var i=0;i<fresh.length && i<maxDetailPerKind;i++) {
-        if(!mounted)break;
-        if(i>0) await Future<void>.delayed(betweenDetails);
-        final checked = await _detail(kind,fresh[i]);
+      var fromListing = 0;
+      var detailsChecked = 0;
+      for (final row in fresh) {
+        if (!mounted) break;
+        // LK21 /latest often prints comma-separated genres on the card.
+        // Skip expensive detail-page navigation when those are available.
+        if (CatalogScanHelpers.parseGenreLabels(row['genres']).isNotEmpty) {
+          enriched.add(row);
+          fromListing++;
+          totalGenres++;
+          continue;
+        }
+        if (detailsChecked >= maxDetailPerKind) {
+          enriched.add(row); // Preserve a new title even if genre is absent.
+          continue;
+        }
+        if (detailsChecked > 0) {
+          await Future<void>.delayed(betweenDetails);
+        }
+        detailsChecked++;
+        final checked = await _detail(kind, row);
         enriched.add(checked);
-        if((checked['genres'] as List?)?.isNotEmpty ?? false)totalGenres++;
+        if (CatalogScanHelpers.parseGenreLabels(
+            checked['genres']).isNotEmpty) totalGenres++;
       }
       if(enriched.isEmpty)continue;
       // Save after each source, so an error from the next source cannot
@@ -411,7 +429,9 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       FilmStreamCatalog.refresh();
       if(mounted)widget.onCatalogUpdated();
       await _log('Scan ' + kind + ': ' + enriched.length.toString() +
-          ' judul baru tersimpan di HP.');
+          ' judul baru, ' + fromListing.toString() +
+          ' genre dari daftar, ' + detailsChecked.toString() +
+          ' detail diperiksa.');
     }
     await _log((unavailableKinds == 0
         ? 'Scan LK21 selesai: '
