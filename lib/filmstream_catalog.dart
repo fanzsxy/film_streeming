@@ -71,6 +71,22 @@ class CatalogEntry {
   }
 }
 
+/// One poster policy for Home, Film, Series, Filter and Search:
+/// prefer verified TMDB artwork, then the original catalog fallback.
+String preferredCatalogPoster(CatalogEntry entry, {String tmdbPoster = ''}) {
+  final remote = tmdbPoster.trim();
+  if (remote.startsWith('/') ||
+      remote.startsWith('https://image.tmdb.org/t/p/')) {
+    return remote;
+  }
+  final stored = entry.tmdbPosterPath.trim();
+  if (stored.startsWith('/') ||
+      stored.startsWith('https://image.tmdb.org/t/p/')) {
+    return stored;
+  }
+  return entry.posterUrl.startsWith('https://') ? entry.posterUrl : '';
+}
+
 class FilmStreamCatalog {
   FilmStreamCatalog._();
   static Future<List<CatalogEntry>>? _cached;
