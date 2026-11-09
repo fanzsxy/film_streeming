@@ -25,6 +25,43 @@ void main() {
       genres: ['Biography', 'Drama']),
   ];
 
+  test('Home TMDB rankings are separate from catalog genre filters', () {
+    expect(CatalogQueryIndex.handles('catalog/movie'), isTrue);
+    expect(CatalogQueryIndex.handles('catalog/tv'), isTrue);
+    expect(CatalogQueryIndex.handles('catalog/filter'), isTrue);
+    expect(CatalogQueryIndex.handles('search/multi'), isTrue);
+    for (final tmdbHome in [
+      'trending/all/week', 'trending/movie/week', 'trending/tv/week',
+      'movie/popular', 'tv/popular',
+      'movie/top_rated', 'tv/top_rated',
+      'home/recommended', 'home/latest', 'home/family',
+    ]) {
+      expect(CatalogQueryIndex.handles(tmdbHome), isFalse,
+          reason: 'Home ranking should come from TMDB: ' + tmdbHome);
+    }
+    final catalogGenres=CatalogQueryIndex.fromEntries(entries).availableGenres;
+    expect(catalogGenres.any((g) => g.value == 'Biography'), isTrue);
+  });
+
+  test('TMDB poster has priority over original catalog posters', () {
+    const movie=CatalogEntry(title:'Poster Example',year:2025,
+      type:'movie',url:'https://example.org/poster',
+      posterUrl:'https://example.org/source.jpg',
+      tmdbPosterPath:'/tmdb-catalog.jpg');
+    expect(preferredCatalogPoster(movie), '/tmdb-catalog.jpg');
+    expect(preferredCatalogPoster(movie,tmdbPoster:'/tmdb-fresh.jpg'),
+      '/tmdb-fresh.jpg');
+    expect(preferredCatalogPoster(movie,tmdbPoster:''),
+      '/tmdb-catalog.jpg');
+    const fallback=CatalogEntry(title:'Fallback',year:2025,
+      type:'tv',url:'https://example.org/fallback',
+      posterUrl:'https://example.org/source.jpg');
+    expect(preferredCatalogPoster(fallback),
+      'https://example.org/source.jpg');
+    expect(preferredCatalogPoster(fallback,tmdbPoster:'/verified.jpg'),
+      '/verified.jpg');
+  });
+
   test('parse source genre names and TMDB IDs separately', () {
     final item = CatalogEntry.fromJson({
       'title': 'Example', 'year': 2026,

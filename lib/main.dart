@@ -152,18 +152,8 @@ class LocalCatalogMetadata {
   }
   static Movie _withCollectedMetadata(CatalogEntry entry, Map<String,dynamic> base) {
     final data=Map<String,dynamic>.from(base);
-    // One poster priority for Home, Search, Film/Series Popular and Detail:
-    // TMDB artwork first; if missing, use the bundled catalog poster.
-    final tmdbPoster=(data['poster_path']??'').toString().trim();
-    if(tmdbPoster.isEmpty || tmdbPoster=='null') {
-      if(entry.tmdbPosterPath.startsWith('/')) {
-        data['poster_path']=entry.tmdbPosterPath;
-      } else if(entry.posterUrl.startsWith('https://')) {
-        data['poster_path']=entry.posterUrl;
-      } else {
-        data['poster_path']='';
-      }
-    }
+    data['poster_path']=preferredCatalogPoster(
+      entry,tmdbPoster:(data['poster_path']??'').toString());
     // Genres collected from LK21 are usable even without TMDB genre IDs.
     data['genre_ids']=entry.genreIds;
     data['genre_names']=entry.genres;
@@ -171,11 +161,16 @@ class LocalCatalogMetadata {
       data['original_language']=entry.originalLanguage;
     }
     if((data['backdrop_path']??'').toString().isEmpty) {
-      data['backdrop_path']=entry.tmdbPosterPath.isNotEmpty
-          ?entry.tmdbPosterPath:entry.posterUrl;
+      // When a real TMDB backdrop is unavailable, use the same
+      // TMDB-first poster as the card instead of unrelated source artwork.
+      data['backdrop_path']=data['poster_path'];
     }
-    if(entry.synopsis.isNotEmpty) data['overview']=entry.synopsis;
-    if(entry.rating!=null) data['vote_average']=entry.rating;
+    if(entry.synopsis.isNotEmpty && (data['overview']??'').toString().isEmpty) {
+      data['overview']=entry.synopsis;
+    }
+    if(data['vote_average'] is! num && entry.rating!=null) {
+      data['vote_average']=entry.rating;
+    }
     // Prefer a real TMDB poster from metadata; fall back to catalog artwork.
     data['title']=entry.title;
     data['name']=entry.title;
@@ -189,14 +184,43 @@ class LocalCatalogMetadata {
         ? entry.activeSourceUrl : entry.url;
     return Movie.fromJson(data,fallback:entry.type);
   }
-  // Keep only the current fast catalog-page entries for optional poster
-  // upgrades. A page renders immediately, while missing TMDB artwork can
-  // be resolved in individual cards without blocking navigation.
+  // Keep the catalog index for currently rendered tiles only.
+  // Every screen uses this same verified TMDB poster fallback path.
   static final Map<String,CatalogEntry> _pagePosterEntries={};
-  // The catalog already stores poster URLs. Avoid an extra TMDB request
-  // for every visible tile on Home/Search/Filter/See All.
-  static Future<Movie?> catalogPosterUpgrade(Movie movie) =>
-      Future<Movie?>.value(movie);
+  static final Map<String,Future<Movie?>> _posterUpgrades={};
+  static int _activePosterRequests=0;
+  static final List<Completer<void>> _posterQueue=[];
+
+  static Future<Movie?> catalogPosterUpgrade(Movie movie) {
+    // Already a TMDB image from the catalog or TMDB's ranked response.
+    if (movie.poster.startsWith('/') ||
+        movie.poster.startsWith('https://image.tmdb.org/')) {
+      return Future<Movie?>.value(movie);
+    }
+    final entry=_pagePosterEntries[movie.sourceUrl];
+    if(entry==null || entry.tmdbId==null) return Future<Movie?>.value(movie);
+    if(_posterUpgrades.length>240 && !_posterUpgrades.containsKey(entry.url)){
+      _posterUpgrades.remove(_posterUpgrades.keys.first);
+    }
+    return _posterUpgrades.putIfAbsent(entry.url,()=>_lookupPoster(entry));
+  }
+
+  static Future<Movie?> _lookupPoster(CatalogEntry entry) async {
+    // Resolve at most three known TMDB IDs concurrently. Do not search
+    // TMDB by title for every film on the visible grid.
+    if(_activePosterRequests>=3) {
+      final slot=Completer<void>();
+      _posterQueue.add(slot);
+      await slot.future;
+    }
+    _activePosterRequests++;
+    try {
+      return await enrich(entry);
+    } finally {
+      _activePosterRequests--;
+      if(_posterQueue.isNotEmpty) _posterQueue.removeAt(0).complete();
+    }
+  }
 
   static Future<Movie?> enrich(CatalogEntry entry) {
     // Bound the in-memory TMDB resolver cache; do not retain thousands of
@@ -363,7 +387,7 @@ class LocalCatalogMetadata {
   static Future<List<Movie>> _filledDiscoveryPage(
     List<CatalogEntry> source,String endpoint,int page,
     Map<String,String> params,String type) async {
-    const window=5;
+    const window=3;
     final start=(page-1)*window+1;
     if(start>500)return [];
     final pages=await Future.wait([
@@ -405,6 +429,9 @@ class LocalCatalogMetadata {
         data['media_type']=selected.type;
         final movie=_withCollectedMetadata(selected,data);
         _sourceByTmdb[_key(movie.type,movie.id)]=movie.sourceUrl;
+        _pagePosterEntries[movie.sourceUrl]=selected;
+        if(_pagePosterEntries.length>320)
+          _pagePosterEntries.remove(_pagePosterEntries.keys.first);
         found.add(movie);
         if(found.length>=20)return found;
       }
@@ -413,8 +440,8 @@ class LocalCatalogMetadata {
   }
 
   static Future<List<Movie>> list(String endpoint,{int page=1,Map<String,String> params=const {},String type='movie'}) async {
-    // All public catalog-facing screens share one in-memory source of truth.
-    // No TMDB discovery/search calls on Home, See All, Filter or Search.
+    // Only local Film/Series/Filter/Search use the catalog query index.
+    // Home ranking/collections use TMDB, matched to catalog entries below.
     if (CatalogQueryIndex.handles(endpoint)) {
       final index=await CatalogQueryIndex.load();
       final slice=index.select(endpoint,page:page,type:type,params:params);
@@ -423,13 +450,22 @@ class LocalCatalogMetadata {
           'id':entry.tmdbId ?? -_stableId(entry.url),
         });
         _sourceByTmdb[_key(movie.type,movie.id)]=movie.sourceUrl;
+        _pagePosterEntries[movie.sourceUrl]=entry;
+        if(_pagePosterEntries.length>320)
+          _pagePosterEntries.remove(_pagePosterEntries.keys.first);
         return movie;
       }).toList(growable:false);
     }
     final source=await FilmStreamCatalog.load();
     // New home collections are filtered lists of actual catalog entries.
     if (endpoint == 'home/latest') {
-      return list('catalog/movie', page:page, type:'movie');
+      // Newest actual TMDB releases, never an invented catalog popularity sort.
+      return list('discover/movie', page:page, type:'movie', params:{
+        'sort_by':'primary_release_date.desc',
+        'primary_release_date.lte':
+            DateTime.now().toIso8601String().substring(0,10),
+        'include_adult':'false',
+      });
     }
     if (endpoint == 'home/family') {
       // Unknown age classifications are excluded. Family genre PLUS an
@@ -468,14 +504,12 @@ class LocalCatalogMetadata {
       }
       return list('trending/all/week',page:page,type:'movie',params:params);
     }
-    // Numbered collections fill pages from several disjoint TMDB result
-    // pages, using returned poster metadata directly (no per-film requests).
-    // The normal Home rails keep their existing one-page ranking behavior.
-    if(params['fill_page']=='true' &&
-       (endpoint.startsWith('discover/') ||
-        endpoint.startsWith('trending/') ||
-        endpoint.endsWith('/popular') ||
-        endpoint.endsWith('/top_rated'))){
+    // Home rails and their "Lihat Lainnya" pages share the same TMDB-ranked
+    // source windows. The metadata already contains TMDB poster/backdrop.
+    if(endpoint.startsWith('discover/') ||
+       endpoint.startsWith('trending/') ||
+       endpoint.endsWith('/popular') ||
+       endpoint.endsWith('/top_rated')){
       final clean=Map<String,String>.from(params)..remove('fill_page');
       return _filledDiscoveryPage(source,endpoint,page,clean,type);
     }
@@ -760,7 +794,7 @@ class _HomePageState extends State<HomePage> {
     setState(()=>catalogRefresh++);
   }}),if(tab!=4)Padding(padding:const EdgeInsets.fromLTRB(14,8,14,8),child:TextField(controller:search,focusNode:searchFocus,decoration:InputDecoration(prefixIcon:const Icon(Icons.search_rounded),hintText:'Cari film atau series...',suffixIcon:ValueListenableBuilder<TextEditingValue>(valueListenable:search,builder:(context,value,_)=>value.text.isEmpty?const SizedBox.shrink():IconButton(icon:const Icon(Icons.close_rounded),onPressed:(){debounce?.cancel();suggestionDebounce?.cancel();search.clear();setState((){query='';suggestionText='';});})),filled:true,fillColor:const Color(0xff20252e),enabledBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(16),borderSide:BorderSide.none),focusedBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(16),borderSide:const BorderSide(color:Color(0xffe5aa55),width:1.4))),onChanged:(v){debounce?.cancel();suggestionDebounce?.cancel();
  suggestionDebounce=Timer(const Duration(milliseconds:180),(){if(mounted)setState(()=>suggestionText=v.trim());});
- debounce=Timer(const Duration(milliseconds:350),(){if(mounted)setState(()=>query=v.trim());});})),if(tab!=4)AnimatedBuilder(animation:Listenable.merge([search,searchFocus]),builder:(context,_)=>!searchFocus.hasFocus || suggestionText.isEmpty || suggestionText!=search.text.trim()?const SizedBox.shrink():FilmSearchSuggestions(key:ValueKey('suggestions:$catalogRefresh'),text:suggestionText,onSelected:selectSearchSuggestion)),Expanded(child:query.isNotEmpty?PagedGrid(key:ValueKey('search:$query:$catalogRefresh'),title:'Hasil pencarian: $query',endpoint:'search/multi',params:{'query':query,'include_adult':'false'},type:'movie',onTap:open):switch(tab){0=>ListView(key:const PageStorageKey('home-feed'),controller:homeScroll,children:[CinemaHero(key:ValueKey('hero:$catalogRefresh'),onTap:open),CinemaGenres(key:ValueKey('cinema-genres:$catalogRefresh'),onSelect:(id){setState((){tab=3;genre='$id';query='';search.clear();});}),const LastWatchedRail(),const Padding(padding:EdgeInsets.fromLTRB(16,24,16,2),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('JELAJAHI KOLEKSI',style:TextStyle(fontSize:11,letterSpacing:2,color:Color(0xffe5aa55),fontWeight:FontWeight.w800)),SizedBox(height:7),Text('Pilihan untuk kamu',style:TextStyle(fontSize:25,fontWeight:FontWeight.w800))])),MovieRail(key:ValueKey('rail-trending:$catalogRefresh'),title:'Unggulan Katalog',endpoint:'trending/all/week',type:'movie',onTap:open,onSeeAll:()=>openCollection('Unggulan Katalog','trending/all/week','movie')),MovieRail(key:ValueKey('rail-film-pop:$catalogRefresh'),title:'Film Favorit Katalog',endpoint:'movie/popular',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Favorit Katalog','movie/popular','movie')),MovieRail(key:ValueKey('rail-series-pop:$catalogRefresh'),title:'Series Favorit Katalog',endpoint:'tv/popular',type:'tv',onTap:open,onSeeAll:()=>openCollection('Series Favorit Katalog','tv/popular','tv')),MovieRail(key:ValueKey('rail-film-top:$catalogRefresh'),title:'Film Rating Tinggi',endpoint:'movie/top_rated',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Rating Tinggi','movie/top_rated','movie')),MovieRail(key:ValueKey('rail-series-top:$catalogRefresh'),title:'Series Rating Tinggi',endpoint:'tv/top_rated',type:'tv',onTap:open,onSeeAll:()=>openCollection('Series Rating Tinggi','tv/top_rated','tv')),ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,builder:(context,history,_)=>MovieRail(key:ValueKey('rail-home-recommend:$catalogRefresh'),title:'Pilihan Katalog',endpoint:'home/recommended',type:'movie',onTap:open,onSeeAll:()=>openCollection('Pilihan Katalog','home/recommended','movie'))),MovieRail(key:ValueKey('rail-home-latest:$catalogRefresh'),title:'Film Terbaru',endpoint:'home/latest',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Terbaru','home/latest','movie')),MovieRail(key:ValueKey('rail-home-family:$catalogRefresh'),title:'Genre Keluarga',endpoint:'home/family',type:'movie',onTap:open,onSeeAll:()=>openCollection('Genre Keluarga','home/family','movie')),MovieRail(key:ValueKey('rail-movie-week:$catalogRefresh'),title:'Film Rating Unggulan',endpoint:'trending/movie/week',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Rating Unggulan','trending/movie/week','movie')),MovieRail(key:ValueKey('rail-tv-week:$catalogRefresh'),title:'Series Rating Unggulan',endpoint:'trending/tv/week',type:'tv',onTap:open,onSeeAll:()=>openCollection('Series Rating Unggulan','trending/tv/week','tv')),const SizedBox(height:16)]),1=>PagedGrid(key:ValueKey('film:$catalogRefresh'),title:'Semua Film',endpoint:'catalog/movie',type:'movie',onTap:open),2=>PagedGrid(key:ValueKey('tv:$catalogRefresh'),title:'Semua Series',endpoint:'catalog/tv',type:'tv',onTap:open),3=>FilmstreamFilter(key:ValueKey('filter:$catalogRefresh'),initialGenre:genre,onTap:open),_=>favorites.isEmpty?const Center(child:Text('Belum ada favorit. Simpan dari halaman detail.')):GridView.builder(padding:const EdgeInsets.all(12),gridDelegate:filmstreamGridDelegate(context),itemCount:favorites.length,itemBuilder:(context,i)=>MovieTile(movie:favorites.values.elementAt(i),onTap:open))})])));
+ debounce=Timer(const Duration(milliseconds:350),(){if(mounted)setState(()=>query=v.trim());});})),if(tab!=4)AnimatedBuilder(animation:Listenable.merge([search,searchFocus]),builder:(context,_)=>!searchFocus.hasFocus || suggestionText.isEmpty || suggestionText!=search.text.trim()?const SizedBox.shrink():FilmSearchSuggestions(key:ValueKey('suggestions:$catalogRefresh'),text:suggestionText,onSelected:selectSearchSuggestion)),Expanded(child:query.isNotEmpty?PagedGrid(key:ValueKey('search:$query:$catalogRefresh'),title:'Hasil pencarian: $query',endpoint:'search/multi',params:{'query':query,'include_adult':'false'},type:'movie',onTap:open):switch(tab){0=>ListView(key:const PageStorageKey('home-feed'),controller:homeScroll,children:[CinemaHero(key:ValueKey('hero:$catalogRefresh'),onTap:open),CinemaGenres(key:ValueKey('cinema-genres:$catalogRefresh'),onSelect:(id){setState((){tab=3;genre='$id';query='';search.clear();});}),const LastWatchedRail(),const Padding(padding:EdgeInsets.fromLTRB(16,24,16,2),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('JELAJAHI KOLEKSI',style:TextStyle(fontSize:11,letterSpacing:2,color:Color(0xffe5aa55),fontWeight:FontWeight.w800)),SizedBox(height:7),Text('Pilihan untuk kamu',style:TextStyle(fontSize:25,fontWeight:FontWeight.w800))])),MovieRail(key:ValueKey('rail-trending:$catalogRefresh'),title:'Sedang Trending',endpoint:'trending/all/week',type:'movie',onTap:open,onSeeAll:()=>openCollection('Sedang Trending','trending/all/week','movie')),MovieRail(key:ValueKey('rail-film-pop:$catalogRefresh'),title:'Film Populer',endpoint:'movie/popular',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Populer','movie/popular','movie')),MovieRail(key:ValueKey('rail-series-pop:$catalogRefresh'),title:'Series Populer',endpoint:'tv/popular',type:'tv',onTap:open,onSeeAll:()=>openCollection('Series Populer','tv/popular','tv')),MovieRail(key:ValueKey('rail-film-top:$catalogRefresh'),title:'Film Rating Tinggi',endpoint:'movie/top_rated',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Rating Tinggi','movie/top_rated','movie')),MovieRail(key:ValueKey('rail-series-top:$catalogRefresh'),title:'Series Rating Tinggi',endpoint:'tv/top_rated',type:'tv',onTap:open,onSeeAll:()=>openCollection('Series Rating Tinggi','tv/top_rated','tv')),ValueListenableBuilder<List<WatchEntry>>(valueListenable:WatchStore.entries,builder:(context,history,_)=>MovieRail(key:ValueKey('rail-home-recommend:$catalogRefresh'),title:'Rekomendasi Untukmu',endpoint:'home/recommended',type:'movie',onTap:open,onSeeAll:()=>openCollection('Rekomendasi Untukmu','home/recommended','movie'))),MovieRail(key:ValueKey('rail-home-latest:$catalogRefresh'),title:'Film Terbaru',endpoint:'home/latest',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Terbaru','home/latest','movie')),MovieRail(key:ValueKey('rail-home-family:$catalogRefresh'),title:'Nobar Sekeluarga',endpoint:'home/family',type:'movie',onTap:open,onSeeAll:()=>openCollection('Nobar Sekeluarga','home/family','movie')),MovieRail(key:ValueKey('rail-movie-week:$catalogRefresh'),title:'Film Trending Minggu Ini',endpoint:'trending/movie/week',type:'movie',onTap:open,onSeeAll:()=>openCollection('Film Trending Minggu Ini','trending/movie/week','movie')),MovieRail(key:ValueKey('rail-tv-week:$catalogRefresh'),title:'Series Trending Minggu Ini',endpoint:'trending/tv/week',type:'tv',onTap:open,onSeeAll:()=>openCollection('Series Trending Minggu Ini','trending/tv/week','tv')),const SizedBox(height:16)]),1=>PagedGrid(key:ValueKey('film:$catalogRefresh'),title:'Semua Film',endpoint:'catalog/movie',type:'movie',onTap:open),2=>PagedGrid(key:ValueKey('tv:$catalogRefresh'),title:'Semua Series',endpoint:'catalog/tv',type:'tv',onTap:open),3=>FilmstreamFilter(key:ValueKey('filter:$catalogRefresh'),initialGenre:genre,onTap:open),_=>favorites.isEmpty?const Center(child:Text('Belum ada favorit. Simpan dari halaman detail.')):GridView.builder(padding:const EdgeInsets.all(12),gridDelegate:filmstreamGridDelegate(context),itemCount:favorites.length,itemBuilder:(context,i)=>MovieTile(movie:favorites.values.elementAt(i),onTap:open))})])));
 }
 // Cinema Booking-inspired layout using FilmStream's own TMDB data and widgets.
 
@@ -1468,7 +1502,7 @@ class _PagedGridState extends State<PagedGrid> {
        type:widget.type,params:widget.params).pages;
    }
    final endpoint=widget.endpoint;
-    if(!endpoint.startsWith('catalog/') && endpoint!='home/latest' &&
+    if(!endpoint.startsWith('catalog/') &&
         endpoint!='search/multi')return null;
     final source=await FilmStreamCatalog.load();
     final media=endpoint=='search/multi'?null:
