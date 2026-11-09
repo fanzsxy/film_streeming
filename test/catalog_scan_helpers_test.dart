@@ -151,7 +151,8 @@ void main() {
     }, 'movie', host, 2026)!;
     expect(row['genres'], ['Comedy','Drama']);
     expect(row['genre_data_source'], 'lk21_source');
-    expect(CatalogScanHelpers.needsDetail(row), isFalse);
+    // Genre is available; a detail page is only useful to recover a rating.
+    expect(CatalogScanHelpers.needsDetail(row), isTrue);
     final fresh = CatalogScanHelpers.onlyNew(known,[row]);
     expect(fresh.single['genres'],['Comedy','Drama']);
     expect(CatalogEntry.fromJson(fresh.single).genres,['Comedy','Drama']);
@@ -168,7 +169,10 @@ void main() {
         ['Drama, Romance','Drama','Horror']),['Drama','Romance','Horror']);
     expect(CatalogScanHelpers.parseGenreLabels('Not a genre'), isEmpty);
     expect(CatalogScanHelpers.parseGenreLabels('Play Awal'), isEmpty);
-    expect(CatalogScanHelpers.needsDetail({'genres': 'Comedy, Drama'}),isFalse);
+    expect(CatalogScanHelpers.needsDetail(
+        {'genres': 'Comedy, Drama', 'rating': 7.2}),isFalse);
+    expect(CatalogScanHelpers.needsDetail(
+        {'genres': 'Comedy, Drama'}),isTrue);
     expect(CatalogScanHelpers.needsDetail({'genres': []}),isTrue);
     expect(CatalogScanHelpers.needsDetail({'genres': '???'}),isTrue);
   });
