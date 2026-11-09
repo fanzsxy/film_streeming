@@ -39,6 +39,8 @@ class CatalogScanHelpers {
         original.host == host && landed.host == host &&
         original.userInfo.isEmpty && landed.userInfo.isEmpty &&
         !original.hasPort && !landed.hasPort &&
+        !original.hasQuery && !landed.hasQuery &&
+        !original.hasFragment && !landed.hasFragment &&
         original.path.replaceFirst(RegExp(r'/$'), '') ==
             landed.path.replaceFirst(RegExp(r'/$'), '');
   }
