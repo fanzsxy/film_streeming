@@ -45,9 +45,9 @@ void main() {
             size: 29,
           ),
         ),
-        bottomNavigationBar: const NavigationBar(
+        bottomNavigationBar: NavigationBar(
           selectedIndex: 0,
-          destinations: [
+          destinations: const [
             NavigationDestination(
               icon: Icon(FilmStreamIcons.home),
               selectedIcon: Icon(FilmStreamIcons.homeSelected),
