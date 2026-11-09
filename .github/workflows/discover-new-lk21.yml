@@ -30,6 +30,12 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_auto_discovery.py' -v
       - name: Inspect newest LK21 listings and only new verified detail genres
         run: python tools/auto_discover_lk21.py --pages 2 --delay 3 --detail-limit 30 --detail-delay 2
+      - name: Explain source-side HTTP 403 / local-browser fallback
+        if: failure()
+        run: |
+          echo "::notice::LK21 can return HTTP 403 to hosted runners even when new titles are published."
+          echo "::notice::To scan with an ordinary visible Chromium on your own Windows PC, run: py tools/discover_new_titles_local_webview.py --pages 2 --dry-run"
+          echo "::notice::No access restrictions are bypassed; review the report and local catalog diff before committing."
       - name: Upload discovery report
         if: always()
         uses: actions/upload-artifact@v4
@@ -52,7 +58,7 @@ jobs:
             **Review every addition** (title, year, type, source URL, source poster,
             and genres verified from the title's detail page) before merging.
             Empty genres remain empty if a source detail page is inaccessible
-            or cannot be matched to the exact listing title and release year.
+            or its genre metadata cannot be located safely.
             The workflow only appends catalog entries and requests at most 30
             detail pages for newly discovered titles. It does not download
             video, bypass site restrictions, replace ratings or alter existing items.
