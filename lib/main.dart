@@ -1100,7 +1100,7 @@ class _CinemaHeroState extends State<CinemaHero> with AutomaticKeepAliveClientMi
    Row(mainAxisAlignment:MainAxisAlignment.center,children:[
      if(Platform.isWindows) IconButton(
        tooltip:'Banner sebelumnya',
-       icon:const Icon(Icons.chevron_left),
+       icon:const Icon(FilmStreamIcons.previous),
        onPressed:entries.length<2?null:(){
          if(pager.hasClients)pager.animateToPage((selected-1+entries.length)%entries.length,
            duration:const Duration(milliseconds:280),curve:Curves.easeOut);
@@ -1108,7 +1108,7 @@ class _CinemaHeroState extends State<CinemaHero> with AutomaticKeepAliveClientMi
      ...List.generate(entries.length,(i)=>AnimatedContainer(duration:const Duration(milliseconds:180),margin:const EdgeInsets.symmetric(horizontal:3),width:i==selected?16:5,height:5,decoration:BoxDecoration(color:i==selected?const Color(0xffe5aa55):Colors.white30,borderRadius:BorderRadius.circular(4)))),
      if(Platform.isWindows) IconButton(
        tooltip:'Banner berikutnya',
-       icon:const Icon(Icons.chevron_right),
+       icon:const Icon(FilmStreamIcons.next),
        onPressed:entries.length<2?null:(){
          if(pager.hasClients)pager.animateToPage((selected+1)%entries.length,
            duration:const Duration(milliseconds:280),curve:Curves.easeOut);
@@ -1149,9 +1149,9 @@ class _CinemaGenresState extends State<CinemaGenres> {
            style:TextStyle(letterSpacing:1.6,fontSize:11,color:Colors.white70,fontWeight:FontWeight.w700)))),
        if(Platform.isWindows)...[
          IconButton(tooltip:'Genre sebelumnya',onPressed:()=>_moveGenre(-320),
-           icon:const Icon(Icons.chevron_left)),
+           icon:const Icon(FilmStreamIcons.previous)),
          IconButton(tooltip:'Genre berikutnya',onPressed:()=>_moveGenre(320),
-           icon:const Icon(Icons.chevron_right)),
+           icon:const Icon(FilmStreamIcons.next)),
        ],
      ]),
      const SizedBox(height:12),
@@ -1275,9 +1275,9 @@ class _MovieRailState extends State<MovieRail> with AutomaticKeepAliveClientMixi
  @override void didUpdateWidget(covariant MovieRail old){super.didUpdateWidget(old);if(old.endpoint!=widget.endpoint||old.type!=widget.type){request=Tmdb.rail(widget.endpoint,widget.type);}}
  @override Widget build(BuildContext context){super.build(context);return FutureBuilder<List<Movie>>(future:request,builder:(context,s)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Padding(padding:const EdgeInsets.fromLTRB(16,18,12,12),child:Row(children:[Expanded(child:Text(widget.title,style:const TextStyle(fontSize:19,fontWeight:FontWeight.w700))),if(Platform.isWindows)...[
  IconButton(tooltip:'Geser ${widget.title} ke kiri',
-   onPressed:()=>_scrollRail(-500),icon:const Icon(Icons.chevron_left)),
+   onPressed:()=>_scrollRail(-500),icon:const Icon(FilmStreamIcons.previous)),
  IconButton(tooltip:'Geser ${widget.title} ke kanan',
-   onPressed:()=>_scrollRail(500),icon:const Icon(Icons.chevron_right)),
+   onPressed:()=>_scrollRail(500),icon:const Icon(FilmStreamIcons.next)),
 ],
 TextButton(onPressed:widget.onSeeAll,child:const Row(mainAxisSize:MainAxisSize.min,children:[Text('Lihat Lainnya',style:TextStyle(fontSize:12,fontWeight:FontWeight.w600)),SizedBox(width:2),Icon(Icons.chevron_right,size:17)]))])),if(s.hasError)Padding(padding:const EdgeInsets.all(16),child:Text('${s.error}')) else if(s.hasData && s.data!.isEmpty)
   const Padding(padding:EdgeInsets.symmetric(horizontal:16,vertical:10),
