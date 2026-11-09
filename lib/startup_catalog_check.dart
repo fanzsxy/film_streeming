@@ -245,12 +245,13 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
         final raw = await browser.runJavaScriptReturningResult(listingScript);
         final data = CatalogScanHelpers.decoded(raw);
         if (data is List && data.isNotEmpty) {
-          return [
+          final rows = [
             for (final row in data)
               if (CatalogScanHelpers.listingRow(
                       row, kind, host, DateTime.now().year) case final found?)
                 found,
           ];
+          if (rows.isNotEmpty) return rows;
         }
       } catch (_) { /* One same-page DOM retry. */ }
       if(attempt==0) {
@@ -290,6 +291,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     final known = List<CatalogEntry>.of(catalog);
     var totalAdded = 0;
     var totalGenres = 0;
+    var unavailableKinds = 0;
     for (final kind in hosts.keys) {
       if(!mounted) break;
       _status('Memeriksa ' + (kind == 'movie' ? 'film' : 'series') +
@@ -308,7 +310,10 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
         candidates.addAll(rows);
         if(p<listingPages) await Future<void>.delayed(betweenDetails);
       }
-      if(available==0)continue;
+      if(available==0) {
+        unavailableKinds++;
+        continue;
+      }
       final fresh = CatalogScanHelpers.onlyNew(
         known,candidates,limit:newItemsPerKind,
       );
@@ -341,8 +346,12 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       await _log('Scan ' + kind + ': ' + enriched.length.toString() +
           ' judul baru tersimpan di HP.');
     }
-    await _log('Scan LK21 selesai: ' + totalAdded.toString() +
-        ' judul baru, ' + totalGenres.toString() + ' memiliki genre.');
+    await _log((unavailableKinds == 0
+        ? 'Scan LK21 selesai: '
+        : 'Scan LK21 sebagian gagal (' + unavailableKinds.toString() +
+          ' sumber tidak tersedia): ') +
+        totalAdded.toString() + ' judul baru, ' +
+        totalGenres.toString() + ' memiliki genre.');
   }
 
   Future<void> _syncAfterScan() async {
