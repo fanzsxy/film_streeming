@@ -1,0 +1,25 @@
+name: Validate Local Browser Genre Recovery
+
+on:
+  pull_request:
+    paths:
+      - 'tools/recover_genres_local_webview.py'
+      - 'tools/test_local_webview_genres.py'
+      - '.github/workflows/validate-local-browser-genres.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-local-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile scripts
+        run: python -m py_compile tools/recover_genres_local_webview.py tools/test_local_webview_genres.py
+      - name: Offline redirect, source genre, auth fallback tests
+        run: python -m unittest discover -s tools -p test_local_webview_genres.py -v
