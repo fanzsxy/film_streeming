@@ -30,6 +30,11 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   static const pendingKey = 'filmstream_auto_sync_pending_v1';
   static const sentKey = 'filmstream_auto_sync_sent_v1';
   static const diagnosticKey = 'filmstream_auto_sync_status_v1';
+  static const uploadStatusKey = 'filmstream_auto_sync_upload_status_v1';
+  static const lastPrKey = 'filmstream_auto_sync_last_pr_v1';
+  static const scanStartedKey = 'filmstream_auto_sync_scan_started_v1';
+  static const scanFinishedKey = 'filmstream_auto_sync_scan_finished_v1';
+  static const syncTimeKey = 'filmstream_auto_sync_upload_checked_v1';
   // Never embed source cookies or TMDB credentials in scanning JS.
   static const syncKey = String.fromEnvironment('FILMSTREAM_SYNC_KEY');
   static const hosts = <String, String>{
@@ -65,6 +70,13 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     await prefs.setString(diagnosticKey, value);
   }
 
+  Future<void> _logSync(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(uploadStatusKey, value);
+    await prefs.setInt(syncTimeKey, DateTime.now().millisecondsSinceEpoch);
+    _status(value);
+  }
+
   void _completeNavigation(String? url) {
     final waiting = pageFinished;
     if (waiting != null && !waiting.isCompleted) waiting.complete(url);
@@ -89,6 +101,10 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       return;
     }
     try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(scanStartedKey, DateTime.now().millisecondsSinceEpoch);
+      await prefs.remove(scanFinishedKey);
+      await _log('Pemindaian WebView LK21 dimulai.');
       final browser = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setNavigationDelegate(NavigationDelegate(
@@ -122,6 +138,8 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     } catch (error) {
       await _log('Scanner LK21 gagal: ' + error.runtimeType.toString());
     } finally {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(scanFinishedKey, DateTime.now().millisecondsSinceEpoch);
       if (mounted) setState(() => active = false);
       // Reviewing existing GitHub catalog and optional backend submissions
       // should not keep the WebView open or delay initial page rendering.
@@ -447,8 +465,9 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       await _sendPending();
       final reviewed = await FilmStreamCatalog.syncReviewedCatalog();
       if(reviewed>0 && mounted) widget.onCatalogUpdated();
-    } catch (_) {
-      // Scanner additions remain available locally when offline.
+    } catch (error) {
+      await _logSync('Pemeriksaan backend/katalog gagal: '
+          + error.runtimeType.toString() + '. Data HP tetap tersimpan.');
     }
   }
 
@@ -498,74 +517,92 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
       }
       if(added>0){
         await prefs.setString(pendingKey,jsonEncode(pending));
-        await _log('Menyiapkan $added judul lokal yang belum ada di katalog GitHub untuk sinkronisasi.');
+        await _logSync('Menyiapkan $added judul lokal untuk pengiriman GitHub.');
       }
     }catch(e){
-      await _log('Pemeriksaan hasil scan lokal gagal: ${e.runtimeType}.');
+      await _logSync('Pemeriksaan antrean lokal gagal: ${e.runtimeType}.');
     }
   }
 
   bool sending=false;
   Future<void> _sendPending() async {
-    if(sending)return;
-    if(syncKey.isEmpty){
-      await _log('Sinkronisasi tidak aktif: FILMSTREAM_SYNC_KEY kosong saat build.');
-      return;
-    }
-    sending=true;
+    if (sending) return;
+    sending = true;
     try {
-      final prefs=await SharedPreferences.getInstance();
-      final raw=prefs.getString(pendingKey)??'[]';
-      final decoded=jsonDecode(raw);
-      if(decoded is! List||decoded.isEmpty)return;
-      final batch=decoded.whereType<Map>().take(100).map(
-        (entry)=>Map<String,dynamic>.from(entry)).toList();
-      if(batch.isEmpty)return;
-      final response=await http.post(
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(pendingKey) ?? '[]';
+      final decoded = jsonDecode(raw);
+      if (decoded is! List || decoded.isEmpty) {
+        await _logSync('Tidak ada judul baru menunggu pengiriman; '
+            'PR GitHub baru tidak dibuat.');
+        return;
+      }
+      if (syncKey.isEmpty) {
+        await _logSync('Kunci pengiriman FILMSTREAM_SYNC_KEY tidak ada '
+            'di APK. Hasil scan tetap disimpan di HP.');
+        return;
+      }
+      final batch = decoded.whereType<Map>().take(100)
+          .map((row) => Map<String, dynamic>.from(row)).toList();
+      if (batch.isEmpty) {
+        await _logSync('Antrean pengiriman berisi data tidak valid; '
+            'perlu diperiksa.');
+        return;
+      }
+      await _logSync('Mengirim ${batch.length} judul ke backend FilmStream...');
+      final response = await http.post(
         Uri.parse('https://film-streeming-api.vercel.app/catalog/submit'),
-        headers:{'Content-Type':'application/json','X-Filmstream-Sync-Key':syncKey},
-        body:jsonEncode({'items':batch}),
-      ).timeout(const Duration(seconds:30));
-      if(response.statusCode==200){
-        final result=jsonDecode(response.body);
-        if (result is! Map ||
-            (result['status'] != 'review_required' &&
-             result['status'] != 'already_known')) {
-          await _log('Server tidak mengonfirmasi data di GitHub. '
-              'Antrean tetap tersimpan di HP.');
-          return;
-        }
-        final alreadyKnown = result['status'] == 'already_known';
-        final oldSent=jsonDecode(prefs.getString(sentKey)??'[]');
-        final sent=oldSent is List?oldSent.whereType<String>().toSet():<String>{};
-        sent.addAll(batch.map(_recordId));
-        await prefs.setString(sentKey,jsonEncode(sent.toList()));
-        final remaining=decoded.skip(batch.length).toList();
-        await prefs.setString(pendingKey,jsonEncode(remaining));
-        final url = (result['pull_request_url'] ?? '').toString();
-        if (alreadyKnown) {
-          await _log('${batch.length} judul sudah dikenali oleh GitHub; '
-              'tidak perlu dikirim ulang.');
-        } else {
-          await _log('Berhasil mengirim ${batch.length} judul untuk review '
-              'GitHub. PR: $url');
-        }
-        if (mounted && !alreadyKnown) {
-          // An import PR has not yet updated the canonical catalog.
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Filmstream-Sync-Key': syncKey,
+        },
+        body: jsonEncode({'items': batch}),
+      ).timeout(const Duration(seconds: 30));
+      if (response.statusCode != 200) {
+        await _logSync('Backend menolak pengiriman: HTTP '
+            '${response.statusCode}. Antrean tetap di HP.');
+        return;
+      }
+      final body = jsonDecode(response.body);
+      if (body is! Map ||
+          (body['status'] != 'review_required' &&
+           body['status'] != 'already_known')) {
+        await _logSync('Backend belum mengonfirmasi PR atau data yang ada. '
+            'Antrean tetap di HP.');
+        return;
+      }
+      final confirmedAlready = body['status'] == 'already_known';
+      final oldSent = jsonDecode(prefs.getString(sentKey) ?? '[]');
+      final sent = oldSent is List
+          ? oldSent.whereType<String>().toSet() : <String>{};
+      sent.addAll(batch.map(_recordId));
+      await prefs.setString(sentKey, jsonEncode(sent.toList()));
+      await prefs.setString(pendingKey,
+          jsonEncode(decoded.skip(batch.length).toList()));
+      final prUrl = (body['pull_request_url'] ?? '').toString();
+      if (!confirmedAlready && prUrl.startsWith(
+          'https://github.com/fanzsxy/film_streeming/pull/')) {
+        await prefs.setString(lastPrKey, prUrl);
+      }
+      if (confirmedAlready) {
+        await _logSync('${batch.length} judul sudah dikenal GitHub/backend. '
+            'Tidak perlu membuat PR duplikat.');
+      } else {
+        await _logSync('Backend menerima ${batch.length} judul dan '
+            'membuat PR review: $prUrl');
+        if (mounted) {
           ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-            content: Text('${batch.length} judul dikirim ke GitHub. '
-                'Gabungkan PR hasil scan untuk melanjutkan impor katalog.'),
+            content: Text('${batch.length} judul dikirim ke GitHub; '
+                'review PR sebelum katalog utama bertambah.'),
             duration: const Duration(seconds: 6),
           ));
         }
-      } else {
-        await _log('Pengiriman ke backend gagal: HTTP ${response.statusCode}. Data tetap tersimpan di HP.');
       }
-    }catch(e){
-      await _log('Pengiriman ke backend gagal: ${e.runtimeType}. Data tetap tersimpan.');
-      // Keep pending submissions for a later launch.
-    }finally{
-      sending=false;
+    } catch (error) {
+      await _logSync('Pengiriman backend gagal: '
+          '${error.runtimeType}. Antrean tetap di HP.');
+    } finally {
+      sending = false;
     }
   }
 
