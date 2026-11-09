@@ -26,8 +26,8 @@ class CatalogScanHelpers {
     for (final fragment in fragments) {
       if (fragment.length > 180) continue;
       final noPrefix = fragment.trim().replaceFirst(
-        RegExp(r'^genres?\\s*:\\s*', caseSensitive: false), '');
-      for (final candidate in noPrefix.split(RegExp(r'\\s*[,|•]\\s*'))) {
+        RegExp(r'^genres?\s*:\s*', caseSensitive: false), '');
+      for (final candidate in noPrefix.split(RegExp(r'\s*[,|•]\s*'))) {
         final matched = _genreNamesByLower[candidate.trim().toLowerCase()];
         if (matched != null && !parsed.contains(matched)) parsed.add(matched);
         if (parsed.length >= 10) return parsed;
