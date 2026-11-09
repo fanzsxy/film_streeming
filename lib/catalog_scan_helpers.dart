@@ -8,9 +8,33 @@ class CatalogScanHelpers {
     'Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime',
     'Documentary', 'Drama', 'Family', 'Fantasy', 'History', 'Horror',
     'Musical', 'Music', 'Mystery', 'Romance', 'Sci-Fi', 'Science Fiction',
-    'Sport', 'Thriller', 'War', 'Western', 'Reality', 'Soap', 'Kids',
+    'Sport', 'Short', 'Thriller', 'War', 'Western', 'Reality', 'Soap', 'Kids',
     'TV Movie', 'War & Politics', 'Action & Adventure', 'Sci-Fi & Fantasy',
   };
+
+  /// Accept comma-separated LK21 card metadata such as "Comedy, Drama",
+  /// without treating navigation menus, titles or arbitrary text as genres.
+  static final Map<String, String> _genreNamesByLower = {
+    for (final label in genres) label.toLowerCase(): label,
+  };
+
+  static List<String> parseGenreLabels(Object? raw) {
+    final fragments = raw is List
+        ? raw.whereType<String>().toList()
+        : raw is String ? <String>[raw] : const <String>[];
+    final parsed = <String>[];
+    for (final fragment in fragments) {
+      if (fragment.length > 180) continue;
+      final noPrefix = fragment.trim().replaceFirst(
+        RegExp(r'^genres?\\s*:\\s*', caseSensitive: false), '');
+      for (final candidate in noPrefix.split(RegExp(r'\\s*[,|•]\\s*'))) {
+        final matched = _genreNamesByLower[candidate.trim().toLowerCase()];
+        if (matched != null && !parsed.contains(matched)) parsed.add(matched);
+        if (parsed.length >= 10) return parsed;
+      }
+    }
+    return parsed;
+  }
 
   static Object? decoded(Object? value) {
     for (var i = 0; i < 2 && value is String; i++) {
@@ -78,6 +102,7 @@ class CatalogScanHelpers {
     if (pathYear == null || int.parse(pathYear.group(1)!) != year) return null;
     final poster = validPoster(raw['poster_url']);
     final rating = raw['rating'];
+    final listingGenres = parseGenreLabels(raw['genres']);
     return {
       'type': kind,
       'title': title,
@@ -85,6 +110,8 @@ class CatalogScanHelpers {
       'url': cleanUrl(url),
       if (poster.isNotEmpty) 'poster_url': poster,
       if (rating is num && rating > 0 && rating <= 10) 'rating': rating,
+      if (listingGenres.isNotEmpty) 'genres': listingGenres,
+      if (listingGenres.isNotEmpty) 'genre_data_source': 'lk21_source',
       'scan_added_v2': true,
     };
   }
@@ -124,17 +151,10 @@ class CatalogScanHelpers {
     // The caller only invokes this after exact HTTPS host/path verification.
     final result = Map<String, dynamic>.from(row);
     if (rawDetail is! Map) return result;
-    final names = <String>[];
-    final rawGenres = rawDetail['genres'];
-    if (rawGenres is List) {
-      for (final value in rawGenres) {
-        if (value is String && genres.contains(value) &&
-            !names.contains(value) && names.length < 10) {
-          names.add(value);
-        }
-      }
-    }
-    if (names.isNotEmpty) {
+    final names = parseGenreLabels(rawDetail['genres']);
+    final alreadyHasGenres =
+        parseGenreLabels(result['genres']).isNotEmpty;
+    if (names.isNotEmpty && !alreadyHasGenres) {
       result['genres'] = names;
       result['genre_data_source'] = 'lk21_source';
     }
