@@ -122,9 +122,11 @@ class CatalogScanHelpers {
     };
   }
 
-  /// A verified card genre is sufficient; detail pages are fallback only.
+  /// A detail page is only useful if a new card lacks genre or rating.
+  /// Fully-populated cards require no extra WebView navigation.
   static bool needsDetail(Map<String, dynamic> row) =>
-      parseGenreLabels(row['genres']).isEmpty;
+      parseGenreLabels(row['genres']).isEmpty ||
+      parseRating(row['rating']) == null;
 
   static String keyFor(Map<String, dynamic> row) {
     final type = (row['type'] ?? '') == 'series' ? 'tv' : 'movie';
