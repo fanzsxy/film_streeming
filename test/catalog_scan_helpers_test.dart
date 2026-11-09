@@ -77,6 +77,71 @@ void main() {
     expect(CatalogScanHelpers.onlyNew(known, rows, limit:1).length,1);
   });
 
+  test('LK21 latest star ratings are accepted without guessing', () {
+    expect(CatalogScanHelpers.parseRating(5.2), 5.2);
+    expect(CatalogScanHelpers.parseRating('★ 7.7'), 7.7);
+    expect(CatalogScanHelpers.parseRating('⭐ 8.1'), 8.1);
+    expect(CatalogScanHelpers.parseRating('8/10'), 8);
+    expect(CatalogScanHelpers.parseRating('10.0'), 10);
+    expect(CatalogScanHelpers.parseRating('9.25'), 9.25);
+    for (final invalid in [
+      null, true, '', 'HD', '2026', '01:31', '11', '0',
+      '7.7 votes', '5.2 2025 HD', '-1', 'NaN', '100',
+    ]) {
+      expect(CatalogScanHelpers.parseRating(invalid), isNull,
+          reason: 'Not a source rating: ' + invalid.toString());
+    }
+  });
+
+  test('scanner preserves LK21 ratings alongside genre and poster', () {
+    final row = CatalogScanHelpers.listingRow({
+      'title': 'Concessions',
+      'year': 2025,
+      'url': 'https://tv12.lk21official.cc/concessions-2025',
+      'poster_url': 'https://cdn.example/concessions.jpg',
+      'genres': 'Comedy, Drama',
+      'rating': 5.2,
+    }, 'movie', host, 2026)!;
+    expect(row['rating'], 5.2);
+    expect(row['genres'], ['Comedy', 'Drama']);
+    expect(CatalogScanHelpers.needsDetail(row), isFalse);
+    final inCatalog = CatalogEntry.fromJson(row);
+    expect(inCatalog.rating, 5.2);
+    expect(inCatalog.genres, ['Comedy', 'Drama']);
+    expect(CatalogScanHelpers.onlyNew(known, [row]).single['rating'], 5.2);
+    final bad = CatalogScanHelpers.listingRow({
+      'title': 'Invalid Star', 'year': 2026,
+      'url': 'https://tv12.lk21official.cc/invalid-star-2026',
+      'genres': 'Drama', 'rating': '2026',
+    }, 'movie', host, 2026)!;
+    expect(bad.containsKey('rating'), isFalse);
+    expect(CatalogScanHelpers.needsDetail(bad), isTrue);
+  });
+
+  test('detail rating fallback does not overwrite listing rating', () {
+    final row = <String, dynamic>{
+      'title': 'Film', 'year': 2026, 'type': 'movie',
+      'url': 'https://tv12.lk21official.cc/film-2026',
+      'genres': ['Drama'], 'rating': 7.7,
+    };
+    final matched = CatalogScanHelpers.withVerifiedDetail(row,
+        {'genres': ['Horror'], 'rating': 5.0});
+    expect(matched['rating'], 7.7);
+    expect(matched['genres'], ['Drama']);
+    final emptyScore = <String, dynamic>{
+      'title': 'Other Film', 'year': 2026, 'type': 'movie',
+      'url': 'https://tv12.lk21official.cc/other-film-2026',
+      'genres': ['Action'],
+    };
+    final recovered = CatalogScanHelpers.withVerifiedDetail(emptyScore,
+        {'rating': '⭐ 8.1'});
+    expect(recovered['rating'], 8.1);
+    expect(emptyScore.containsKey('rating'), isFalse);
+    final invalid = CatalogScanHelpers.withVerifiedDetail(emptyScore,
+        {'rating': '01:31'});
+    expect(invalid.containsKey('rating'), isFalse);
+  });
+
   test('genre text on LK21 latest cards is saved directly', () {
     final row = CatalogScanHelpers.listingRow({
       'title': 'Concessions',
