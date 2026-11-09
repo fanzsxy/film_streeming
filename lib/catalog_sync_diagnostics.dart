@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,6 +37,7 @@ class CatalogSyncDiagnostics {
 
   static Future<void> show(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
+    final isWindows = Platform.isWindows;
     final started = prefs.getInt(_scanStartedKey);
     final finished = prefs.getInt(_scanFinishedKey);
     final latestScan = prefs.getString(_statusKey) ?? 'Belum ada laporan scanner.';
@@ -50,7 +52,8 @@ class CatalogSyncDiagnostics {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Status scanner & GitHub'),
+        title: Text(isWindows ? 'Status katalog & GitHub'
+            : 'Status scanner & GitHub'),
         content: SizedBox(
           width: 370,
           child: SingleChildScrollView(
@@ -58,17 +61,25 @@ class CatalogSyncDiagnostics {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Data lokal di HP',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(isWindows ? 'Data lokal di Windows' : 'Data lokal di HP',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text('Tambahan tersimpan: $localCount judul'),
                 Text('Menunggu pengiriman: $pendingCount judul'),
                 Text('Pernah dikonfirmasi backend: $sentCount judul'),
                 const SizedBox(height: 12),
-                const Text('Pemindaian LK21',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Text('Mulai: ${_time(started)}'),
-                Text('Selesai: ${_time(finished)}'),
-                SelectableText(latestScan),
+                if (isWindows) ...[
+                  const Text('Pembaruan katalog Windows',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('Windows membaca penambahan yang sudah '
+                      'disetujui dari katalog GitHub. Pemindaian WebView '
+                      'LK21 otomatis hanya berjalan pada aplikasi Android.'),
+                ] else ...[
+                  const Text('Pemindaian LK21',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text('Mulai: ${_time(started)}'),
+                  Text('Selesai: ${_time(finished)}'),
+                  SelectableText(latestScan),
+                ],
                 const SizedBox(height: 12),
                 const Text('Pengiriman GitHub',
                     style: TextStyle(fontWeight: FontWeight.bold)),
@@ -80,11 +91,16 @@ class CatalogSyncDiagnostics {
                   SelectableText(lastPr),
                 ],
                 const SizedBox(height: 12),
-                const Text(
-                  'Film Terbaru di Beranda juga dapat berasal dari katalog '
-                  'bawaan. PR hanya dibuat jika ada judul lokal baru dan '
-                  'backend berhasil menerima kiriman.',
-                  style: TextStyle(fontSize: 12, color: Colors.white70),
+                Text(
+                  isWindows
+                      ? 'Film Terbaru dapat berasal dari katalog bawaan '
+                        'atau hasil review GitHub. Memasang aplikasi '
+                        'Windows tidak membuat PR scanner LK21 baru.'
+                      : 'Film Terbaru di Beranda juga dapat berasal dari '
+                        'katalog bawaan. PR hanya dibuat jika ada judul '
+                        'lokal baru dan backend berhasil menerima kiriman.',
+                  style: const TextStyle(
+                      fontSize: 12, color: Colors.white70),
                 ),
                 const SizedBox(height: 12),
                 const Text(
