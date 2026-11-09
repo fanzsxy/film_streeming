@@ -30,17 +30,54 @@ void main() {
     expect(CatalogQueryIndex.handles('catalog/tv'), isTrue);
     expect(CatalogQueryIndex.handles('catalog/filter'), isTrue);
     expect(CatalogQueryIndex.handles('search/multi'), isTrue);
+    expect(CatalogQueryIndex.handles('home/latest'), isTrue);
     for (final tmdbHome in [
       'trending/all/week', 'trending/movie/week', 'trending/tv/week',
       'movie/popular', 'tv/popular',
       'movie/top_rated', 'tv/top_rated',
-      'home/recommended', 'home/latest', 'home/family',
+      'home/recommended', 'home/family',
     ]) {
       expect(CatalogQueryIndex.handles(tmdbHome), isFalse,
           reason: 'Home ranking should come from TMDB: ' + tmdbHome);
     }
     final catalogGenres=CatalogQueryIndex.fromEntries(entries).availableGenres;
     expect(catalogGenres.any((g) => g.value == 'Biography'), isTrue);
+  });
+
+  test('Film Terbaru is filled with newest catalog movies and paginates', () {
+    final index = CatalogQueryIndex.fromEntries(entries);
+    final latest = index.select('home/latest', type:'movie');
+    expect(latest.total, 2);
+    expect(latest.items.map((e)=>e.title).toList(),
+      ['An Action Movie', 'Biography Movie']);
+    expect(latest.items.every((e)=>e.type=='movie'), isTrue);
+    expect(latest.pages, 1);
+    expect(index.select('home/latest', page:2).items, isEmpty);
+  });
+
+  test('language choices show names, common first; omit unknown country codes', () {
+    final sample=<CatalogEntry>[
+      for(var i=0;i<5;i++) CatalogEntry(title:'English '+i.toString(),
+        year:2025,type:'movie',
+        url:'https://example.org/en/'+i.toString(),originalLanguage:'en'),
+      for(var i=0;i<3;i++) CatalogEntry(title:'Korean '+i.toString(),
+        year:2025,type:'tv',
+        url:'https://example.org/ko/'+i.toString(),originalLanguage:'ko'),
+      const CatalogEntry(title:'German',year:2025,type:'movie',
+        url:'https://example.org/de',originalLanguage:'de'),
+      const CatalogEntry(title:'Country Code',year:2025,type:'movie',
+        url:'https://example.org/cn',originalLanguage:'cn'),
+      const CatalogEntry(title:'Unknown',year:2025,type:'movie',
+        url:'https://example.org/xx',originalLanguage:'xx'),
+    ];
+    final options=CatalogLanguageOptions.available(sample);
+    expect(options.map((entry)=>entry.key).toList(),['en','ko','de']);
+    expect(options.map((entry)=>entry.value).toList(),
+      ['Inggris','Korea','Jerman']);
+    expect(CatalogLanguageOptions.available(sample,limit:2).length,2);
+    final index=CatalogQueryIndex.fromEntries(sample);
+    expect(index.select('catalog/filter',type:'all',
+      params:{'language':'ko'}).total,3);
   });
 
   test('TMDB poster has priority over original catalog posters', () {
