@@ -26,6 +26,15 @@ PASS = "local_webview_v1"
 TMDB_AUTH_FAILED = False
 
 
+def should_skip(item, skip_tmdb_pending=False):
+    """Do not repeat completed items; optionally defer TMDB-auth failures."""
+    if item.get("genre_local_pass") == PASS:
+        return True
+    return (skip_tmdb_pending
+            and item.get("genre_local_status") == "tmdb_auth_required")
+
+
+
 def browse_source(page, item, delay):
     """Read rendered page from an actual visible browser, never an HTTP scraper."""
     address = item.get("url")
@@ -100,6 +109,11 @@ def main():
     parser.add_argument("--limit", type=int, default=25,
                         help="1-1000 titles per batch; 0 audits without opening the browser")
     parser.add_argument("--delay", type=float, default=0.8)
+    parser.add_argument(
+        "--skip-tmdb-pending", action="store_true",
+        help="Defer empty titles already checked while TMDB was unauthorized; "
+             "they remain pending and can be retried after fixing TMDB token",
+    )
     args = parser.parse_args()
     if not 0 <= args.limit <= 1000 or args.delay < 0.5:
         parser.error("--limit must be 0..1000 and --delay >= 0.5")
@@ -134,7 +148,7 @@ def main():
             for item in blanks:
                 if attempted >= args.limit:
                     break
-                if item.get("genre_local_pass") == PASS:
+                if should_skip(item, args.skip_tmdb_pending):
                     continue
                 try:
                     title, genres, source_status = browse_source(page, item, args.delay)
@@ -142,28 +156,39 @@ def main():
                         print(f"Access blocked by source website ({source_status}) for {item.get('url')}. "
                               "Stopping; no bypass attempted.", flush=True)
                         break
-                    if source_status.startswith("invalid_redirect"):
-                        print("Unexpected source redirect; stopping for safety.", flush=True)
-                        break
-                    if source_status.startswith("http_"):
-                        print(f"Source page unavailable: {source_status} ({item.get('title')!r})",
-                              flush=True)
-                    status, title_fixed, from_tmdb, from_source = recover_item(
-                        item, title, genres, source_status, token, args.delay)
-                    item["genre_local_status"] = status
-                    if status != "tmdb_auth_required":
+                    if source_status == "invalid_redirect":
+                        # Ignore redirected page contents entirely: it might
+                        # be another title, login page or an unrelated host.
+                        # Record the anomaly and move to the next catalog URL.
+                        item["genre_local_status"] = "invalid_redirect"
                         item["genre_local_pass"] = PASS
+                        attempted += 1
+                        unresolved += 1
+                        print(f"[{attempted}/{args.limit}] "
+                              f"{item.get('title')!r}: skipped unexpected redirect "
+                              f"(no genre or title modified)", flush=True)
                     else:
-                        # Keep incomplete record pending until TMDB works.
-                        print("No verified source genre; pending TMDB credential fix.", flush=True)
-                    attempted += 1
-                    corrected += int(title_fixed)
-                    tmdb_filled += int(from_tmdb)
-                    source_filled += int(from_source)
-                    unresolved += int(not from_tmdb and not from_source)
-                    print(f"[{attempted}/{args.limit}] {item.get('title')!r}: "
-                          f"source={source_status}; result={status}; "
-                          f"genres={item.get('genres') or []}", flush=True)
+                        if source_status.startswith("http_"):
+                            print(f"Source page unavailable: {source_status} "
+                                  f"({item.get('title')!r})", flush=True)
+                        status, title_fixed, from_tmdb, from_source = recover_item(
+                            item, title, genres, source_status, token, args.delay)
+                        item["genre_local_status"] = status
+                        if status != "tmdb_auth_required":
+                            item["genre_local_pass"] = PASS
+                        else:
+                            # Revisit later once the user supplies valid
+                            # TMDB credentials, without losing progress.
+                            print("No verified source genre; pending TMDB credential fix.",
+                                  flush=True)
+                        attempted += 1
+                        corrected += int(title_fixed)
+                        tmdb_filled += int(from_tmdb)
+                        source_filled += int(from_source)
+                        unresolved += int(not from_tmdb and not from_source)
+                        print(f"[{attempted}/{args.limit}] {item.get('title')!r}: "
+                              f"source={source_status}; result={status}; "
+                              f"genres={item.get('genres') or []}", flush=True)
                 except (HTTPError, URLError, TimeoutError, BrowserError, KeyError, ValueError) as exc:
                     # Do not classify network/API errors as permanent mismatches.
                     print(f"Stopped on temporary browser/TMDB error near {item.get('title')!r}: {exc}",
