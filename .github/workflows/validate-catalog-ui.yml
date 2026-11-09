@@ -7,6 +7,10 @@ on:
       - 'lib/filmstream_catalog.dart'
       - 'lib/main.dart'
       - 'lib/filmstream_icons.dart'
+      - 'lib/windows_navigation.dart'
+      - 'lib/filmstream_detail_metadata.dart'
+      - 'lib/windows_source_player.dart'
+      - 'lib/windows_season_picker.dart'
       - 'pubspec.yaml'
       - 'pubspec.lock'
       - 'lib/startup_catalog_check.dart'
@@ -17,6 +21,8 @@ on:
       - 'test/catalog_scan_helpers_test.dart'
       - 'test/catalog_sync_diagnostics_test.dart'
       - 'test/filmstream_icons_test.dart'
+      - 'test/windows_navigation_test.dart'
+      - 'test/filmstream_detail_metadata_test.dart'
       - '.github/workflows/validate-catalog-ui.yml'
   workflow_dispatch:
 
@@ -36,7 +42,7 @@ jobs:
       - name: Get Flutter packages
         run: flutter pub get
       - name: Analyze changed Dart files
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/catalog_query.dart lib/filmstream_catalog.dart lib/main.dart lib/search_suggestions.dart lib/startup_catalog_check.dart lib/catalog_scan_helpers.dart lib/catalog_sync_diagnostics.dart lib/filmstream_icons.dart
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/catalog_query.dart lib/filmstream_catalog.dart lib/main.dart lib/search_suggestions.dart lib/startup_catalog_check.dart lib/catalog_scan_helpers.dart lib/catalog_sync_diagnostics.dart lib/filmstream_icons.dart lib/windows_navigation.dart lib/filmstream_detail_metadata.dart lib/windows_source_player.dart lib/windows_season_picker.dart
       - name: Test catalog search, categories, filter and pagination
         run: |
           flutter test test/catalog_query_test.dart
@@ -46,3 +52,5 @@ jobs:
           flutter test test/catalog_scan_helpers_test.dart
           flutter test test/catalog_sync_diagnostics_test.dart
           flutter test test/filmstream_icons_test.dart
+          flutter test test/windows_navigation_test.dart
+          flutter test test/filmstream_detail_metadata_test.dart
