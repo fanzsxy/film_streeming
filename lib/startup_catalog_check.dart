@@ -94,6 +94,9 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setNavigationDelegate(NavigationDelegate(
           onNavigationRequest: (request) {
+            // Ignore subframe adverts/players. A blocked iframe is not an
+            // indication that the main listing/detail navigation failed.
+            if (!request.isMainFrame) return NavigationDecision.prevent;
             final target = expectedUrl;
             if (target == null) return NavigationDecision.prevent;
             final host = Uri.tryParse(target)?.host ?? '';
