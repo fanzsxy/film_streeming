@@ -43,6 +43,8 @@ class FilmStreamIcons {
   static const play = PhosphorIconsRegular.playCircle;
   static const completed = PhosphorIconsFill.checkCircle;
   static const sourcePage = PhosphorIconsRegular.fileText;
+  static const previous = PhosphorIconsRegular.caretLeft;
+  static const next = PhosphorIconsRegular.caretRight;
 
   // Header.
   static const brand = PhosphorIconsFill.filmStrip;
