@@ -4,6 +4,11 @@ import 'filmstream_catalog.dart';
 /// Build normalized titles once; typing only scans cached lowercase strings.
 /// Keep only the best seven entries, never sort the entire catalog per key.
 class CatalogSuggestionIndex {
+  static Future<CatalogSuggestionIndex>? _cached;
+  static Future<CatalogSuggestionIndex> shared() =>
+      _cached ??= FilmStreamCatalog.load()
+          .then((entries) => CatalogSuggestionIndex(entries));
+  static void invalidate() { _cached = null; }
   final List<_IndexedTitle> _titles;
   CatalogSuggestionIndex(List<CatalogEntry> entries)
       : _titles = [
@@ -83,8 +88,7 @@ class FilmSearchSuggestions extends StatefulWidget {
 }
 
 class _FilmSearchSuggestionsState extends State<FilmSearchSuggestions> {
-  late final Future<CatalogSuggestionIndex> _index = FilmStreamCatalog.load()
-      .then((entries) => CatalogSuggestionIndex(entries));
+  late final Future<CatalogSuggestionIndex> _index = CatalogSuggestionIndex.shared();
 
   @override
   Widget build(BuildContext context) {

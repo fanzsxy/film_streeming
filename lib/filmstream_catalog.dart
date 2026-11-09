@@ -14,6 +14,9 @@ class CatalogEntry {
   final double? rating;
   final int? tmdbId;
   final String tmdbPosterPath;
+  final String originalLanguage;
+  final List<String> genres;
+  final List<int> genreIds;
 
   const CatalogEntry({
     required this.title,
@@ -26,6 +29,9 @@ class CatalogEntry {
     this.rating,
     this.tmdbId,
     this.tmdbPosterPath = '',
+    this.originalLanguage = '',
+    this.genres = const [],
+    this.genreIds = const [],
   });
 
   factory CatalogEntry.fromJson(Map<String, dynamic> json) {
@@ -51,6 +57,16 @@ class CatalogEntry {
       rating: json['rating'] is num ? (json['rating'] as num).toDouble() : null,
       tmdbId: json['tmdb_id'] is int && json['tmdb_id'] > 0 ? json['tmdb_id'] as int : null,
       tmdbPosterPath: (json['tmdb_poster_path'] ?? '').toString(),
+      originalLanguage: (json['original_language'] ?? '').toString(),
+      genres: (json['genres'] is List)
+          ? (json['genres'] as List)
+              .whereType<String>().where((name) => name.trim().isNotEmpty)
+              .toList(growable: false)
+          : const [],
+      genreIds: (json['genre_ids'] is List)
+          ? (json['genre_ids'] as List).whereType<int>()
+              .where((id) => id > 0).toList(growable: false)
+          : const [],
     );
   }
 }
@@ -80,7 +96,7 @@ class FilmStreamCatalog {
     try {
       final response = await http.get(Uri.parse(_remoteUrl))
           .timeout(const Duration(seconds: 30));
-      if (response.statusCode != 200 || response.bodyBytes.length > 15000000) {
+      if (response.statusCode != 200 || response.bodyBytes.length > 30000000) {
         return 0;
       }
       final remote = await compute(_parseCatalog, utf8.decode(response.bodyBytes));
@@ -113,6 +129,9 @@ class FilmStreamCatalog {
           'rating': entry.rating,
           'tmdb_id': entry.tmdbId,
           'tmdb_poster_path': entry.tmdbPosterPath,
+          'genres': entry.genres,
+          'genre_ids': entry.genreIds,
+          'original_language': entry.originalLanguage,
         });
       }
       if (additions.isNotEmpty) {
