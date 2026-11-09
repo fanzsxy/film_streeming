@@ -1,0 +1,29 @@
+name: Validate latest catalog scanner
+
+on:
+  pull_request:
+    paths:
+      - 'tools/auto_discover_lk21.py'
+      - 'tests/test_auto_discovery.py'
+      - '.github/workflows/discover-new-lk21.yml'
+      - '.github/workflows/validate-latest-catalog-scanner.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scanner-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install scanner dependencies
+        run: pip install -r crawler/requirements.txt
+      - name: Compile and run offline metadata scanner tests
+        run: |
+          python -m py_compile tools/auto_discover_lk21.py
+          python -m unittest discover -s tests -p 'test_auto_discovery.py' -v
