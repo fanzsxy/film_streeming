@@ -152,18 +152,8 @@ class LocalCatalogMetadata {
   }
   static Movie _withCollectedMetadata(CatalogEntry entry, Map<String,dynamic> base) {
     final data=Map<String,dynamic>.from(base);
-    // One poster priority for Home, Search, Film/Series Popular and Detail:
-    // TMDB artwork first; if missing, use the bundled catalog poster.
-    final tmdbPoster=(data['poster_path']??'').toString().trim();
-    if(tmdbPoster.isEmpty || tmdbPoster=='null') {
-      if(entry.tmdbPosterPath.startsWith('/')) {
-        data['poster_path']=entry.tmdbPosterPath;
-      } else if(entry.posterUrl.startsWith('https://')) {
-        data['poster_path']=entry.posterUrl;
-      } else {
-        data['poster_path']='';
-      }
-    }
+    data['poster_path']=preferredCatalogPoster(
+      entry,tmdbPoster:(data['poster_path']??'').toString());
     // Genres collected from LK21 are usable even without TMDB genre IDs.
     data['genre_ids']=entry.genreIds;
     data['genre_names']=entry.genres;
