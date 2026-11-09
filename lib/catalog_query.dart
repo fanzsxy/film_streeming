@@ -103,69 +103,10 @@ class CatalogQueryIndex {
 
   List<String> get availableLanguages {
     final names = <String>{};
+    final languageCode = RegExp(r'^[a-z]{2,3}' + r'$');
     for (final entry in _entries) {
       final value = entry.originalLanguage.trim().toLowerCase();
-      if (RegExp(r'^[a-z]{2,3}
-
-  static bool handles(String endpoint) =>
-      endpoint.startsWith('catalog/') || endpoint == 'search/multi' ||
-      endpoint.startsWith('home/') || endpoint.startsWith('trending/') ||
-      endpoint.endsWith('/popular') || endpoint.endsWith('/top_rated');
-
-  CatalogSlice select(String endpoint, {
-    int page = 1,
-    String type = 'all',
-    Map<String, String> params = const {},
-  }) {
-    if (page < 1) return const CatalogSlice([], 0);
-    String? selectedType = type == 'all' ? null : type;
-    if (endpoint == 'search/multi' || endpoint == 'catalog/sorted' ||
-        endpoint == 'catalog/filter' || endpoint == 'trending/all/week' ||
-        endpoint == 'home/recommended') {
-      selectedType = type == 'all' || endpoint == 'search/multi' ||
-          endpoint == 'trending/all/week' ? null : type;
-      if (endpoint == 'home/recommended') selectedType = null;
-    }
-    if (endpoint == 'home/latest' || endpoint == 'home/family' ||
-        endpoint == 'catalog/movie' || endpoint.startsWith('movie/') ||
-        endpoint == 'trending/movie/week') {
-      selectedType = 'movie';
-    } else if (endpoint == 'catalog/tv' || endpoint.startsWith('tv/') ||
-        endpoint == 'trending/tv/week') {
-      selectedType = 'tv';
-    }
-
-    final sort = params['sort'] ??
-        ((endpoint.endsWith('/popular') || endpoint.endsWith('/top_rated') ||
-          endpoint.startsWith('trending/') || endpoint == 'home/recommended')
-        ? 'popular' : 'latest');
-    final order = sort == 'title' ? _title :
-        sort == 'popular' ? _rated : _year;
-    final query = (params['query'] ?? '').trim().toLowerCase();
-    final language = (params['language'] ?? '').trim().toLowerCase();
-    final genre1 = int.tryParse(params['genre1'] ?? '') ?? 0;
-    final genre2 = int.tryParse(params['genre2'] ?? '') ?? 0;
-    final family = endpoint == 'home/family';
-    final first = (page - 1) * 20;
-    final selected = <CatalogEntry>[];
-    var matches = 0;
-
-    for (final entry in order) {
-      if (selectedType != null && entry.type != selectedType) continue;
-      if (query.isNotEmpty && !_titles[entry]!.contains(query)) continue;
-      if (language.isNotEmpty &&
-          entry.originalLanguage.toLowerCase() != language) continue;
-      final ids = _genres[entry]!;
-      if (genre1 != 0 && !ids.contains(genre1)) continue;
-      if (genre2 != 0 && !ids.contains(genre2)) continue;
-      if (family && !ids.contains(10751)) continue;
-      if (matches >= first && selected.length < 20) selected.add(entry);
-      matches++;
-    }
-    return CatalogSlice(selected, matches);
-  }
-}
-).hasMatch(value)) names.add(value);
+      if (languageCode.hasMatch(value)) names.add(value);
     }
     return names.toList()..sort();
   }
@@ -185,7 +126,8 @@ class CatalogQueryIndex {
     if (endpoint == 'search/multi' || endpoint == 'catalog/sorted' ||
         endpoint == 'catalog/filter' || endpoint == 'trending/all/week' ||
         endpoint == 'home/recommended') {
-      selectedType = type == 'all' || endpoint == 'search/multi' ? null : type;
+      selectedType = type == 'all' || endpoint == 'search/multi' ||
+          endpoint == 'trending/all/week' ? null : type;
       if (endpoint == 'home/recommended') selectedType = null;
     }
     if (endpoint == 'home/latest' || endpoint == 'home/family' ||
