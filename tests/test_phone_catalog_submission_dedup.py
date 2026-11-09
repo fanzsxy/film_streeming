@@ -1,9 +1,13 @@
 import base64
 import json
+import os
 import unittest
 from unittest.mock import patch, Mock
 
-from backend.phone_catalog_sync import source_identity, known_source_identities
+from backend.phone_catalog_sync import (
+    source_identity, known_source_identities, valid_source_genres,
+    submit_catalog, PhoneImport,
+)
 
 
 class SourceIdentityTests(unittest.TestCase):
@@ -25,6 +29,71 @@ class SourceIdentityTests(unittest.TestCase):
     def test_untrusted_hostname_not_accepted(self):
         self.assertIsNone(source_identity({"type": "series",
             "url": "https://tv.nontondrama.vip.evil.test/show-2026"}))
+
+    def test_genres_are_whitelisted_without_guessing(self):
+        assert valid_source_genres(["Comedy", "Drama", "Short", "Sci-fi",
+                                    "Drama", "Invalid Genre"]) == [
+            "Comedy", "Drama", "Short", "Sci-Fi",
+        ]
+        self.assertEqual(valid_source_genres("Comedy, Drama"), [])
+        self.assertEqual(valid_source_genres(["Unknown"]), [])
+        self.assertEqual(valid_source_genres(["Action"] * 21), [])
+
+    @patch.dict(os.environ, {
+        "FILMSTREAM_SYNC_KEY": "test-only-app-key",
+        "FILMSTREAM_GITHUB_TOKEN": "test-only-server-token",
+    })
+    @patch("backend.phone_catalog_sync.known_source_identities",
+           return_value=set())
+    @patch("backend.phone_catalog_sync.github")
+    def test_android_genres_reach_github_import_pr(self, github, known):
+        github.side_effect = [
+            {"object": {"sha": "known-main-sha"}}, {}, {},
+            {"html_url": "https://github.com/fanzsxy/film_streeming/pull/999"},
+        ]
+        result = submit_catalog(
+            PhoneImport(items=[{
+                "type": "movie",
+                "title": "  The   Latest Film  ",
+                "year": 2026,
+                "url": "https://tv12.lk21official.cc/the-latest-film-2026",
+                "poster_url": "https://cdn.example.org/poster.jpg",
+                "genres": ["Comedy", "Drama", "Short", "Drama",
+                           "Wrong Genre"],
+                "genre_data_source": "untrusted",
+            }]),
+            x_filmstream_sync_key="test-only-app-key",
+        )
+        self.assertEqual(result["status"], "review_required")
+        self.assertEqual(result["submitted"], 1)
+        file_upload = github.call_args_list[2]
+        payload = json.loads(base64.b64decode(
+            file_upload.kwargs["json"]["content"]))
+        item = payload["items"][0]
+        self.assertEqual(item["genres"], ["Comedy", "Drama", "Short"])
+        self.assertEqual(item["genre_data_source"], "lk21_source")
+        self.assertEqual(item["title"], "The Latest Film")
+        self.assertEqual(item["type"], "movie")
+        known.assert_called_once()
+
+    @patch.dict(os.environ, {
+        "FILMSTREAM_SYNC_KEY": "test-only-app-key",
+        "FILMSTREAM_GITHUB_TOKEN": "test-only-server-token",
+    })
+    @patch("backend.phone_catalog_sync.known_source_identities")
+    @patch("backend.phone_catalog_sync.github")
+    def test_already_known_submissions_do_not_create_duplicate_pr(
+            self, github, known):
+        item = {"type": "movie", "title": "Known",
+                "year": 2026,
+                "url": "https://tv12.lk21official.cc/known-2026",
+                "genres": ["Horror"]}
+        known.return_value = {source_identity(item)}
+        result = submit_catalog(PhoneImport(items=[item]),
+                                x_filmstream_sync_key="test-only-app-key")
+        self.assertEqual(result["status"], "already_known")
+        self.assertEqual(result["submitted"], 0)
+        github.assert_not_called()
 
     @patch("backend.phone_catalog_sync.github")
     @patch("backend.phone_catalog_sync.requests.get")
