@@ -632664,7 +632664,9 @@
       "metadata_status": "sitemap_slug_unverified",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "ambiguous",
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genre_local_status": "invalid_redirect",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "The Guardians of Zhu Yin",
@@ -632815,7 +632817,13 @@
       "synopsis": "Setelah diperkosa di sebuah pesta, aktris ini mengasingkan diri ketika saudara laki-lakinya, Adrian, meragukan ceritanya. Sementara dia mengatasinya melalui teater, berperan sebagai Medea, Adrian masu...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Miley Cyrus: Something Beautiful",
@@ -632909,7 +632917,13 @@
       "original_language": "kn",
       "genre_sync_status": "no_genres",
       "genre_retry_status": "no_genres",
-      "genre_third_status": "no_genres"
+      "genre_third_status": "no_genres",
+      "genres": [
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "The Fantastic Four: First Steps",
@@ -632981,7 +632995,15 @@
       "synopsis": "Menelaah karier pembawa acara televisi perintis Ed Sullivan, dengan fokus pada platformnya terhadap musisi kulit hitam selama era hak-hak sipil....",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Documentary",
+        "Biography",
+        "History"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Trainwreck: P.I. Moms",
@@ -633010,7 +633032,14 @@
       "synopsis": "Pertemuan malam hari seorang penjaga keamanan dengan kekuatan gaib di Gedung M berujung pada percintaan dengan seorang dokter, hingga rahasia bangunan kuno mengancam nyawa mereka....",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Thriller",
+        "Horror"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Hal Harper",
@@ -633040,7 +633069,15 @@
       "synopsis": "Film fiksi ilmiah yang membumi seperti District 9, yang menyentuh tema privasi versus pengawasan Soundtrack: Keep Your Head Up (Written by Wolfgang Valbrun, Adam Holgate, James Graham, Thierry Lemaitr...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Drama",
+        "Adventure",
+        "Horror"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Untold",
@@ -633071,7 +633108,13 @@
       "original_language": "ms",
       "genre_sync_status": "no_genres",
       "genre_retry_status": "no_genres",
-      "genre_third_status": "no_genres"
+      "genre_third_status": "no_genres",
+      "genres": [
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Spermageddon",
@@ -633106,7 +633149,13 @@
       "synopsis": "Streaming Ji Dao (2025) gratis subtitle indonesia kualitas HD. Saksikan aksi seru Simon Yam, Clara Lee, Henry Prince Mak",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Action"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Detective Dee: The Mystery of a Ghost Town",
@@ -633175,7 +633224,15 @@
       "synopsis": "Lima orang biasa, yang mengembangkan kekuatan super mereka setelah menerima transplantasi organ dari makhluk berkekuatan super sebelumnya, bertarung melawan cenayang lain, yang juga mendapatkan kekuat...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Comedy",
+        "Action",
+        "Adventure"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Abraham's Boys",
@@ -633187,7 +633244,13 @@
       "synopsis": "Abraham van Helsing memindahkan kedua putranya ke Amerika Serikat untuk melarikan diri dari masa lalu mereka. Worldwide Gross: $212,706...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Horror"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "The Pickup",
@@ -633256,7 +633319,14 @@
       "synopsis": "Seorang mantan mata-mata terjebak ke dalam dunia gelap seorang pria yang telah menentang siklus waktu dan kematian, yang memiliki kemampuan jahat....",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "ambiguous",
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genres": [
+        "Adventure",
+        "Thriller"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "The Four Bad Boys and Me",
@@ -633392,7 +633462,15 @@
       "synopsis": "Film ini membawa kita kembali ke awal tahun 2000-an, di mana surat-surat tulisan tangan menyimpan emosi yang tak terucapkan, dan cinta adalah sesuatu yang indah sekaligus cepat berlalu. Mengisahkan du...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "ambiguous",
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genres": [
+        "Drama",
+        "Comedy",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Jim Jefferies: Two Limb Policy",
@@ -633463,7 +633541,14 @@
       "synopsis": "Di film \"Isolated\" (2025), seorang perawat berjuang melindungi pasiennya dari seorang penyerang brutal yang menginvasi rumah sakit terpencil. Dalam keadaan genting, mereka harus bekerja sama untuk ber...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "ambiguous",
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genres": [
+        "Drama",
+        "Thriller"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Leprechaun: The Beginning",
@@ -633716,7 +633801,15 @@
       "synopsis": "\"Gobaekeui yeoksa\" (2025) adalah kisah komedi romantis tentang Park Se-ri, remaja 19 tahun yang ingin meluruskan rambut keritingnya sebelum mengungkapkan perasaannya. Namun, kehidupannya menjadi rumit...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Drama",
+        "Comedy",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "The Players",
@@ -633785,7 +633878,15 @@
       "synopsis": "\"Bo Tu Bao Thu\" (2025) merupakan film komedi romantis yang mengisahkan empat teman yang berencana untuk menyelesaikan segitiga cinta yang rumit. Mereka menciptakan rencana konyol untuk memecahkan masa...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Comedy",
+        "Drama",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "I Heart Willie",
@@ -633877,7 +633978,13 @@
       "synopsis": "\"Csongor es Tunde\" (2025) adalah film animasi yang membawa kita ke dalam dunia fantasi yang mempesona. Seorang pangeran muda memulai petualangan ajaib untuk menemukan kebahagiaan, bertemu peri, penyih...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Animation"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Thug CR 143/24",
@@ -634246,7 +634353,14 @@
       "synopsis": "Dalam \"First Moon\" (2025), seorang pelayan muda diculik oleh sekte keagamaan yang menganggapnya terjangkit virus werewolf menular seksual. Mereka akan melakukan apa saja untuk menyembuhkannya, bahkan ...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "ambiguous",
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genres": [
+        "Horror",
+        "Thriller"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Kalaratri",
@@ -634275,7 +634389,9 @@
       "metadata_status": "sitemap_slug_unverified",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genre_local_status": "invalid_redirect",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Messy",
@@ -634367,7 +634483,7 @@
       "original_language": "cs"
     },
     {
-      "title": "Death Bunny Munro",
+      "title": "The Death of Bunny Munro",
       "year": 2025,
       "url": "https://tv.nontondrama.vip/death-bunny-munro-2025",
       "type": "series",
@@ -634375,7 +634491,14 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/11/film-death-bunny-munro-2025-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "Death Bunny Munro",
+      "genres": [
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Blood of the Werewolf's Claw",
@@ -634404,7 +634527,13 @@
       "synopsis": "Dalam \"Maria Azama: Da Best P*rn Star\", kehidupan seorang pria biasa berubah 180 derajat saat bintang film dewasa idolanya, Maria Azama, tiba-tiba muncul dari video. Awalnya, ini adalah keajaiban, tap...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Comedy"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Black Butterflies Zwarte Vlinders",
@@ -634415,7 +634544,9 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2025/12/film-black-butterflies-zwarte-vlinders-2011-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genre_local_status": "title_conflict",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Salikmata",
@@ -634492,7 +634623,7 @@
       "original_language": "en"
     },
     {
-      "title": "Love Story 1970S",
+      "title": "Love Story in the 1970s",
       "year": 2026,
       "url": "https://tv.nontondrama.vip/love-story-1970s-2026",
       "type": "series",
@@ -634500,7 +634631,15 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/02/film-love-story-1970s-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "Love Story 1970S",
+      "genres": [
+        "Drama",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "56 Days",
@@ -634553,7 +634692,13 @@
       "synopsis": "Dalam film Vigilante (2026), seorang pria misterius dengan kemampuan tempur luar biasa muncul di kota yang terancam kejahatan. Dengan kekuatan dan kecerdasan yang luar biasa, ia memburu penjahat dan m...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "ambiguous",
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genres": [
+        "Action"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Perfect Crown1",
@@ -634564,7 +634709,9 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/04/film-perfect-crown-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genre_local_status": "title_conflict",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "The Dog & Catfish",
@@ -634576,7 +634723,15 @@
       "synopsis": "Dalam \"The Dog & Catfish\" (2024), seorang pria bernama Yoshii keluar dari penjara setelah 10 tahun karena pembunuhan. Ia kemudian bertemu Yoko, seorang relawan yang membantunya memulai hidup baru. Sem...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Crime",
+        "Drama",
+        "Mystery"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Wicked Temptation",
@@ -634603,7 +634758,9 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/07/film-husband-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genre_local_status": "title_conflict",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Soulm8te",
@@ -634636,7 +634793,15 @@
       "synopsis": "Just the Two of Us (2023) mengikuti kisah Blanche yang mengira telah menemukan pria impiannya saat bertemu dengan Grégoire, memicu jalinan asmara yang cepat dan keputusan untuk pindah jauh dari keluar...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Drama",
+        "Romance",
+        "Thriller"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Gail Daughtry and the Celebrity Sex Pass",
@@ -634730,7 +634895,7 @@
       "original_language": "en"
     },
     {
-      "title": "Cycle Sin",
+      "title": "Cycle of Sin",
       "year": 2026,
       "url": "https://tv.nontondrama.vip/cycle-sin-2026",
       "type": "series",
@@ -634738,7 +634903,15 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/09/film-cycle-sin-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "Cycle Sin",
+      "genres": [
+        "Mystery",
+        "Horror"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Teenage Sex and Death at Camp Miasma",
@@ -634770,7 +634943,9 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/09/film-scandal-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genre_local_status": "title_conflict",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Fragmentos",
@@ -634782,7 +634957,13 @@
       "synopsis": "Fragmentos - Diego memutuskan untuk berlibur ke Lanzarote bersama istrinya, Alba, sebagai upaya kesekian kalinya untuk menyelamatkan pernikahan mereka. Namun, hubungan toksik tanpa ikatan emosional ya...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "ambiguous",
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genres": [
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Sultana",
@@ -634839,7 +635020,7 @@
       "original_language": "he"
     },
     {
-      "title": "Second Time Charm",
+      "title": "Second Time is a Charm",
       "year": 2019,
       "url": "https://tv.nontondrama.vip/second-time-charm-2019",
       "type": "series",
@@ -634847,7 +635028,16 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-second-time-charm-2019-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "Second Time Charm",
+      "genres": [
+        "Comedy",
+        "Drama",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Wild Journey",
@@ -634897,7 +635087,13 @@
       "synopsis": "The Cult of Humpty Dumpty - Sekelompok gadis remaja yang bermasalah bersama guru mereka harus berjuang mati-matian demi bertahan hidup setelah menemukan fakta bahwa sebuah sekte sesat berhasil menghid...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Horror"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "The Mentor",
@@ -634938,7 +635134,7 @@
       "original_language": "pa"
     },
     {
-      "title": "New Stanford Prison Experiment",
+      "title": "The New Stanford Prison Experiment",
       "year": 2026,
       "url": "https://tv.nontondrama.vip/new-stanford-prison-experiment-2026",
       "type": "series",
@@ -634946,7 +635142,9 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-new-stanford-prison-experiment-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "New Stanford Prison Experiment",
+      "genre_local_status": "tmdb_auth_required"
     },
     {
       "title": "Adultery",
@@ -634990,7 +635188,15 @@
       "synopsis": "Filipiñana - Saat bekerja di sebuah country club elite di luar Manila, seorang pekerja berusia 17 tahun asal Ilocos bernama Ilocana mengungkap kebenaran yang kejam dan penuh kekerasan dari tempat kerj...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Comedy",
+        "Drama",
+        "Mystery"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Minimum Wage",
@@ -635036,7 +635242,9 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-mob-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genre_local_status": "title_conflict",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Suprema",
@@ -635105,7 +635313,15 @@
       "synopsis": "Ever After - Sekelompok sahabat wanita tiba di sebuah pondok di tengah hutan untuk merayakan sesuatu, namun situasi berubah menjadi mimpi buruk yang mengerikan ketika mereka menyadari bahwa hutan ters...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "ambiguous",
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genres": [
+        "Drama",
+        "Horror",
+        "Thriller"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "The Teenage Vampire",
@@ -635151,7 +635367,16 @@
       "synopsis": "Verity - Lowen Ashleigh, seorang penulis yang disewa untuk menjadi penulis bayangan (ghostwriter) bagi penulis buku terlaris Verity Crawford, tanpa sengaja menemukan catatan-catatan autobiografi rahas...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "ambiguous",
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genres": [
+        "Drama",
+        "Mystery",
+        "Crime",
+        "Thriller"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Lost Hearts",
@@ -635162,7 +635387,17 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-lost-hearts-2017-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genres": [
+        "Crime",
+        "Drama",
+        "Mystery",
+        "Romance",
+        "Thriller"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Not What You Think",
@@ -635191,7 +635426,14 @@
       "synopsis": "The Doll - Berlatar di Prancis bagian timur pada masa kini, Rémi yang belum sepenuhnya pulih dari kepedihan masa lalunya akibat patah hati memilih untuk menjalani hidup bersama sebuah boneka bernama A...",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "ambiguous",
-      "genre_third_status": "ambiguous"
+      "genre_third_status": "ambiguous",
+      "genres": [
+        "Comedy",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Perfeitos Desconhecidos",
@@ -635254,10 +635496,12 @@
       "rating": 9.2,
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "genre_local_status": "title_conflict",
+      "genre_local_pass": "local_webview_v1"
     },
     {
-      "title": "This City Ours Crime Family Saga",
+      "title": "This City Is Ours: A Crime Family Saga",
       "year": 2025,
       "url": "https://tv.nontondrama.vip/this-city-ours-crime-family-saga-2025",
       "type": "series",
@@ -635265,10 +635509,18 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-this-city-ours-crime-family-saga-2025-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "This City Ours Crime Family Saga",
+      "genres": [
+        "Crime",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
-      "title": "When Lights Rise",
+      "title": "When the Lights Rise",
       "year": 2026,
       "url": "https://tv.nontondrama.vip/when-lights-rise-2026",
       "type": "series",
@@ -635277,7 +635529,14 @@
       "rating": 10,
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "When Lights Rise",
+      "genres": [
+        "Mystery"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Nocturne",
@@ -635300,7 +635559,7 @@
       "original_language": "en"
     },
     {
-      "title": "Perfect Lie",
+      "title": "The Perfect Lie",
       "year": 2026,
       "url": "https://tv.nontondrama.vip/perfect-lie-2026",
       "type": "series",
@@ -635308,7 +635567,15 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/10/film-perfect-lie-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "Perfect Lie",
+      "genres": [
+        "Drama",
+        "Thriller"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Dead End Job",
@@ -635347,7 +635614,7 @@
       "original_language": "tl"
     },
     {
-      "title": "Love Last",
+      "title": "A Love to Last",
       "year": 2017,
       "url": "https://tv.nontondrama.vip/love-last-2017",
       "type": "series",
@@ -635356,7 +635623,18 @@
       "rating": 5.3,
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "Love Last",
+      "genres": [
+        "Comedy",
+        "Drama",
+        "Family",
+        "Music",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Obsess",
@@ -635375,7 +635653,7 @@
       "original_language": "ar"
     },
     {
-      "title": "Rinnan Traitor Within",
+      "title": "Rinnan: The Traitor Within",
       "year": 2026,
       "url": "https://tv.nontondrama.vip/rinnan-traitor-within-2026",
       "type": "series",
@@ -635384,7 +635662,16 @@
       "rating": 7.8,
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "Rinnan Traitor Within",
+      "genres": [
+        "Biography",
+        "Drama",
+        "War"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Secret Unrequited Love",
@@ -635421,7 +635708,7 @@
       "original_language": "zh"
     },
     {
-      "title": "Story Yanxi Palace",
+      "title": "Story of Yanxi Palace",
       "year": 2018,
       "url": "https://tv.nontondrama.vip/story-yanxi-palace-2018",
       "type": "series",
@@ -635430,10 +635717,20 @@
       "rating": 8.2,
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "Story Yanxi Palace",
+      "genres": [
+        "Comedy",
+        "Drama",
+        "History",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
-      "title": "Remarried Empress",
+      "title": "The Remarried Empress",
       "year": 2026,
       "url": "https://tv.nontondrama.vip/remarried-empress-2026",
       "type": "series",
@@ -635442,10 +635739,20 @@
       "rating": 9,
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "Remarried Empress",
+      "genres": [
+        "Drama",
+        "Fantasy",
+        "History",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
-      "title": "World Love",
+      "title": "The World of Love",
       "year": 2015,
       "url": "https://tv.nontondrama.vip/world-love-2015",
       "type": "series",
@@ -635454,7 +635761,16 @@
       "rating": 8,
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "World Love",
+      "genres": [
+        "Drama",
+        "History",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     },
     {
       "title": "Cherchez La Femme",
@@ -635480,7 +635796,7 @@
       "original_language": "pt"
     },
     {
-      "title": "When I Meet Moon",
+      "title": "When I Meet the Moon",
       "year": 2026,
       "url": "https://tv.nontondrama.vip/when-i-meet-moon-2026",
       "type": "series",
@@ -635488,7 +635804,15 @@
       "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-when-i-meet-moon-2026-lk21.jpg",
       "genre_sync_status": "unmatched",
       "genre_retry_status": "unmatched",
-      "genre_third_status": "unmatched"
+      "genre_third_status": "unmatched",
+      "title_before_source_check": "When I Meet Moon",
+      "genres": [
+        "Drama",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source",
+      "genre_local_status": "matched_source",
+      "genre_local_pass": "local_webview_v1"
     }
   ]
 }
