@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// One consistent Phosphor icon family for FilmStream's primary navigation,
 /// genre discovery and top-bar actions. Keep icons independent of genre labels:
