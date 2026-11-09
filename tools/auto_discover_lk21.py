@@ -1,6 +1,6 @@
 """Conservatively discover new public LK21 title links and prepare a review PR.
 
-Only collects title/year/type/source URL. Never downloads media.
+Collects title/year/type/source URL and conservatively verified detail genres/poster. Never downloads media.
 Fail closed for robots restrictions, empty/ambiguous pages and unknown host.
 """
 import argparse
@@ -22,7 +22,7 @@ SERIES_CONFIG = Path("config/source_domains.json")
 UA = "FilmStreamPublicCatalogUpdater/1.0"
 YEAR_SLUG = re.compile(r"-(19\d{2}|20\d{2})$")
 CARD_CLASS = re.compile(r"item|movie|series|poster|film", re.I)
-DETAIL_TITLE = re.compile(r"^(.+?)\\s*\\((\\d{4})\\)\\s*$")
+DETAIL_TITLE = re.compile(r"^(.+?)\s*\((\d{4})\)\s*$")
 GENRE_NAMES = frozenset({
     "Action", "Adventure", "Animation", "Biography", "Comedy", "Crime",
     "Documentary", "Drama", "Family", "Fantasy", "History", "Horror",
@@ -121,7 +121,7 @@ def detail_metadata(html, entry):
             if label in GENRE_NAMES and label not in genres:
                 genres.append(label)
         elif isinstance(node, NavigableString):
-            if re.search(r"\\b(?:Play Awal|Play Terbaru|Beri rating film ini)\\b",
+            if re.search(r"\b(?:Play Awal|Play Terbaru|Beri rating film ini)\b",
                          str(node), re.I):
                 break
     result = {"genres": genres} if genres else {}
