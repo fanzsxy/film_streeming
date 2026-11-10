@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter_windows/webview_flutter_windows.dart';
 
 import 'filmstream_icons.dart';
+import 'windows_episode_selector.dart';
 
 /// Windows-only episode list: reads actual source links through WebView2.
 class WindowsSeasonPicker extends StatefulWidget {
@@ -282,40 +283,25 @@ class _WindowsSeasonPickerState extends State<WindowsSeasonPicker> {
       SizedBox(height:_showPage?300:2, width:double.infinity,
         child:_ready?Webview(_web):const SizedBox.shrink()),
       const SizedBox(height:12),
-      const Text('Pilih Season',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
-      if(!_ready || (!_initialSearchFinished && seasons.isEmpty))...[
-        const LinearProgressIndicator(),
-        const Padding(padding:EdgeInsets.symmetric(vertical:8),child:Text('Memuat daftar season dan episode dari sumber...',style:TextStyle(color:Colors.white70))),
-      ],
-      if(_error!=null)Text(_error!,style:const TextStyle(color:Colors.orangeAccent)),
-      if(_changingSeason) const LinearProgressIndicator(),
-      if(seasons.isEmpty && _ready && _initialSearchFinished)const Text(
-        'Daftar season belum ditemukan dari halaman sumber.',
-        style:TextStyle(color:Colors.white70)),
-      if(seasons.isNotEmpty)Wrap(spacing:8,runSpacing:6,children:[
-        for(final season in seasons)ChoiceChip(
-          label:Text('Season $season'),
-          selected:_selected==season,onSelected:(_)=>_selectSeason(season)),
-      ]),
-      if(_selected!=null)...[
-        const SizedBox(height:12),
-        Text('Episode · Season $_selected',
-          style:const TextStyle(fontWeight:FontWeight.bold,fontSize:17)),
-        const SizedBox(height:8),
-        if(numbers.isEmpty && !_changingSeason && !_episodeSearchFinished)...[
-          const LinearProgressIndicator(),
-          const Padding(padding:EdgeInsets.symmetric(vertical:8),child:Text('Memuat episode dari sumber...',style:TextStyle(color:Colors.white70))),
-        ],
-        if(numbers.isEmpty && !_changingSeason && _episodeSearchFinished)const Text('Episode belum tersedia dari sumber.',
-          style:TextStyle(color:Colors.white70)),
-        Wrap(spacing:8,runSpacing:8,children:[
-          for(final episode in numbers)OutlinedButton.icon(
-            icon:Icon(_openedEpisodes.contains('$_selected:$episode')
-                ? FilmStreamIcons.completed : FilmStreamIcons.play),
-            label:Text('Episode $episode'),
-            onPressed:()=>_openEpisode(_selected!,episode,links[episode]!)),
-        ]),
-      ],
+      WindowsEpisodeSelector(
+        seasons: seasons,
+        selectedSeason: _selected,
+        episodes: numbers,
+        openedEpisodes: _openedEpisodes,
+        loadingSeasons: !_ready || (!_initialSearchFinished && seasons.isEmpty),
+        loadingEpisodes: numbers.isEmpty &&
+            !_changingSeason && !_episodeSearchFinished,
+        changingSeason: _changingSeason,
+        error: _error,
+        onSeasonSelected: (season) => _selectSeason(season),
+        onEpisodeSelected: (episode) {
+          final season = _selected;
+          final url = links[episode];
+          if (season != null && url != null && !_changingSeason) {
+            _openEpisode(season, episode, url);
+          }
+        },
+      ),
       if(seasons.isEmpty && _ready && _initialSearchFinished)...[
         const SizedBox(height:8),
         TextButton.icon(
