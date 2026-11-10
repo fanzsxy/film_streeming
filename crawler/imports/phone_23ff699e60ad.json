@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "Anti Drug Operations",
+      "year": 2025,
+      "url": "https://tv12.lk21official.cc/anti-drug-operations-2025",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-anti-drug-operations-2025-lk21.jpg",
+      "rating": 6.8,
+      "genres": [
+        "Action",
+        "Crime"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Awkwafina: The Unlikely Cook",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/awkwafina-unlikely-cook-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-awkwafina-unlikely-cook-2026-lk21.jpg",
+      "rating": 7.4,
+      "genres": [
+        "Documentary"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
