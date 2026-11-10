@@ -76,11 +76,15 @@ List<CatalogEntry> matchCatalogSuggestions(
 
 class FilmSearchSuggestions extends StatefulWidget {
   final String text;
-  final ValueChanged<String> onSelected;
+  // Open the exact selected catalog entry rather than just re-searching
+  // its title: similarly named films/years must not be confused.
+  final ValueChanged<CatalogEntry> onSelected;
+  final Future<CatalogSuggestionIndex>? index;
   const FilmSearchSuggestions({
     super.key,
     required this.text,
     required this.onSelected,
+    this.index,
   });
 
   @override
@@ -88,7 +92,21 @@ class FilmSearchSuggestions extends StatefulWidget {
 }
 
 class _FilmSearchSuggestionsState extends State<FilmSearchSuggestions> {
-  late final Future<CatalogSuggestionIndex> _index = CatalogSuggestionIndex.shared();
+  late Future<CatalogSuggestionIndex> _index;
+
+  @override
+  void initState() {
+    super.initState();
+    _index = widget.index ?? CatalogSuggestionIndex.shared();
+  }
+
+  @override
+  void didUpdateWidget(covariant FilmSearchSuggestions oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.index != oldWidget.index) {
+      _index = widget.index ?? CatalogSuggestionIndex.shared();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +119,10 @@ class _FilmSearchSuggestionsState extends State<FilmSearchSuggestions> {
         if (suggestions.isEmpty) return const SizedBox.shrink();
         return Padding(
           padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-          child: Material(
+          // In Windows desktop mouse clicks, TextFieldTapRegion prevents
+          // losing focus and destroying the row before onTap completes.
+          child: TextFieldTapRegion(
+            child: Material(
             color: const Color(0xff20252e),
             borderRadius: BorderRadius.circular(14),
             clipBehavior: Clip.antiAlias,
@@ -122,12 +143,13 @@ class _FilmSearchSuggestionsState extends State<FilmSearchSuggestions> {
                       '${entry.year} · ${entry.type == 'tv' ? 'Series' : 'Film'}',
                       style: const TextStyle(fontSize: 11),
                     ),
-                    trailing: const Icon(Icons.north_west, size: 16),
-                    onTap: () => widget.onSelected(entry.title),
+                    trailing: const Icon(Icons.arrow_outward, size: 16),
+                    onTap: () => widget.onSelected(entry),
                   ),
               ],
             ),
           ),
+        ),
         );
       },
     );
