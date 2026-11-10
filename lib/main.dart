@@ -1,5 +1,6 @@
 import 'filmstream_catalog.dart';
 import 'catalog_poster_display.dart';
+import 'windows_poster_reveal_gate.dart';
 import 'catalog_query.dart';
 import 'search_suggestions.dart';
 import 'startup_catalog_check.dart';
@@ -1050,13 +1051,17 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
       :more?TextButton(onPressed:()=>_fillThrough(1),
         child:const Text('Cari halaman katalog berikutnya'))
       :const Text('Tidak ada hasil sesuai filter'))),
-  if(visible.isNotEmpty) SliverPadding(
-    padding:const EdgeInsets.all(12),
-    sliver:SliverGrid(delegate:SliverChildBuilderDelegate((context,i)=>
-      CatalogPosterTile(key:ValueKey(
-          '${visible[i].type}:${visible[i].sourceUrl}'),
-        movie:visible[i],onTap:widget.onTap),
-      childCount:visible.length),gridDelegate:filmstreamGridDelegate(context))),
+  if(visible.isNotEmpty) _windowsPosterCollection(
+    visible,
+    'filter:$visiblePage:${visible.take(8).map((m)=>'${m.type}:${m.id}:${m.poster}').join('|')}',
+    SliverPadding(
+      padding:const EdgeInsets.all(12),
+      sliver:SliverGrid(delegate:SliverChildBuilderDelegate((context,i)=>
+        CatalogPosterTile(key:ValueKey(
+            '${visible[i].type}:${visible[i].sourceUrl}'),
+          movie:visible[i],onTap:widget.onTap),
+        childCount:visible.length),gridDelegate:filmstreamGridDelegate(context))),
+    asSliver:true,loadingHeight:360),
   if(results.isNotEmpty) SliverToBoxAdapter(child:Column(children:[
     if(error.isNotEmpty)TextButton(
       onPressed:()=>_fillThrough(visiblePage+1),child:Text(error)),
@@ -1279,6 +1284,37 @@ class MovieTile extends StatelessWidget {
   ]));
 }
 // Simpan request katalog saat widget direbuild, bukan mengambil ulang pada setiap scroll.
+/// Windows shows one bounded spinner before releasing the first visible
+/// catalog posters together. Android keeps its original immediate grid/rail
+/// behavior, and all screens continue to use PR #289's CatalogPosterTile.
+Widget _windowsPosterCollection(
+    List<Movie> items, String batchKey, Widget child,
+    {double loadingHeight = 267, int preloadCount = 8,
+    bool asSliver = false}) {
+  return WindowsPosterRevealGate(
+    enabled: Platform.isWindows,
+    batchKey: batchKey,
+    itemCount: items.length,
+    preloadCount: preloadCount,
+    loadingHeight: loadingHeight,
+    asSliver: asSliver,
+    resolvePoster: (index) async {
+      final original = items[index];
+      final upgraded = await LocalCatalogMetadata.catalogPosterUpgrade(original);
+      return upgraded != null && upgraded.poster.isNotEmpty
+          ? upgraded.poster : original.poster;
+    },
+    // Precache the same URL as Image.network used by MovieTile. Once decoded,
+    // the first displayed posters are already in Flutter's image cache.
+    precachePoster: (context, poster) => precacheImage(
+      NetworkImage(filmstreamImageUrl(poster)),
+      context,
+      onError: (error, stack) {},
+    ),
+    child: child,
+  );
+}
+
 class MovieRail extends StatefulWidget {
  final String title,endpoint,type; final ValueChanged<Movie> onTap; final VoidCallback onSeeAll;
  const MovieRail({super.key,required this.title,required this.endpoint,required this.type,required this.onTap,required this.onSeeAll});
@@ -1308,7 +1344,21 @@ TextButton(onPressed:widget.onSeeAll,child:const Row(mainAxisSize:MainAxisSize.m
   const Padding(padding:EdgeInsets.symmetric(horizontal:16,vertical:10),
     child:Text('Belum ada judul yang cocok di katalog.',
       style:TextStyle(color:Colors.white60,fontSize:13)))
- else SizedBox(height:267,child:!s.hasData?const Center(child:CircularProgressIndicator()):ListView.builder(controller:_railScroll,key:PageStorageKey('rail:${widget.endpoint}'),scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:12),itemCount:s.data!.length,itemBuilder:(context,i)=>SizedBox(width:153,child:Padding(padding:const EdgeInsets.symmetric(horizontal:4),child:CatalogPosterTile(key:ValueKey('rail-poster:${s.data![i].sourceUrl}'),movie:s.data![i],onTap:widget.onTap)))))]));}
+ else SizedBox(height:267,child:!s.hasData
+  ?const Center(child:CircularProgressIndicator())
+  :_windowsPosterCollection(
+    s.data!,
+    'rail:${widget.endpoint}:${s.data!.take(8).map((m)=>'${m.type}:${m.id}:${m.poster}').join('|')}',
+    ListView.builder(controller:_railScroll,
+      key:PageStorageKey('rail:${widget.endpoint}'),
+      scrollDirection:Axis.horizontal,
+      padding:const EdgeInsets.symmetric(horizontal:12),
+      itemCount:s.data!.length,
+      itemBuilder:(context,i)=>SizedBox(width:153,
+        child:Padding(padding:const EdgeInsets.symmetric(horizontal:4),
+          child:CatalogPosterTile(
+            key:ValueKey('rail-poster:${s.data![i].sourceUrl}'),
+            movie:s.data![i],onTap:widget.onTap))))))]));}
 }
 class LastWatchedRail extends StatelessWidget {
  const LastWatchedRail({super.key});
@@ -1576,19 +1626,20 @@ class _PagedGridState extends State<PagedGrid> {
       else if(items.isEmpty)const SliverFillRemaining(
         hasScrollBody:false,child:Center(child:Text('Tidak ditemukan')))
       else ...[
-        SliverPadding(padding:const EdgeInsets.all(12),
-          sliver:SliverGrid(
-            gridDelegate:filmstreamGridDelegate(context),
-            delegate:SliverChildBuilderDelegate(
-              // One smooth poster behavior for Film, Series, Search,
-              // and every Beranda "Lihat Lainnya" collection. For TMDB
-              // result lists the official poster is already known, so the
-              // wrapper performs no extra lookup.
-              (context,i)=>CatalogPosterTile(
-                key:ValueKey(items[i].sourceUrl.isNotEmpty
-                    ?items[i].sourceUrl:'${items[i].type}:${items[i].id}'),
-                movie:items[i],onTap:widget.onTap),
-              childCount:items.length))),
+        _windowsPosterCollection(
+          items,
+          'page:${widget.endpoint}:${widget.type}:$page:${items.take(8).map((m)=>'${m.type}:${m.id}:${m.poster}').join('|')}',
+          SliverPadding(padding:const EdgeInsets.all(12),
+            sliver:SliverGrid(
+              gridDelegate:filmstreamGridDelegate(context),
+              delegate:SliverChildBuilderDelegate(
+                // PR #289: one poster card for all tabs and See More.
+                (context,i)=>CatalogPosterTile(
+                  key:ValueKey(items[i].sourceUrl.isNotEmpty
+                      ?items[i].sourceUrl:'${items[i].type}:${items[i].id}'),
+                  movie:items[i],onTap:widget.onTap),
+                childCount:items.length))),
+          asSliver:true,loadingHeight:360),
         SliverToBoxAdapter(child:CatalogPageControls(
           page:page,maxPage:maxPage,
           hasNext:hasNext,busy:busy,onSelect:_fetch)),
