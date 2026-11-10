@@ -12,7 +12,7 @@ Aplikasi Film Streaming untuk **Android** dan **Windows**.
 
 **[📦 Lihat semua versi GitHub Releases](https://github.com/fanzsxy/film_streeming/releases)**
 
-**Status:** Repository belum memiliki Release yang diterbitkan. Tombol APK langsung akan aktif setelah Release pertama dibuat. Jika Windows belum memiliki sertifikat penandatanganan, file Windows belum tersedia di Releases.
+**Jika Release pertama belum diterbitkan:** tautan langsung APK belum aktif. Gunakan alternatif GitHub Actions di bawah. Jika Windows belum memiliki sertifikat penandatanganan, file Windows belum tersedia di Releases.
 
 ### Alternatif: download build untuk pengujian
 
