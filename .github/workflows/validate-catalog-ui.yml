@@ -6,6 +6,7 @@ on:
       - 'lib/catalog_query.dart'
       - 'lib/filmstream_catalog.dart'
       - 'lib/main.dart'
+      - 'lib/web_source_page.dart'
       - 'lib/windows_poster_reveal_gate.dart'
       - 'lib/catalog_poster_display.dart'
       - 'lib/filmstream_icons.dart'
@@ -22,6 +23,8 @@ on:
       - 'lib/catalog_scan_helpers.dart'
       - 'lib/search_suggestions.dart'
       - 'test/catalog_query_test.dart'
+      - 'test/age_verification_callback_test.dart'
+      - 'test/web_source_auth_diagnostic_test.dart'
       - 'test/search_suggestions_test.dart'
       - 'test/catalog_scan_helpers_test.dart'
       - 'test/catalog_sync_diagnostics_test.dart'
@@ -51,10 +54,12 @@ jobs:
       - name: Get Flutter packages
         run: flutter pub get
       - name: Analyze changed Dart files
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/catalog_query.dart lib/filmstream_catalog.dart lib/main.dart lib/search_suggestions.dart lib/startup_catalog_check.dart lib/catalog_scan_helpers.dart lib/catalog_sync_diagnostics.dart lib/filmstream_icons.dart lib/windows_navigation.dart lib/filmstream_detail_metadata.dart lib/windows_source_player.dart lib/windows_season_picker.dart lib/catalog_poster_display.dart lib/windows_poster_reveal_gate.dart lib/windows_episode_selector.dart lib/windows_fullscreen_coordinator.dart
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/catalog_query.dart lib/filmstream_catalog.dart lib/main.dart lib/search_suggestions.dart lib/startup_catalog_check.dart lib/catalog_scan_helpers.dart lib/catalog_sync_diagnostics.dart lib/filmstream_icons.dart lib/windows_navigation.dart lib/filmstream_detail_metadata.dart lib/windows_source_player.dart lib/windows_season_picker.dart lib/catalog_poster_display.dart lib/windows_poster_reveal_gate.dart lib/windows_episode_selector.dart lib/windows_fullscreen_coordinator.dart lib/web_source_page.dart
       - name: Test catalog search, categories, filter and pagination
         run: |
           flutter test test/catalog_query_test.dart
+          flutter test test/age_verification_callback_test.dart
+          flutter test test/web_source_auth_diagnostic_test.dart
           flutter test test/search_suggestions_test.dart
           flutter test test/catalog_numbered_pagination_test.dart
           flutter test test/filter_completed_pages_test.dart
