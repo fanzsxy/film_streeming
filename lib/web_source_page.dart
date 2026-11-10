@@ -56,6 +56,20 @@ bool preserveOfficialAgeVerification({
   required bool googleSignInInProgress,
 }) => ageGateVisible || googleSignInInProgress;
 
+/// The browser fallback must use only the original film/series URL.
+/// Never open Google account endpoints or OAuth callbacks with secret codes.
+Uri? officialSourceBrowserDestination(Uri source) {
+  final host = source.host.toLowerCase();
+  if (source.scheme != 'https' || source.userInfo.isNotEmpty ||
+      source.hasPort || host.isEmpty ||
+      host.startsWith('accounts.') || host.startsWith('login.') ||
+      source.path.toLowerCase().contains('/oauth/') ||
+      source.path.toLowerCase().contains('/auth/callback')) {
+    return null;
+  }
+  return source;
+}
+
 /// A visual reader mode for the source page. The site's actual player/iframe
 /// remains in its original document. Nothing is proxied or extracted.
 class WebSourcePage extends StatefulWidget {
@@ -1225,9 +1239,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
   /// Never open an OAuth callback URL (which may contain credentials) or
   /// copy cookies/tokens between Chrome and Android's separate WebView.
   Future<void> _openOriginalSourceInBrowser() async {
-    final source = widget.url;
-    if (source.scheme != 'https' || source.userInfo.isNotEmpty ||
-        source.hasPort || source.host.isEmpty) return;
+    final source = officialSourceBrowserDestination(widget.url);
+    if (source == null) return;
     try {
       final opened = await launchUrl(
         source,
@@ -1259,6 +1272,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
       } catch (_) {}
     }
     if (mounted) setState(() => _manualFullSourceView = expanding);
+    if (!expanding && mounted && _focused && !_ageGateVisible) {
+      await _applyFocus();
+    }
   }
 
   Widget _verificationControls() => Padding(
@@ -1383,7 +1399,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
               // Leave space for the manual browser/verification controls.
               height: (MediaQuery.sizeOf(context).height -
                   MediaQuery.paddingOf(context).top -
-                  kToolbarHeight - 116).clamp(260.0, double.infinity),
+                  kToolbarHeight - 116).clamp(260.0, double.infinity).toDouble(),
               child: _playerBody(),
             )
           : AspectRatio(aspectRatio: 16 / 9, child: _playerBody()),
