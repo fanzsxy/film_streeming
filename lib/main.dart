@@ -774,6 +774,7 @@ class Tmdb {
 class HomePage extends StatefulWidget {const HomePage({super.key});@override State<HomePage> createState()=>_HomePageState();}
 class _HomePageState extends State<HomePage> {
  int tab=0;String genre='';String query='';String suggestionText='';
+ bool windowsMenuExpanded = true;
  Timer? debounce;
  Timer? suggestionDebounce;final search=TextEditingController();final searchFocus=FocusNode();
  final homeScroll=ScrollController();
@@ -800,13 +801,22 @@ class _HomePageState extends State<HomePage> {
  }
  void selectSearchSuggestion(String title){debounce?.cancel();suggestionDebounce?.cancel();FocusScope.of(context).unfocus();search.value=TextEditingValue(text:title,selection:TextSelection.collapsed(offset:title.length));setState((){query=title;suggestionText='';});}
  void openCollection(String title,String endpoint,String type) => Navigator.push(context,MaterialPageRoute(builder:(_)=>Scaffold(appBar:AppBar(title:Text(title)),body:PagedGrid(title:title,endpoint:endpoint,type:type,onTap:open))));
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Row(mainAxisSize:MainAxisSize.min,children:[Icon(FilmStreamIcons.brand,color:Color(0xffe5aa55),size:27),SizedBox(width:9),Text('FILM STREAMING',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:0.8,fontSize:19))]),actions:[IconButton(tooltip:'Riwayat tontonan',icon:const Icon(FilmStreamIcons.history,size:26),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const HistoryPage()))),IconButton(tooltip:'Status scanner dan GitHub',icon:const Icon(FilmStreamIcons.info,size:26),onPressed:()=>CatalogSyncDiagnostics.show(context))]),bottomNavigationBar:Platform.isWindows?null:NavigationBar(selectedIndex:tab,onDestinationSelected:changeTab,destinations:const [
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(
+ title:Row(mainAxisSize:MainAxisSize.min,children:[
+   if(Platform.isWindows) WindowsSidebarToggleButton(
+     expanded:windowsMenuExpanded,
+     onPressed:()=>setState(()=>windowsMenuExpanded=!windowsMenuExpanded)),
+   const Icon(FilmStreamIcons.brand,color:Color(0xffe5aa55),size:27),
+   const SizedBox(width:9),
+   const Text('FILM STREAMING',
+     style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:0.8,fontSize:19)),
+ ]),actions:[IconButton(tooltip:'Riwayat tontonan',icon:const Icon(FilmStreamIcons.history,size:26),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const HistoryPage()))),IconButton(tooltip:'Status scanner dan GitHub',icon:const Icon(FilmStreamIcons.info,size:26),onPressed:()=>CatalogSyncDiagnostics.show(context))]),bottomNavigationBar:Platform.isWindows?null:NavigationBar(selectedIndex:tab,onDestinationSelected:changeTab,destinations:const [
   NavigationDestination(icon:Icon(FilmStreamIcons.home,size:27),selectedIcon:Icon(FilmStreamIcons.homeSelected,size:27),label:'Beranda'),
   NavigationDestination(icon:Icon(FilmStreamIcons.film,size:27),selectedIcon:Icon(FilmStreamIcons.filmSelected,size:27),label:'Film'),
   NavigationDestination(icon:Icon(FilmStreamIcons.series,size:27),selectedIcon:Icon(FilmStreamIcons.seriesSelected,size:27),label:'Series'),
   NavigationDestination(icon:Icon(FilmStreamIcons.filter,size:27),selectedIcon:Icon(FilmStreamIcons.filterSelected,size:27),label:'Filter'),
   NavigationDestination(icon:Icon(FilmStreamIcons.favorites,size:27),selectedIcon:Icon(FilmStreamIcons.favoritesSelected,size:27),label:'Favorit'),
-]),body:DesktopShell(selectedIndex:tab,onSelected:changeTab,child:Column(children:[StartupCatalogCheck(onCatalogUpdated:(){if(mounted){
+]),body:DesktopShell(selectedIndex:tab,onSelected:changeTab,expanded:windowsMenuExpanded,child:Column(children:[StartupCatalogCheck(onCatalogUpdated:(){if(mounted){
     CatalogQueryIndex.invalidate();
     CatalogSuggestionIndex.invalidate();
     _CinemaGenresState.invalidate();
@@ -823,12 +833,14 @@ class _HomePageState extends State<HomePage> {
 class DesktopShell extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelected;
+  final bool expanded;
   final Widget child;
 
   const DesktopShell({
     super.key,
     required this.selectedIndex,
     required this.onSelected,
+    required this.expanded,
     required this.child,
   });
 
@@ -843,6 +855,7 @@ class DesktopShell extends StatelessWidget {
             selectedIndex: selectedIndex,
             onSelected: onSelected,
             availableWidth: constraints.maxWidth,
+            expanded: expanded,
           ),
           Expanded(child: child),
         ]),
