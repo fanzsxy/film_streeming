@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'lib/main.dart'
+      - 'lib/search_suggestions.dart'
       - 'lib/windows_poster_reveal_gate.dart'
       - 'lib/filmstream_icons.dart'
       - 'lib/windows_navigation.dart'
@@ -13,6 +14,7 @@ on:
       - 'lib/windows_fullscreen_coordinator.dart'
       - 'lib/windows_season_picker.dart'
       - 'test/windows_navigation_test.dart'
+      - 'test/search_suggestions_test.dart'
       - 'test/windows_fullscreen_coordinator_test.dart'
       - 'test/windows_episode_selector_test.dart'
       - 'test/windows_poster_reveal_gate_test.dart'
@@ -47,6 +49,7 @@ jobs:
         run: |
           flutter test test/filmstream_icons_test.dart
           flutter test test/windows_navigation_test.dart
+          flutter test test/search_suggestions_test.dart
           flutter test test/windows_fullscreen_coordinator_test.dart
           flutter test test/windows_episode_selector_test.dart
           flutter test test/windows_poster_reveal_gate_test.dart

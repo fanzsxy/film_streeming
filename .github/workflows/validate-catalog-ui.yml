@@ -22,6 +22,7 @@ on:
       - 'lib/catalog_scan_helpers.dart'
       - 'lib/search_suggestions.dart'
       - 'test/catalog_query_test.dart'
+      - 'test/search_suggestions_test.dart'
       - 'test/catalog_scan_helpers_test.dart'
       - 'test/catalog_sync_diagnostics_test.dart'
       - 'test/filmstream_icons_test.dart'

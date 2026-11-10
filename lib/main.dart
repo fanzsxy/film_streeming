@@ -206,6 +206,21 @@ class LocalCatalogMetadata {
         ? entry.activeSourceUrl : entry.url;
     return Movie.fromJson(data,fallback:entry.type);
   }
+  /// Build the very same catalog-backed Movie used in Film/Series grids,
+  /// without a new title search or a network request. The suggestion's
+  /// source URL, year and type uniquely identify the intended detail page.
+  static Movie movieFromSuggestion(CatalogEntry entry) {
+    final movie = _withCollectedMetadata(entry, {
+      'id': entry.tmdbId ?? -_stableId(entry.url),
+    });
+    _sourceByTmdb[_key(movie.type, movie.id)] = movie.sourceUrl;
+    _pagePosterEntries[movie.sourceUrl] = entry;
+    if (_pagePosterEntries.length > 320) {
+      _pagePosterEntries.remove(_pagePosterEntries.keys.first);
+    }
+    return movie;
+  }
+
   // Keep the catalog index for currently rendered tiles only.
   // Every screen uses this same verified TMDB poster fallback path.
   static final Map<String,CatalogEntry> _pagePosterEntries={};
@@ -815,7 +830,17 @@ class _HomePageState extends State<HomePage> {
      });
    }
  }
- void selectSearchSuggestion(String title){debounce?.cancel();suggestionDebounce?.cancel();FocusScope.of(context).unfocus();search.value=TextEditingValue(text:title,selection:TextSelection.collapsed(offset:title.length));setState((){query=title;suggestionText='';});}
+ void selectSearchSuggestion(CatalogEntry entry) {
+   if (!mounted) return;
+   debounce?.cancel();
+   suggestionDebounce?.cancel();
+   searchFocus.unfocus();
+   search.clear();
+   setState(() { query = ''; suggestionText = ''; });
+   // A suggestion represents one actual catalog item, not just words to
+   // fill in search. Tap/click immediately opens its film/series detail.
+   open(LocalCatalogMetadata.movieFromSuggestion(entry));
+ }
  void openCollection(String title,String endpoint,String type) => Navigator.push(context,MaterialPageRoute(builder:(_)=>Scaffold(appBar:AppBar(title:Text(title)),body:PagedGrid(title:title,endpoint:endpoint,type:type,onTap:open))));
  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(
  title:Row(mainAxisSize:MainAxisSize.min,children:[
