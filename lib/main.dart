@@ -25,6 +25,7 @@ import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:window_manager/window_manager.dart';
 
 const tmdbToken = String.fromEnvironment('TMDB_TOKEN');
 const imageRoot = 'https://image.tmdb.org/t/p/w500';
@@ -62,7 +63,22 @@ SliverGridDelegate filmstreamGridDelegate(BuildContext context) =>
             mainAxisSpacing: 14,
             crossAxisSpacing: 12);
 
-void main() {WidgetsFlutterBinding.ensureInitialized();PaintingBinding.instance.imageCache.maximumSize = 160; PaintingBinding.instance.imageCache.maximumSizeBytes = 80 << 20;runApp(const FilmStream());}
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Only Windows needs native window control. Without initialization,
+  // WebView2 fullscreen stops at the Flutter window's title bar/taskbar.
+  if (Platform.isWindows) {
+    try {
+      await windowManager.ensureInitialized();
+    } catch (error) {
+      // Keep FilmStream usable when native fullscreen is unavailable.
+      debugPrint('Windows window manager init failed: $error');
+    }
+  }
+  PaintingBinding.instance.imageCache.maximumSize = 160;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 80 << 20;
+  runApp(const FilmStream());
+}
 class StartupGate extends StatefulWidget {const StartupGate({super.key});@override State<StartupGate> createState()=>_StartupGateState();}
 class _StartupGateState extends State<StartupGate> {
  late Future<void> loading;
