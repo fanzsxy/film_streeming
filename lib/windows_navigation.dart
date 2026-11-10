@@ -51,9 +51,10 @@ class WindowsNavigationRail extends StatelessWidget {
     final showLabels = expanded && isWide;
     final width = expanded ? (isWide ? 232.0 : 76.0) : 60.0;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeInOut,
+    // Switch width atomically with label visibility. Animating the width
+    // while labels are already visible caused RenderFlex overflows in
+    // intermediate frames when expanding a compact Windows sidebar.
+    return Container(
       width: width,
       decoration: const BoxDecoration(
         color: Color(0xff171b22),
