@@ -2,32 +2,52 @@ import 'package:flutter/material.dart';
 
 import 'filmstream_icons.dart';
 
-/// Desktop equivalent of Android's five-item bottom NavigationBar.
+/// Fixed in the Windows AppBar, immediately before the Film Streaming brand.
+/// Keeping the toggle outside the sidebar makes it reachable in both states.
+class WindowsSidebarToggleButton extends StatelessWidget {
+  final bool expanded;
+  final VoidCallback onPressed;
+
+  const WindowsSidebarToggleButton({
+    super.key,
+    required this.expanded,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+    key: const ValueKey('windows-nav-toggle'),
+    tooltip: expanded ? 'Sembunyikan menu' : 'Tampilkan menu',
+    onPressed: onPressed,
+    icon: const Icon(FilmStreamIcons.desktopMenu, size: 25),
+    color: const Color(0xffe5aa55),
+    padding: const EdgeInsets.only(right: 8),
+    constraints: const BoxConstraints(minWidth: 42, minHeight: 44),
+  );
+}
+
+/// Desktop equivalent of Android's five-item navigation.
 ///
-/// This widget has no Windows-only runtime dependencies, so its behavior can
-/// be tested on Linux CI. It is only mounted by DesktopShell on Windows.
-class WindowsNavigationRail extends StatefulWidget {
+/// Expanded state is owned by the HomePage header so the button does not
+/// disappear or move when the rail changes width. Even collapsed, all five
+/// destinations remain clickable as icons with tooltips.
+class WindowsNavigationRail extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final double availableWidth;
+  final bool expanded;
 
   const WindowsNavigationRail({
     super.key,
     required this.selectedIndex,
     required this.onSelected,
     required this.availableWidth,
+    this.expanded = true,
   });
 
   @override
-  State<WindowsNavigationRail> createState() => _WindowsNavigationRailState();
-}
-
-class _WindowsNavigationRailState extends State<WindowsNavigationRail> {
-  bool expanded = true;
-
-  @override
   Widget build(BuildContext context) {
-    final isWide = widget.availableWidth >= 950;
+    final isWide = availableWidth >= 950;
     final showLabels = expanded && isWide;
     final width = expanded ? (isWide ? 232.0 : 76.0) : 60.0;
 
@@ -40,30 +60,7 @@ class _WindowsNavigationRailState extends State<WindowsNavigationRail> {
         border: Border(right: BorderSide(color: Color(0xff30343d))),
       ),
       child: Column(children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 12, bottom: 14),
-          child: IconButton(
-            key: const ValueKey('windows-nav-toggle'),
-            tooltip: expanded ? 'Perkecil menu' : 'Perluas menu',
-            icon: const Icon(FilmStreamIcons.desktopMenu, size: 25),
-            color: const Color(0xffe5aa55),
-            onPressed: () => setState(() => expanded = !expanded),
-          ),
-        ),
-        if (showLabels)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 26, top: 10),
-            child: Text(
-              'FILM STREAMING',
-              style: TextStyle(
-                color: Color(0xffe5aa55),
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        // Keep all five destinations usable even when the rail is collapsed.
-        // The old Windows layout removed the entire menu on collapse.
+        const SizedBox(height: 18),
         for (var index = 0;
             index < FilmStreamIcons.navigationLabels.length;
             index++)
@@ -73,13 +70,13 @@ class _WindowsNavigationRailState extends State<WindowsNavigationRail> {
               message: FilmStreamIcons.navigationLabels[index],
               child: Material(
                 borderRadius: BorderRadius.circular(12),
-                color: widget.selectedIndex == index
+                color: selectedIndex == index
                     ? const Color(0xff493724)
                     : Colors.transparent,
                 child: InkWell(
                   key: ValueKey('windows-nav-$index'),
                   borderRadius: BorderRadius.circular(12),
-                  onTap: () => widget.onSelected(index),
+                  onTap: () => onSelected(index),
                   child: SizedBox(
                     height: 50,
                     width: double.infinity,
@@ -92,10 +89,10 @@ class _WindowsNavigationRailState extends State<WindowsNavigationRail> {
                         Icon(
                           FilmStreamIcons.navigationIcon(
                             index,
-                            selected: widget.selectedIndex == index,
+                            selected: selectedIndex == index,
                           ),
                           size: 26,
-                          color: widget.selectedIndex == index
+                          color: selectedIndex == index
                               ? const Color(0xffe5aa55)
                               : Colors.white70,
                         ),
@@ -104,10 +101,10 @@ class _WindowsNavigationRailState extends State<WindowsNavigationRail> {
                           Text(
                             FilmStreamIcons.navigationLabels[index],
                             style: TextStyle(
-                              fontWeight: widget.selectedIndex == index
+                              fontWeight: selectedIndex == index
                                   ? FontWeight.w700
                                   : FontWeight.w500,
-                              color: widget.selectedIndex == index
+                              color: selectedIndex == index
                                   ? const Color(0xffe5aa55)
                                   : Colors.white70,
                             ),
