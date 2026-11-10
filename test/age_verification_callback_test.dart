@@ -2,6 +2,40 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:filmstream_personal/web_source_page.dart';
 
 void main() {
+  group('Android age verification must preserve the official website', () {
+    test('never treat a loaded player as authorization to hide an age gate', () {
+      expect(preserveOfficialAgeVerification(
+        ageGateVisible: true, googleSignInInProgress: false), isTrue);
+      expect(preserveOfficialAgeVerification(
+        ageGateVisible: false, googleSignInInProgress: true), isTrue);
+      expect(preserveOfficialAgeVerification(
+        ageGateVisible: true, googleSignInInProgress: true), isTrue);
+      expect(preserveOfficialAgeVerification(
+        ageGateVisible: false, googleSignInInProgress: false), isFalse);
+    });
+
+    test('browser fallback opens only the original safe source, not OAuth callbacks', () {
+      final source = Uri.parse(
+        'https://tv12.lk21official.cc/verity-2024');
+      expect(officialSourceBrowserDestination(source), source);
+      final series = Uri.parse(
+        'https://tv.lk21online.de/game-of-thrones-2011');
+      expect(officialSourceBrowserDestination(series), series);
+      for (final text in [
+        'http://tv12.lk21official.cc/verity-2024',
+        'https://user:secret@tv12.lk21official.cc/verity-2024',
+        'https://tv12.lk21official.cc:8443/verity-2024',
+        'https://accounts.google.com/o/oauth2/auth?code=secret',
+        'https://login.lk21official.cc/auth/callback?code=secret',
+        'https://tv12.lk21official.cc/auth/callback?code=secret',
+        'https://tv12.lk21official.cc/oauth/return?state=secret',
+      ]) {
+        expect(officialSourceBrowserDestination(Uri.parse(text)), isNull,
+            reason: text);
+      }
+    });
+  });
+
   group('Age verification Google callback allowlist', () {
     test('permits only observed callback host during active consent', () {
       final callback = Uri.parse(
