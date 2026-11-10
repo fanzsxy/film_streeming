@@ -1,22 +1,35 @@
 # Film Streaming
 
-Aplikasi streaming untuk **Android** dan **Windows**. Unduh hasil build terbaru dari GitHub Actions:
+Aplikasi Film Streaming untuk **Android** dan **Windows**.
+
+## ⬇️ Download aplikasi
 
 | 📱 Android | 🖥️ Windows |
 |:--|:--|
-| **[⬇️ Download APK Android](https://github.com/fanzsxy/film_streeming/actions/workflows/build-apk.yml)** | **[⬇️ Download Windows (Installer / Portable)](https://github.com/fanzsxy/film_streeming/actions/workflows/build-windows.yml)** |
-| File: `app-release.apk` | File: `Film-Streaming-Setup.exe` atau `Film-Streaming-Windows.zip` |
+| **[Download APK Android (GitHub Release terbaru)](https://github.com/fanzsxy/film_streeming/releases/latest/download/Film-Streaming-Android.apk)** | **[Download Windows (lihat Installer / Portable di Releases)](https://github.com/fanzsxy/film_streeming/releases)** |
+| File: `Film-Streaming-Android.apk` | File: `Film-Streaming-Setup.exe` atau `Film-Streaming-Windows.zip` |
+| APK rilis ditandatangani | Installer/portable hanya dipublikasikan jika build Windows ditandatangani |
 
-### Cara mengunduh
+**[📦 Lihat semua versi GitHub Releases](https://github.com/fanzsxy/film_streeming/releases)**
 
-1. Klik **Download APK Android** atau **Download Windows** di atas.
-2. Pilih **workflow run yang berhasil** (tanda centang hijau, bukan run yang gagal).
-3. Gulir ke bagian **Artifacts** lalu pilih file yang sesuai:
-   - **Android:** `Film-Streaming-Release-APK`. Unduh ZIP artifact GitHub, ekstrak, lalu instal `app-release.apk` di Android.
-   - **Windows (installer):** `Film-Streaming-Windows-Installer` jika tersedia dan ditandatangani; atau `Film-Streaming-Windows-PERSONAL-UNSIGNED-Installer` **hanya untuk pengujian pribadi**. Ekstrak ZIP artifact, lalu jalankan `Film-Streaming-Setup.exe`.
-   - **Windows (portable):** `Film-Streaming-Windows-Portable`. Ekstrak ZIP artifact, lalu ekstrak `Film-Streaming-Windows.zip` beserta semua file aplikasinya. Tersedia juga artifact `Film-Streaming-Windows-Checksums` untuk memeriksa SHA-256.
+**Status:** Repository belum memiliki Release yang diterbitkan. Tombol APK langsung akan aktif setelah Release pertama dibuat. Jika Windows belum memiliki sertifikat penandatanganan, file Windows belum tersedia di Releases.
 
-**Catatan:** Tautan di atas menuju halaman build, **bukan unduhan file langsung**. GitHub dapat meminta login untuk mengunduh Artifacts. File Artifacts punya masa simpan terbatas (installer Windows unsigned pribadi disimpan **3 hari**); jika tidak ada hasil build yang masih tersedia, buka workflow terkait dan gunakan **Run workflow** pada branch `main` untuk membuat versi baru. Installer Windows tanpa tanda tangan digital tidak untuk distribusi publik; jangan abaikan peringatan keamanan Windows.
+### Alternatif: download build untuk pengujian
+
+| Android | Windows |
+|:--|:--|
+| [Build Android di GitHub Actions](https://github.com/fanzsxy/film_streeming/actions/workflows/build-apk.yml) | [Build Windows di GitHub Actions](https://github.com/fanzsxy/film_streeming/actions/workflows/build-windows.yml) |
+
+Buka **run yang berhasil → Artifacts**, unduh ZIP lalu ekstrak filenya. Artifacts tidak permanen, dan GitHub mungkin meminta login. Untuk Windows, `PERSONAL-UNSIGNED-Installer` **hanya untuk pengujian pribadi**, bukan rilis publik; jangan melewati peringatan keamanan. Periksa sumber build dan tanda tangan digital sebelum menginstal.
+
+### Untuk pemilik repositori: menerbitkan Release
+
+1. Jalankan **[Build FilmStream APK V5](https://github.com/fanzsxy/film_streeming/actions/workflows/build-apk.yml)** pada branch `main` hingga berhasil. Catat **run ID** dari URL hasil build.
+2. Opsional, jalankan **[Build Film Streaming Windows Desktop](https://github.com/fanzsxy/film_streeming/actions/workflows/build-windows.yml)** pada commit `main` yang **sama**. Untuk memasukkan installer dan ZIP Windows ke Release publik, build harus menghasilkan artifact **`Film-Streaming-Windows-Installer`** (ditandatangani, bukan `PERSONAL-UNSIGNED-Installer`). Itu membutuhkan secret `WINDOWS_CODESIGN_PFX_BASE64` dan `WINDOWS_CODESIGN_PASSWORD` yang benar.
+3. Buka **[Publish Film Streaming Release](https://github.com/fanzsxy/film_streeming/actions/workflows/publish-release.yml)** → **Run workflow** pada `main`. Isi `version` (contoh `v1.0.0`), `android_run_id`, dan `windows_run_id` jika ada build Windows yang ditandatangani. Tidak perlu mengisi Windows jika belum tersedia.
+4. Workflow memeriksa bahwa build benar-benar berhasil dari `main`, memastikan kedua platform berasal dari commit yang sama, menyiapkan checksum SHA-256, dan membuat GitHub Release dengan file unduhan nyata. Gunakan **tag versi baru** untuk rilis berikutnya.
+
+**Catatan keamanan:** Release adalah distribusi publik, sedangkan Windows installer unsigned memang belum ditujukan untuk publik. Untuk Windows publik yang lebih tepercaya, konfigurasi sertifikat penandatanganan terlebih dahulu. Jangan membagikan password maupun keystore/PFX di README atau chat.
 
 ---
 
