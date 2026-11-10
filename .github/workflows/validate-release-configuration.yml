@@ -1,0 +1,63 @@
+name: Validate Film Streaming Release Configuration
+
+on:
+  pull_request:
+    paths:
+      - 'README.md'
+      - '.github/workflows/publish-release.yml'
+      - '.github/workflows/validate-release-configuration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate YAML and Bash scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet 'PyYAML==6.0.2'
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import yaml
+
+          workflow = yaml.load(
+              Path('.github/workflows/publish-release.yml').read_text(),
+              Loader=yaml.BaseLoader,
+          )
+          assert 'workflow_dispatch' in workflow['on']
+          assert workflow['permissions']['actions'] == 'read'
+          assert workflow['permissions']['contents'] == 'write'
+          assert workflow['jobs']['publish']['if'] == "github.ref == 'refs/heads/main'"
+          scripts = [
+              step['run']
+              for step in workflow['jobs']['publish']['steps']
+              if 'run' in step
+          ]
+          assert len(scripts) >= 4
+          for script in scripts:
+              result = subprocess.run(
+                  ['bash', '-n'], input=script, text=True,
+                  capture_output=True, check=False,
+              )
+              assert result.returncode == 0, result.stderr
+          source = '\n'.join(scripts)
+          assert 'Film-Streaming-Windows-Installer' in source
+          assert 'Film-Streaming-Windows-PERSONAL-UNSIGNED-Installer' not in source
+          assert 'head_sha == $sha' in source
+          assert 'sha256sum' in source
+          print('Release YAML, scripts and signed-artifact safety checks passed.')
+          PY
+      - name: Check README download targets match release asset names
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq '/releases/latest/download/Film-Streaming-Android.apk' README.md
+          grep -Fq '/actions/workflows/publish-release.yml' README.md
+          grep -Fq 'Film-Streaming-Setup.exe' README.md
+          grep -Fq 'Film-Streaming-Windows.zip' README.md
