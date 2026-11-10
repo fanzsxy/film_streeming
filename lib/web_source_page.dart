@@ -72,41 +72,8 @@ class WebSourcePage extends StatefulWidget {
 class _WebSourcePageState extends State<WebSourcePage> {
   late final WebViewController _controller;
   late bool _focused;
-  // Never expand all movie/series players. The source's 18+ warning
-  // needs taller space only while it is detected or verified as an affected
-  // provider page. A cross-origin iframe may hide its contents from JS.
-  bool _ageGateVisible = false;
-  // In-memory rendering hint shared across detail views with the SAME source
-  // host. This is not authentication state and never bypasses a gate.
-  static final Set<String> _hostsWithObservedGoogleReturn = {};
-  // Persist only a UI sizing hint (no credentials, cookies, tokens, or
-  // assertion that the provider authorized an age-restricted page).
-  bool _savedReturnForThisSource = false;
-  String get _visualReturnKey =>
-      'fs_view_return_v1_${widget.url.host.toLowerCase()}';
-  bool get _priorReturnForThisSource =>
-      _savedReturnForThisSource ||
-      _hostsWithObservedGoogleReturn.contains(widget.url.host.toLowerCase());
-
-  Future<void> _rememberVisualReturn() async {
-    _savedReturnForThisSource = true;
-    _hostsWithObservedGoogleReturn.add(widget.url.host.toLowerCase());
-    try {
-      final preferences = await SharedPreferences.getInstance();
-      await preferences.setBool(_visualReturnKey, true);
-    } catch (_) {
-      // Appearance hint only; playback and authentication are unaffected.
-    }
-  }
-  // Once Google has returned to an actual source page, title-specific
-  // fallback must not keep a poster/video expanded like an age warning.
-  // This flag does not assert that age verification succeeded.
-  bool _returnedToSourceAfterGoogle = false;
-  bool get _expandedSource => widget.embedded && _ageGateVisible;
-  bool get _knownAgeGateExample {
-    final title = _normalizeTitle(_matchTitle);
-    return title == 'verity' || title == 'game of thrones';
-  }
+  // The source is displayed using the regular embedded player viewport.
+  // Its own server-side age policy, if any, remains controlled by the site.
   // Tracks OAuth navigation; consent UI is not a playback failure.
   bool _googleSignInInProgress = false;
   // Only diagnostic status. Never store OAuth URLs, query parameters, codes,
@@ -514,7 +481,6 @@ class _WebSourcePageState extends State<WebSourcePage> {
   }
 
   Future<void> _applyCleanPlayer() async {
-    if (_expandedSource) return;
     try {
       await _controller.runJavaScript(r'''(() => {
         if (window.__filmstreamCleanV1) return;
@@ -531,31 +497,6 @@ class _WebSourcePageState extends State<WebSourcePage> {
         new MutationObserver(clean).observe(document.documentElement, {childList:true,subtree:true});
       })();''');
     } catch (_) { /* Site may reject script injection; keep original player available. */ }
-  }
-
-  // Detect age-gate text only where the browser's same-origin policy
-  // permits it. Cross-origin iframe text cannot be read from the parent.
-  Future<bool> _detectVisibleAgeGate() async {
-    try {
-      final raw = await _controller.runJavaScriptReturningResult(r'''(() => {
-        const hasGate = (text) => {
-          const s = String(text || '').toLowerCase();
-          return s.includes('materi khusus dewasa') ||
-            (s.includes('konfirmasi umur') && s.includes('google')) ||
-            (s.includes('konfirmasi usia') && s.includes('google'));
-        };
-        if (hasGate(document.body?.innerText)) return true;
-        for (const frame of document.querySelectorAll('iframe')) {
-          try {
-            if (hasGate(frame.contentDocument?.body?.innerText)) return true;
-          } catch (_) { /* cross-origin: not readable */ }
-        }
-        return false;
-      })()''');
-      return raw == true || raw.toString() == 'true';
-    } catch (_) {
-      return false;
-    }
   }
 
   // Controls are native Flutter widgets. The original page owns the iframe and
@@ -805,7 +746,6 @@ class _WebSourcePageState extends State<WebSourcePage> {
                   loadedHost == 'accounts.google.co.id') &&
                   _googleSignInInProgress)) {
             _googleSignInInProgress = true;
-            if (widget.embedded) _ageGateVisible = true;
             if (mounted && generation == _navigationGeneration) {
               setState(() {
                 _loading = false;
@@ -844,8 +784,6 @@ class _WebSourcePageState extends State<WebSourcePage> {
             // page transitions (observed as player/poster -> spinner -> blank).
             // Let the official source handle cookies and display its own result.
             _googleSignInInProgress = false;
-            _returnedToSourceAfterGoogle = true;
-            await _rememberVisualReturn();
             if (!mounted || generation != _navigationGeneration) return;
           }
           await _applyCleanPlayer();
@@ -903,22 +841,6 @@ class _WebSourcePageState extends State<WebSourcePage> {
           bool found = false;
           if (_focused && !isGoogleSignIn) found = await _applyFocus();
           if (!mounted || generation != _navigationGeneration) return;
-          if (widget.embedded && !isGoogleSignIn) {
-            final gateTextFound = await _detectVisibleAgeGate();
-            if (!mounted || generation != _navigationGeneration) return;
-            // Known cross-origin gate cases from Android screenshots are
-            // a fallback only; they must not resize unrelated movies.
-            final shouldExpand = gateTextFound ||
-                (_knownAgeGateExample && !_googleSignInInProgress &&
-                    !_returnedToSourceAfterGoogle &&
-                    !_priorReturnForThisSource);
-            if (_ageGateVisible != shouldExpand) {
-              setState(() => _ageGateVisible = shouldExpand);
-              // Reapply the provider iframe's CSS after visibility changes.
-              if (_focused && found) await _applyFocus();
-              if (!mounted || generation != _navigationGeneration) return;
-            }
-          }
           if (found) {
             await _readServers();
             await _readSourceDetails();
@@ -932,8 +854,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
           if (mounted && generation == _navigationGeneration) setState(() {
             _loading = false;
             _hasShownSourcePage = true;
-            // Preserve the source's real 18+ warning and Google's own
-            // sign-in UI even if no playable iframe exists on that page.
+            // Render the source page as-is, without any extra app-created
+            // age-specific UI or confirmation state.
             _search = !found && !widget.embedded &&
                 !isGoogleSignIn && !_googleSignInInProgress;
             _revealed = true;
@@ -1036,15 +958,6 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // This is scoped to the user-opened source WebView and does not authorize
   // age-restricted playback or override Google's embedded OAuth policy.
   Future<void> _initializeSourceWebView() async {
-    // Load the visual hint BEFORE the initial WebView navigates; otherwise
-    // the first rendered poster may flash as a full-height age-warning frame.
-    try {
-      final preferences = await SharedPreferences.getInstance();
-      _savedReturnForThisSource =
-          preferences.getBool(_visualReturnKey) ?? false;
-    } catch (_) {
-      _savedReturnForThisSource = false;
-    }
     if (!mounted) return;
     if (_controller.platform is AndroidWebViewController) {
       try {
@@ -1111,21 +1024,6 @@ class _WebSourcePageState extends State<WebSourcePage> {
               margin-left:0!important; margin-right:0!important; }
           `;
           document.documentElement.classList.add('fs-focus-v53');
-          // Expand only the source iframe's container for the tall 18+ warning.
-          // This preserves the original provider login elements and session.
-          if (TARGET_AGE_GATE) {
-            document.documentElement.classList.add('fs-age-gate');
-            style.textContent += `
-              html.fs-age-gate .main-player {
-                aspect-ratio:auto!important; height:100dvh!important;
-                max-height:none!important;
-              }
-              html.fs-age-gate .main-player > iframe,
-              html.fs-age-gate .main-player > #main-player {
-                height:100%!important; max-height:none!important;
-              }
-            `;
-          }
           const player = document.querySelector('.main-player');
           if (player) {
             window.scrollTo(0, 0);
@@ -1142,7 +1040,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
           }
           return true;
         })();
-      '''.replaceAll('TARGET_AGE_GATE', _expandedSource ? 'true' : 'false'));
+      ''');
       return result == true || result.toString() == 'true';
     } catch (_) { return false; }
   }
@@ -1265,14 +1163,9 @@ class _WebSourcePageState extends State<WebSourcePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      _expandedSource
-          ? SizedBox(
-              height: MediaQuery.sizeOf(context).height -
-                  MediaQuery.paddingOf(context).top - kToolbarHeight,
-              child: _playerBody(),
-            )
-          : AspectRatio(aspectRatio: 16 / 9, child: _playerBody()),
+    if (widget.embedded) return ClipRect(child: Column(
+      mainAxisSize: MainAxisSize.min, children: [
+      AspectRatio(aspectRatio: 16 / 9, child: _playerBody()),
       _flutterServers(),
       _flutterSourceDetails(),
     ]));
