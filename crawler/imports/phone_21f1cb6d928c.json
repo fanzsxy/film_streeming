@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "Magical Secret Tour",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/magical-secret-tour-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-magical-secret-tour-2026-lk21.jpg",
+      "rating": 6.5,
+      "genres": [
+        "Drama",
+        "Crime"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Don't Let the Sun",
+      "year": 2025,
+      "url": "https://tv12.lk21official.cc/dont-let-sun-2025",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-dont-let-sun-2025-lk21.jpg",
+      "rating": 6.1,
+      "genres": [
+        "Drama",
+        "Sci-Fi"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Good Lawyer",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/good-lawyer-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-good-lawyer-2026-lk21.jpg",
+      "rating": 6.3,
+      "genres": [
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "North of North",
+      "year": 2025,
+      "url": "https://tv.lk21online.de/north-north-2025",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-north-north-2025-lk21.jpg",
+      "rating": 7.5,
+      "genres": [
+        "Comedy"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Campus Drivers",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/campus-drivers-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-campus-drivers-2026-lk21.jpg",
+      "rating": 7.5,
+      "genres": [
+        "Drama",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
