@@ -1,0 +1,187 @@
+name: Publish Film Streaming Release
+
+# Releases are deliberately explicit: uploading unsigned personal Windows
+# installers to a public Release is not allowed by this workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New version tag (e.g. v1.0.0)'
+        required: true
+        type: string
+      android_run_id:
+        description: 'Successful Build FilmStream APK V5 run ID from main'
+        required: true
+        type: string
+      windows_run_id:
+        description: 'Optional successful SIGNED Windows build run ID from same commit'
+        required: false
+        default: ''
+        type: string
+      prerelease:
+        description: 'Mark version as a pre-release'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: publish-filmstream-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate requested release and provenance
+        id: source
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.version }}
+          ANDROID_RUN: ${{ inputs.android_run_id }}
+          WINDOWS_RUN: ${{ inputs.windows_run_id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
+            echo "::error::Version must look like v1.0.0, v1.2.3-beta.1"
+            exit 1
+          fi
+          if [[ ! "$ANDROID_RUN" =~ ^[0-9]+$ ]] ||
+             { [[ -n "$WINDOWS_RUN" ]] && [[ ! "$WINDOWS_RUN" =~ ^[0-9]+$ ]]; }; then
+            echo "::error::Provide numeric GitHub Actions run IDs."
+            exit 1
+          fi
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release $TAG already exists. Choose a new version."
+            exit 1
+          fi
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::Git tag $TAG already exists; refusing to change an existing tag."
+            exit 1
+          fi
+
+          apk_workflow=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/build-apk.yml" --jq '.id')
+          apk_run=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$ANDROID_RUN")
+          if ! jq -e --argjson workflow "$apk_workflow" --arg repo "$GITHUB_REPOSITORY" '
+            .workflow_id == $workflow and .status == "completed" and
+            .conclusion == "success" and .head_branch == "main" and
+            .event == "workflow_dispatch" and .head_repository.full_name == $repo
+          ' <<< "$apk_run" >/dev/null; then
+            echo "::error::Android run must be a successful manual build from this repository's main branch."
+            exit 1
+          fi
+          source_sha=$(jq -r '.head_sha' <<< "$apk_run")
+          [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
+
+          if [[ -n "$WINDOWS_RUN" ]]; then
+            win_workflow=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/build-windows.yml" --jq '.id')
+            win_run=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$WINDOWS_RUN")
+            if ! jq -e --argjson workflow "$win_workflow" --arg repo "$GITHUB_REPOSITORY" --arg sha "$source_sha" '
+              .workflow_id == $workflow and .status == "completed" and
+              .conclusion == "success" and .head_branch == "main" and
+              .event == "workflow_dispatch" and .head_repository.full_name == $repo and
+              .head_sha == $sha
+            ' <<< "$win_run" >/dev/null; then
+              echo "::error::Windows must be a successful manual build from exactly the same main commit as Android."
+              exit 1
+            fi
+            # A signed installer artifact is produced ONLY when Windows
+            # Authenticode signing passed; never publish the PERSONAL-UNSIGNED
+            # installer or a portable executable from an unsigned run.
+            artifact_count=$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$WINDOWS_RUN/artifacts" \
+              --jq '[.artifacts[] | select(.name == "Film-Streaming-Windows-Installer" and .expired == false)] | length' \
+              | awk '{sum += $1} END {print sum+0}')
+            if [[ "$artifact_count" -ne 1 ]]; then
+              echo "::error::No signed Windows installer in that run. Use Actions for personal unsigned builds, or configure Windows code signing before making a public Release."
+              exit 1
+            fi
+          fi
+          echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
+          echo "windows_present=$([[ -n "$WINDOWS_RUN" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Download verified Android release APK
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.android_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p release android-artifact
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "Film-Streaming-Release-APK" --dir android-artifact
+          test -s android-artifact/app-release.apk || {
+            echo "::error::Signed Android app-release.apk not found in verified run."
+            exit 1
+          }
+          cp android-artifact/app-release.apk release/Film-Streaming-Android.apk
+
+      - name: Download signed Windows installer and portable app
+        if: steps.source.outputs.windows_present == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.windows_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p windows-installer windows-portable
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "Film-Streaming-Windows-Installer" --dir windows-installer
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "Film-Streaming-Windows-Portable" --dir windows-portable
+          test -s windows-installer/Film-Streaming-Setup.exe
+          test -s windows-portable/Film-Streaming-Windows.zip
+          cp windows-installer/Film-Streaming-Setup.exe release/
+          cp windows-portable/Film-Streaming-Windows.zip release/
+
+      - name: Prepare release checksums and notes
+        shell: bash
+        env:
+          TAG: ${{ inputs.version }}
+          SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+          WINDOWS_PRESENT: ${{ steps.source.outputs.windows_present }}
+        run: |
+          set -euo pipefail
+          (cd release && sha256sum Film-Streaming-Android.apk \
+            Film-Streaming-Setup.exe Film-Streaming-Windows.zip 2>/dev/null \
+            || sha256sum Film-Streaming-Android.apk) > release/SHA256SUMS.txt
+          {
+            echo "## Film Streaming $TAG"
+            echo
+            echo "Built from repository commit `$SOURCE_SHA`."
+            echo
+            echo "- **Android:** Download `Film-Streaming-Android.apk` (signed release APK)."
+            if [[ "$WINDOWS_PRESENT" == "true" ]]; then
+              echo "- **Windows:** Download `Film-Streaming-Setup.exe` (signed installer) or `Film-Streaming-Windows.zip` (portable app with signed executable)."
+            else
+              echo "- **Windows:** No signed Windows installer was provided. Personal unsigned builds are available only through GitHub Actions, not public Releases."
+            fi
+            echo "- SHA-256 values: `SHA256SUMS.txt`."
+            echo
+            echo "Only download from the official repository. Review Windows publisher/signature details and do not bypass security warnings."
+          } > release-notes.md
+
+      - name: Publish GitHub Release with verified assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.version }}
+          SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+          PRE_RELEASE: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+          args=(--repo "$GITHUB_REPOSITORY" --target "$SOURCE_SHA" \
+            --title "Film Streaming $TAG" --notes-file release-notes.md)
+          if [[ "$PRE_RELEASE" == "true" ]]; then
+            args+=(--prerelease)
+          fi
+          # 'gh release create' uploads assets before publishing the release.
+          gh release create "$TAG" release/* "${args[@]}"
+          echo "### Release published: [$TAG](https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG)" >> "$GITHUB_STEP_SUMMARY"
