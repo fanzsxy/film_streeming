@@ -21,6 +21,7 @@ class WindowsPosterRevealGate extends StatefulWidget {
   final int preloadCount;
   final Duration maxWait;
   final double loadingHeight;
+  final bool asSliver;
   final Future<String> Function(int index) resolvePoster;
   final Future<void> Function(BuildContext context, String poster) precachePoster;
   final Widget child;
@@ -36,6 +37,7 @@ class WindowsPosterRevealGate extends StatefulWidget {
     this.preloadCount = 8,
     this.maxWait = const Duration(seconds: 7),
     this.loadingHeight = 267,
+    this.asSliver = false,
   });
 
   @override
@@ -57,7 +59,8 @@ class _WindowsPosterRevealGateState extends State<WindowsPosterRevealGate> {
     if (oldWidget.batchKey != widget.batchKey ||
         oldWidget.enabled != widget.enabled ||
         oldWidget.itemCount != widget.itemCount ||
-        oldWidget.preloadCount != widget.preloadCount) {
+        oldWidget.preloadCount != widget.preloadCount ||
+        oldWidget.asSliver != widget.asSliver) {
       _batch = _begin();
     }
   }
@@ -98,7 +101,7 @@ class _WindowsPosterRevealGateState extends State<WindowsPosterRevealGate> {
         if (snapshot.connectionState == ConnectionState.done) {
           return widget.child;
         }
-        return SizedBox(
+        final loading = SizedBox(
           height: widget.loadingHeight,
           child: const Center(
             child: Column(
@@ -112,6 +115,9 @@ class _WindowsPosterRevealGateState extends State<WindowsPosterRevealGate> {
             ),
           ),
         );
+        return widget.asSliver
+            ? SliverToBoxAdapter(child: loading)
+            : loading;
       },
     );
   }
