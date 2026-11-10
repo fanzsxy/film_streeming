@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:filmstream_personal/filmstream_catalog.dart';
 import 'package:filmstream_personal/search_suggestions.dart';
+import 'package:filmstream_personal/main.dart' show LocalCatalogMetadata;
 
 void main() {
   const entries = <CatalogEntry>[
@@ -12,6 +13,48 @@ void main() {
     CatalogEntry(title: 'Spirit', year: 2021, url: 'https://example.org/d', type: 'movie'),
     CatalogEntry(title: 'Other Movie', year: 2025, url: 'https://example.org/e', type: 'movie'),
   ];
+
+  test('exact suggestion maps to catalog-backed detail with source identity',
+      () {
+    const first = CatalogEntry(
+      title: 'Dora and the Search for Sol Dorado',
+      year: 2025,
+      url: 'https://tv12.lk21official.cc/dora-search-2025',
+      type: 'movie',
+      synopsis: 'Catalog synopsis',
+      genres: ['Adventure'],
+      rating: 7.1,
+    );
+    const otherYear = CatalogEntry(
+      title: 'Dora and the Search for Sol Dorado',
+      year: 2026,
+      url: 'https://tv12.lk21official.cc/dora-search-2026',
+      type: 'movie',
+    );
+    const series = CatalogEntry(
+      title: 'The Adventures of Dora',
+      year: 2025,
+      url: 'https://tv.lk21online.de/the-adventures-of-dora-2025',
+      type: 'tv',
+      tmdbId: 12345,
+    );
+    final a = LocalCatalogMetadata.movieFromSuggestion(first);
+    final b = LocalCatalogMetadata.movieFromSuggestion(otherYear);
+    final tv = LocalCatalogMetadata.movieFromSuggestion(series);
+    expect(a.title, first.title);
+    expect(a.year, '2025');
+    expect(a.sourceUrl, first.url);
+    expect(a.id, isNegative);
+    expect(a.genres, isEmpty);
+    expect(a.genreNames, ['Adventure']);
+    expect(a.overview, 'Catalog synopsis');
+    expect(a.rating, 7.1);
+    expect(b.sourceUrl, otherYear.url);
+    expect(b.id, isNot(a.id));
+    expect(tv.id, 12345);
+    expect(tv.type, 'tv');
+    expect(tv.sourceUrl, series.url);
+  });
 
   test('spi suggests local Spider-Man titles, prefix first, no duplicates', () {
     final suggestions = matchCatalogSuggestions(entries, 'SPI');
