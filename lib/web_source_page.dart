@@ -49,6 +49,13 @@ String loginReturnBlockedMessage(Uri destination) =>
     'URL dan token tidak disimpan. Situs sumber harus mendukung '
     'callback ini secara resmi.';
 
+/// Do not replace the website's own age/Google confirmation controls with
+/// a guessed player. Site authorization is determined by the provider.
+bool preserveOfficialAgeVerification({
+  required bool ageGateVisible,
+  required bool googleSignInInProgress,
+}) => ageGateVisible || googleSignInInProgress;
+
 /// A visual reader mode for the source page. The site's actual player/iframe
 /// remains in its original document. Nothing is proxied or extracted.
 class WebSourcePage extends StatefulWidget {
@@ -76,6 +83,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // needs taller space only while it is detected or verified as an affected
   // provider page. A cross-origin iframe may hide its contents from JS.
   bool _ageGateVisible = false;
+  bool _manualFullSourceView = false;
   // In-memory rendering hint shared across detail views with the SAME source
   // host. This is not authentication state and never bypasses a gate.
   static final Set<String> _hostsWithObservedGoogleReturn = {};
@@ -102,7 +110,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
   // fallback must not keep a poster/video expanded like an age warning.
   // This flag does not assert that age verification succeeded.
   bool _returnedToSourceAfterGoogle = false;
-  bool get _expandedSource => widget.embedded && _ageGateVisible;
+  bool get _expandedSource =>
+      widget.embedded && (_ageGateVisible || _manualFullSourceView);
   bool get _knownAgeGateExample {
     final title = _normalizeTitle(_matchTitle);
     return title == 'verity' || title == 'game of thrones';
@@ -848,8 +857,35 @@ class _WebSourcePageState extends State<WebSourcePage> {
             await _rememberVisualReturn();
             if (!mounted || generation != _navigationGeneration) return;
           }
-          await _applyCleanPlayer();
-          await _installProgressObserver();
+          // Detect verification before focus CSS or JS changes the source
+          // page. Google doesn't allow embedded WebView OAuth sign-in.
+          final initialAgeGate =
+              widget.embedded && await _detectVisibleAgeGate();
+          if (!mounted || generation != _navigationGeneration) return;
+          final knownGateFallback = widget.embedded &&
+              _knownAgeGateExample && !_googleSignInInProgress &&
+              !_returnedToSourceAfterGoogle && !_priorReturnForThisSource;
+          final preserveGate = preserveOfficialAgeVerification(
+            ageGateVisible: initialAgeGate || knownGateFallback ||
+                _manualFullSourceView,
+            googleSignInInProgress: _googleSignInInProgress,
+          );
+          if (widget.embedded &&
+              _ageGateVisible != (initialAgeGate || knownGateFallback)) {
+            setState(() =>
+                _ageGateVisible = initialAgeGate || knownGateFallback);
+          }
+          if (preserveGate) {
+            // Preserve the site's real age-consent buttons and redirects.
+            try {
+              await _controller.runJavaScript(
+                "document.documentElement.classList.remove('fs-focus-v53');"
+              );
+            } catch (_) {}
+          } else {
+            await _applyCleanPlayer();
+            await _installProgressObserver();
+          }
           if (!mounted || generation != _navigationGeneration) return;
           // The source sometimes finishes its countdown/redirect document before
           // navigating to the actual series page. Never briefly reveal that page.
@@ -901,23 +937,29 @@ class _WebSourcePageState extends State<WebSourcePage> {
                   pageHost == 'accounts.google.co.id') &&
                   _googleSignInInProgress);
           bool found = false;
-          if (_focused && !isGoogleSignIn) found = await _applyFocus();
+          if (_focused && !isGoogleSignIn && !preserveGate) {
+            found = await _applyFocus();
+          }
           if (!mounted || generation != _navigationGeneration) return;
           if (widget.embedded && !isGoogleSignIn) {
-            final gateTextFound = await _detectVisibleAgeGate();
+            final gateTextFound =
+                initialAgeGate || await _detectVisibleAgeGate();
             if (!mounted || generation != _navigationGeneration) return;
-            // Known cross-origin gate cases from Android screenshots are
-            // a fallback only; they must not resize unrelated movies.
-            final shouldExpand = gateTextFound ||
-                (_knownAgeGateExample && !_googleSignInInProgress &&
-                    !_returnedToSourceAfterGoogle &&
-                    !_priorReturnForThisSource);
+            final shouldExpand = gateTextFound || knownGateFallback;
             if (_ageGateVisible != shouldExpand) {
               setState(() => _ageGateVisible = shouldExpand);
-              // Reapply the provider iframe's CSS after visibility changes.
-              if (_focused && found) await _applyFocus();
-              if (!mounted || generation != _navigationGeneration) return;
             }
+            // A dynamically inserted prompt can appear after loading.
+            // Never let focus mode cover the site's age confirmation.
+            if (shouldExpand && _focused) {
+              try {
+                await _controller.runJavaScript(
+                  "document.documentElement.classList.remove('fs-focus-v53');"
+                );
+              } catch (_) {}
+              found = false;
+            }
+            if (!mounted || generation != _navigationGeneration) return;
           }
           if (found) {
             await _readServers();
@@ -1179,6 +1221,75 @@ class _WebSourcePageState extends State<WebSourcePage> {
     if (current.scheme == 'https') await launchUrl(current, mode: LaunchMode.externalApplication);
   }
 
+  /// Open the ORIGINAL source link in the device's default browser.
+  /// Never open an OAuth callback URL (which may contain credentials) or
+  /// copy cookies/tokens between Chrome and Android's separate WebView.
+  Future<void> _openOriginalSourceInBrowser() async {
+    final source = widget.url;
+    if (source.scheme != 'https' || source.userInfo.isNotEmpty ||
+        source.hasPort || source.host.isEmpty) return;
+    try {
+      final opened = await launchUrl(
+        source,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened && mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          const SnackBar(content: Text(
+            'Browser tidak dapat dibuka. Periksa browser bawaan HP.',
+          )),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          const SnackBar(content: Text('Gagal membuka browser HP.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleFullSourceView() async {
+    final expanding = !_manualFullSourceView;
+    if (expanding) {
+      try {
+        await _controller.runJavaScript(
+          "document.documentElement.classList.remove('fs-focus-v53');"
+        );
+      } catch (_) {}
+    }
+    if (mounted) setState(() => _manualFullSourceView = expanding);
+  }
+
+  Widget _verificationControls() => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (_ageGateVisible || _googleSignInInProgress)
+        const Padding(
+          padding: EdgeInsets.only(bottom: 4),
+          child: Text(
+            'Situs meminta verifikasi usia. Selesaikan melalui layanan '
+            'resmi situs jika kamu memenuhi persyaratan usia.',
+            style: TextStyle(fontSize: 12, color: Colors.white70),
+          ),
+        ),
+      Wrap(spacing: 8, runSpacing: 2, children: [
+        TextButton.icon(
+          onPressed: _toggleFullSourceView,
+          icon: Icon(_manualFullSourceView
+              ? Icons.close_fullscreen : Icons.open_in_full),
+          label: Text(_manualFullSourceView
+              ? 'Perkecil halaman' : 'Perbesar halaman sumber'),
+        ),
+        TextButton.icon(
+          onPressed: _openOriginalSourceInBrowser,
+          icon: const Icon(Icons.open_in_browser),
+          label: const Text('Buka di browser untuk verifikasi'),
+        ),
+      ]),
+    ]),
+  );
+
   Future<void> _notifyPlayTap() async {
     if (_playIntentNotified || !mounted || !_revealed || _search || _error != null || widget.onPlayIntent == null) return;
     _playIntentNotified = true;
@@ -1265,14 +1376,18 @@ class _WebSourcePageState extends State<WebSourcePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.embedded) return ClipRect(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    if (widget.embedded) return ClipRect(child: Column(
+      mainAxisSize: MainAxisSize.min, children: [
       _expandedSource
           ? SizedBox(
-              height: MediaQuery.sizeOf(context).height -
-                  MediaQuery.paddingOf(context).top - kToolbarHeight,
+              // Leave space for the manual browser/verification controls.
+              height: (MediaQuery.sizeOf(context).height -
+                  MediaQuery.paddingOf(context).top -
+                  kToolbarHeight - 116).clamp(260.0, double.infinity),
               child: _playerBody(),
             )
           : AspectRatio(aspectRatio: 16 / 9, child: _playerBody()),
+      _verificationControls(),
       _flutterServers(),
       _flutterSourceDetails(),
     ]));
