@@ -46,6 +46,13 @@ class WindowsPosterRevealGate extends StatefulWidget {
 
 class _WindowsPosterRevealGateState extends State<WindowsPosterRevealGate> {
   Future<void>? _batch;
+  Timer? _timeout;
+
+  @override
+  void dispose() {
+    _timeout?.cancel();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -76,20 +83,28 @@ class _WindowsPosterRevealGateState extends State<WindowsPosterRevealGate> {
   }
 
   Future<void> _begin() {
+    _timeout?.cancel();
     if (!widget.enabled || widget.itemCount <= 0 ||
         widget.preloadCount <= 0) {
       return Future<void>.value();
     }
     final visible = math.min(widget.itemCount, widget.preloadCount);
-    // The timeout is deliberately for the *whole* batch. A slow or offline
-    // TMDB server cannot leave Windows stuck on a loading spinner.
-    final prepare = Future.wait([
+    final ready = Completer<void>();
+    // A single bounded timeout for this initial batch. Cancel it when
+    // the images finish so it doesn't leave pending timers in widget tests
+    // or unnecessarily wake the app after a successful cache hit.
+    final timer = Timer(widget.maxWait, () {
+      if (!ready.isCompleted) ready.complete();
+    });
+    _timeout = timer;
+    Future.wait([
       for (var index = 0; index < visible; index++) _prepareOne(index),
-    ]);
-    return Future.any<void>([
-      prepare.then((_) {}),
-      Future<void>.delayed(widget.maxWait),
-    ]);
+    ]).then((_) {
+      if (!ready.isCompleted) ready.complete();
+    }, onError: (Object error, StackTrace stack) {
+      if (!ready.isCompleted) ready.complete();
+    }).whenComplete(timer.cancel);
+    return ready.future;
   }
 
   @override
