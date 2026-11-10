@@ -149,9 +149,14 @@ jobs:
           WINDOWS_PRESENT: ${{ steps.source.outputs.windows_present }}
         run: |
           set -euo pipefail
-          (cd release && sha256sum Film-Streaming-Android.apk \
-            Film-Streaming-Setup.exe Film-Streaming-Windows.zip 2>/dev/null \
-            || sha256sum Film-Streaming-Android.apk) > release/SHA256SUMS.txt
+          (
+            cd release
+            files=(Film-Streaming-Android.apk)
+            if [[ "$WINDOWS_PRESENT" == "true" ]]; then
+              files+=(Film-Streaming-Setup.exe Film-Streaming-Windows.zip)
+            fi
+            sha256sum "${files[@]}"
+          ) > release/SHA256SUMS.txt
           {
             echo "## Film Streaming $TAG"
             echo
