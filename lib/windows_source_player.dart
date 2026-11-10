@@ -4,9 +4,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:webview_flutter_windows/webview_flutter_windows.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'filmstream_icons.dart';
 import 'filmstream_detail_metadata.dart';
+import 'windows_fullscreen_coordinator.dart';
 
 /// Windows WebView2 version of the Android focused source player.
 /// Keep the provider-owned iframe and its JS in the original document.
@@ -37,6 +39,11 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
   Timer? _poller;
   StreamSubscription<bool>? _nativeFullscreenSubscription;
   final OverlayPortalController _fullscreenPortal = OverlayPortalController();
+  late final WindowsFullscreenCoordinator _windowFullscreenCoordinator =
+      WindowsFullscreenCoordinator(
+        isFullScreen: () => windowManager.isFullScreen(),
+        setFullScreen: (enabled) => windowManager.setFullScreen(enabled),
+      );
   bool _nativeFullscreen = false;
   bool _ready = false;
   bool _showFullPage = false;
@@ -324,9 +331,11 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
   Future<void> _initialize() async {
     try {
       await _controller.initialize();
-      // WebView2 raises this when the P2P/HYDRAX iframe uses its own
-      // Fullscreen button. Move the *same* Webview into a window-filling
-      // overlay; do not navigate, reload or simulate a player click.
+      // WebView2 raises this when the provider iframe requests HTML
+      // fullscreen. Reparent the SAME Webview into a Flutter overlay AND
+      // switch the native Windows window into real monitor fullscreen.
+      // A Flutter-only overlay leaves the title bar and taskbar visible.
+      // Do not navigate, reload or simulate a player click.
       _nativeFullscreenSubscription =
           _controller.containsFullScreenElementChanged.listen(_onNativeFullscreen);
       await _controller.setPopupWindowPolicy(WebviewPopupWindowPolicy.deny);
@@ -443,6 +452,11 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
     _poller?.cancel();
     _nativeFullscreenSubscription?.cancel();
     if (_nativeFullscreen) _fullscreenPortal.hide();
+    // Restore the original window state even if the user navigates back
+    // while the video itself is in fullscreen.
+    unawaited(_windowFullscreenCoordinator.close().catchError(
+      (Object error, StackTrace stack) =>
+          debugPrint('Could not restore Windows window: $error')));
     _controller.dispose();
     super.dispose();
   }
@@ -458,6 +472,12 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
       _fullscreenPortal.hide();
       setState(() => _nativeFullscreen = false);
     }
+    // WebView2's HTML-fullscreen event alone cannot hide Windows chrome.
+    // Synchronize the top-level HWND too, and restore its previous size,
+    // state and title bar when the iframe exits HTML fullscreen (Esc).
+    unawaited(_windowFullscreenCoordinator.request(requested).catchError(
+      (Object error, StackTrace stack) =>
+          debugPrint('Windows native fullscreen unavailable: $error')));
   }
 
   Widget _serverButtons() {
@@ -486,9 +506,9 @@ class _WindowsSourcePlayerState extends State<WindowsSourcePlayer> {
       ));
     }
     if (!_ready) return const Center(child: CircularProgressIndicator());
-    // The provider's fullscreen button is never covered by Flutter. When
-    // WebView2 reports HTML fullscreen, render the SAME controller at the
-    // overlay's full size; the video and its seek position stay mounted.
+    // Keep the same WebView2 video/seek position. The OverlayPortal fills
+    // Flutter, while window_manager also fills the physical monitor
+    // without Windows title bar or taskbar.
     return OverlayPortal(
       controller: _fullscreenPortal,
       overlayChildBuilder: (_) => Positioned.fill(
