@@ -1115,11 +1115,11 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
             '${visible[i].type}:${visible[i].sourceUrl}'),
           movie:visible[i],onTap:widget.onTap),
         childCount:visible.length),gridDelegate:filmstreamGridDelegate(context))),
-    asSliver:true,loadingHeight:360),
+    asSliver:true,loadingHeight:360,immediate:true),
   if(results.isNotEmpty) SliverToBoxAdapter(child:Column(children:[
     if(error.isNotEmpty)TextButton(
       onPressed:()=>_fillThrough(visiblePage+1),child:Text(error)),
-    if(busy||fillingPage)const Padding(padding:EdgeInsets.all(8),
+    if(!Platform.isWindows && (busy||fillingPage))const Padding(padding:EdgeInsets.all(8),
       child:CircularProgressIndicator()),
     CatalogPageControls(page:visiblePage,
       maxPage:loadedPages+(more?1:0),
@@ -1344,7 +1344,9 @@ class MovieTile extends StatelessWidget {
 Widget _windowsPosterCollection(
     List<Movie> items, String batchKey, Widget child,
     {double loadingHeight = 267, int preloadCount = 8,
-    bool asSliver = false}) {
+    bool asSliver = false, bool immediate = false}) {
+  // Let Film/Series/Filter grids show immediately on Windows.
+  if (immediate) return child;
   return WindowsPosterRevealGate(
     enabled: Platform.isWindows,
     batchKey: batchKey,
@@ -1670,7 +1672,7 @@ class _PagedGridState extends State<PagedGrid> {
         padding:const EdgeInsets.fromLTRB(16,12,16,18),
         child:Text(widget.title,style:const TextStyle(
           fontSize:21,fontWeight:FontWeight.bold)))),
-      if(busy)const SliverFillRemaining(
+      if(busy && (items.isEmpty || !Platform.isWindows))const SliverFillRemaining(
         hasScrollBody:false,
         child:Center(child:CircularProgressIndicator()))
       else if(error.isNotEmpty)SliverFillRemaining(
@@ -1693,7 +1695,7 @@ class _PagedGridState extends State<PagedGrid> {
                       ?items[i].sourceUrl:'${items[i].type}:${items[i].id}'),
                   movie:items[i],onTap:widget.onTap),
                 childCount:items.length))),
-          asSliver:true,loadingHeight:360),
+          asSliver:true,loadingHeight:360,immediate:true),
         SliverToBoxAdapter(child:CatalogPageControls(
           page:page,maxPage:maxPage,
           hasNext:hasNext,busy:busy,onSelect:_fetch)),
