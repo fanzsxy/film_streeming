@@ -1,6 +1,5 @@
 import 'filmstream_catalog.dart';
 import 'catalog_poster_display.dart';
-import 'windows_poster_reveal_gate.dart';
 import 'catalog_query.dart';
 import 'search_suggestions.dart';
 import 'startup_catalog_check.dart';
@@ -1341,33 +1340,12 @@ class MovieTile extends StatelessWidget {
 /// Windows shows one bounded spinner before releasing the first visible
 /// catalog posters together. Android keeps its original immediate grid/rail
 /// behavior, and all screens continue to use PR #289's CatalogPosterTile.
+/// Poster images load independently in CatalogPosterTile on both platforms.
+/// Do not block a Windows page behind network poster preloading.
 Widget _windowsPosterCollection(
     List<Movie> items, String batchKey, Widget child,
     {double loadingHeight = 267, int preloadCount = 8,
-    bool asSliver = false}) {
-  return WindowsPosterRevealGate(
-    enabled: Platform.isWindows,
-    batchKey: batchKey,
-    itemCount: items.length,
-    preloadCount: preloadCount,
-    loadingHeight: loadingHeight,
-    asSliver: asSliver,
-    resolvePoster: (index) async {
-      final original = items[index];
-      final upgraded = await LocalCatalogMetadata.catalogPosterUpgrade(original);
-      return upgraded != null && upgraded.poster.isNotEmpty
-          ? upgraded.poster : original.poster;
-    },
-    // Precache the same URL as Image.network used by MovieTile. Once decoded,
-    // the first displayed posters are already in Flutter's image cache.
-    precachePoster: (context, poster) => precacheImage(
-      NetworkImage(filmstreamImageUrl(poster)),
-      context,
-      onError: (error, stack) {},
-    ),
-    child: child,
-  );
-}
+    bool asSliver = false}) => child;
 
 class MovieRail extends StatefulWidget {
  final String title,endpoint,type; final ValueChanged<Movie> onTap; final VoidCallback onSeeAll;
@@ -1670,9 +1648,9 @@ class _PagedGridState extends State<PagedGrid> {
         padding:const EdgeInsets.fromLTRB(16,12,16,18),
         child:Text(widget.title,style:const TextStyle(
           fontSize:21,fontWeight:FontWeight.bold)))),
-      if(busy)const SliverFillRemaining(
-        hasScrollBody:false,
-        child:Center(child:CircularProgressIndicator()))
+      if(busy && items.isEmpty)const SliverFillRemaining(
+         hasScrollBody:false,
+         child:Center(child:CircularProgressIndicator()))
       else if(error.isNotEmpty)SliverFillRemaining(
         hasScrollBody:false,
         child:Center(child:FilledButton(
