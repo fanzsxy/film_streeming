@@ -7,11 +7,18 @@ on:
         type: boolean
         required: true
         default: true
+      sign_with_signpath:
+        description: 'Use approved SignPath signing (requires SignPath Foundation enrollment)'
+        type: boolean
+        required: true
+        default: false
 
 jobs:
   windows:
     runs-on: windows-latest
+    timeout-minutes: 120
     permissions:
+      actions: read
       contents: read
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +64,34 @@ jobs:
         run: |
           if ([string]::IsNullOrWhiteSpace($env:TMDB_TOKEN)) { throw 'TMDB_TOKEN secret is required.' }
           flutter build windows --release --dart-define="TMDB_TOKEN=$env:TMDB_TOKEN" --dart-define="LK21_API_BASE=$env:LK21_API_BASE" --dart-define="SOURCE_API_BASE=$env:SOURCE_API_BASE" --dart-define="FILMSTREAM_SYNC_KEY=$env:FILMSTREAM_SYNC_KEY"
+      - name: Check SignPath enrollment and inputs
+        if: inputs.sign_with_signpath == true
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          SIGNPATH_EXE_ARTIFACT_CONFIGURATION_SLUG: ${{ vars.SIGNPATH_EXE_ARTIFACT_CONFIGURATION_SLUG }}
+          SIGNPATH_INSTALLER_ARTIFACT_CONFIGURATION_SLUG: ${{ vars.SIGNPATH_INSTALLER_ARTIFACT_CONFIGURATION_SLUG }}
+        run: |
+          if ($env:GITHUB_REF -ne 'refs/heads/main' -or $env:GITHUB_EVENT_NAME -ne 'workflow_dispatch') {
+            throw 'SignPath release signing is restricted to manually triggered builds on main.'
+          }
+          foreach ($key in @(
+            'SIGNPATH_API_TOKEN',
+            'SIGNPATH_ORGANIZATION_ID',
+            'SIGNPATH_PROJECT_SLUG',
+            'SIGNPATH_SIGNING_POLICY_SLUG',
+            'SIGNPATH_EXE_ARTIFACT_CONFIGURATION_SLUG',
+            'SIGNPATH_INSTALLER_ARTIFACT_CONFIGURATION_SLUG')) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($key))) {
+              throw "$key is not configured. Complete SignPath approval and README setup first."
+            }
+          }
+          Write-Host 'SignPath configuration present. Signed binaries will be verified before publishing.'
       - name: Sign Windows application (trusted certificate required for release)
+        if: inputs.sign_with_signpath != true
         id: signing
         shell: pwsh
         env:
@@ -86,6 +120,44 @@ jobs:
           } finally {
             Remove-Item $certPath -ErrorAction SilentlyContinue
           }
+      # SignPath signs only the application created by the current GitHub-hosted
+      # run. The EXE must be signed BEFORE generating the installer and portable ZIP.
+      - name: Upload unsigned Windows executable to GitHub for SignPath provenance
+        id: signpath_unsigned_app
+        if: inputs.sign_with_signpath == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: Film-Streaming-SignPath-Pending-EXE
+          path: build/windows/x64/runner/Release/film_streaming.exe
+          if-no-files-found: error
+      - name: Request SignPath signature for Windows executable
+        if: inputs.sign_with_signpath == true
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_EXE_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.signpath_unsigned_app.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: '3600'
+          output-artifact-directory: signpath-signed-app
+      - name: Verify and install signed Windows executable
+        if: inputs.sign_with_signpath == true
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem 'signpath-signed-app' -Recurse -File -Filter 'film_streaming.exe')
+          if ($files.Count -ne 1) { throw 'Expected exactly one signed Film Streaming executable returned by SignPath.' }
+          $signature = Get-AuthenticodeSignature $files[0].FullName
+          if ($signature.Status -ne 'Valid' -or -not $signature.SignerCertificate) {
+            throw "SignPath executable failed Windows trust verification: $($signature.Status)"
+          }
+          $target = 'build/windows/x64/runner/Release/film_streaming.exe'
+          Copy-Item -LiteralPath $files[0].FullName -Destination $target -Force
+          $recheck = Get-AuthenticodeSignature $target
+          if ($recheck.Status -ne 'Valid') { throw 'Signed application verification failed after copying.' }
+          Write-Host "Verified signed application: $($signature.SignerCertificate.Subject)"
       - name: Package portable Windows app
         shell: pwsh
         run: |
@@ -96,7 +168,7 @@ jobs:
         shell: pwsh
         run: choco install innosetup --yes --no-progress
       - name: Build Windows setup installer
-        if: steps.signing.outputs.signed == 'true' || inputs.personal_installer == true
+        if: steps.signing.outputs.signed == 'true' || inputs.personal_installer == true || inputs.sign_with_signpath == true
         shell: pwsh
         run: |
           $iscc = "${env:ProgramFiles(x86)}\\Inno Setup 6\\ISCC.exe"
@@ -127,15 +199,52 @@ jobs:
           } finally {
             Remove-Item $certPath -ErrorAction SilentlyContinue
           }
+      - name: Upload unsigned installer to GitHub for SignPath provenance
+        id: signpath_unsigned_installer
+        if: inputs.sign_with_signpath == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: Film-Streaming-SignPath-Pending-Installer
+          path: installer-output/Film-Streaming-Setup.exe
+          if-no-files-found: error
+      - name: Request SignPath signature for Windows installer
+        if: inputs.sign_with_signpath == true
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_INSTALLER_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.signpath_unsigned_installer.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: '3600'
+          output-artifact-directory: signpath-signed-installer
+      - name: Verify and install signed Windows installer
+        if: inputs.sign_with_signpath == true
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem 'signpath-signed-installer' -Recurse -File -Filter 'Film-Streaming-Setup.exe')
+          if ($files.Count -ne 1) { throw 'Expected exactly one signed installer returned by SignPath.' }
+          $signature = Get-AuthenticodeSignature $files[0].FullName
+          if ($signature.Status -ne 'Valid' -or -not $signature.SignerCertificate) {
+            throw "SignPath installer failed Windows trust verification: $($signature.Status)"
+          }
+          $target = 'installer-output/Film-Streaming-Setup.exe'
+          Copy-Item -LiteralPath $files[0].FullName -Destination $target -Force
+          if ((Get-AuthenticodeSignature $target).Status -ne 'Valid') {
+            throw 'Signed installer verification failed after copying.'
+          }
+          Write-Host "Verified signed installer: $($signature.SignerCertificate.Subject)"
       - uses: actions/upload-artifact@v4
-        if: steps.signing.outputs.signed != 'true' && inputs.personal_installer == true
+        if: steps.signing.outputs.signed != 'true' && inputs.personal_installer == true && inputs.sign_with_signpath != true
         with:
           name: Film-Streaming-Windows-PERSONAL-UNSIGNED-Installer
           path: installer-output/Film-Streaming-Setup.exe
           if-no-files-found: error
           retention-days: 3
       - uses: actions/upload-artifact@v4
-        if: steps.signing.outputs.signed == 'true'
+        if: steps.signing.outputs.signed == 'true' || inputs.sign_with_signpath == true
         with:
           name: Film-Streaming-Windows-Installer
           path: installer-output/Film-Streaming-Setup.exe
@@ -146,7 +255,7 @@ jobs:
           path: Film-Streaming-Windows.zip
           if-no-files-found: error
       - name: Warn about unsigned personal installer
-        if: steps.signing.outputs.signed != 'true' && inputs.personal_installer == true
+        if: steps.signing.outputs.signed != 'true' && inputs.personal_installer == true && inputs.sign_with_signpath != true
         shell: pwsh
         run: |
           Write-Warning "UNSIGNED PERSONAL BUILD: Chrome and Windows can block this artifact. Do not disable security protections. This build is for testing, not public distribution."
