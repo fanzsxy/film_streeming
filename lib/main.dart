@@ -1119,7 +1119,7 @@ class _FilmstreamFilterState extends State<FilmstreamFilter> {
   if(results.isNotEmpty) SliverToBoxAdapter(child:Column(children:[
     if(error.isNotEmpty)TextButton(
       onPressed:()=>_fillThrough(visiblePage+1),child:Text(error)),
-    if(busy||fillingPage)const Padding(padding:EdgeInsets.all(8),
+    if(!Platform.isWindows && (busy||fillingPage))const Padding(padding:EdgeInsets.all(8),
       child:CircularProgressIndicator()),
     CatalogPageControls(page:visiblePage,
       maxPage:loadedPages+(more?1:0),
