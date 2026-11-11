@@ -5,6 +5,8 @@ on:
     paths:
       - 'README.md'
       - '.github/workflows/publish-release.yml'
+      - '.github/workflows/build-windows.yml'
+      - 'docs/SIGNPATH_SETUP.md'
       - '.github/workflows/validate-release-configuration.yml'
   workflow_dispatch:
 
@@ -52,6 +54,48 @@ jobs:
           assert 'head_sha == $sha' in source
           assert 'sha256sum' in source
           print('Release YAML, scripts and signed-artifact safety checks passed.')
+          PY
+      - name: Validate Windows SignPath guardrails and provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          path = Path('.github/workflows/build-windows.yml')
+          workflow = yaml.load(path.read_text(), Loader=yaml.BaseLoader)
+          assert workflow['on']['workflow_dispatch']['inputs']['sign_with_signpath']['default'] == 'false'
+          assert workflow['jobs']['windows']['permissions']['actions'] == 'read'
+          steps = workflow['jobs']['windows']['steps']
+          names = [step.get('name', '') for step in steps]
+          def where(name):
+              assert names.count(name) == 1, name
+              return names.index(name)
+          exe_upload = where('Upload unsigned Windows executable to GitHub for SignPath provenance')
+          exe_verify = where('Verify and install signed Windows executable')
+          portable = where('Package portable Windows app')
+          installer_build = where('Build Windows setup installer')
+          installer_upload = where('Upload unsigned installer to GitHub for SignPath provenance')
+          installer_verify = where('Verify and install signed Windows installer')
+          assert exe_upload < exe_verify < portable < installer_build < installer_upload < installer_verify
+          signpath = [
+              step for step in steps
+              if step.get('uses', '').startswith('signpath/github-action-submit-signing-request@')
+          ]
+          assert len(signpath) == 2
+          assert all(step['if'] == 'inputs.sign_with_signpath == true' for step in signpath)
+          assert all(step['with']['wait-for-completion'] == 'true' for step in signpath)
+          assert all(step['with']['github-artifact-id'].startswith('${{ steps.') for step in signpath)
+          signed = next(step for step in steps if step.get('with', {}).get('name') ==
+                        'Film-Streaming-Windows-Installer')
+          personal = next(step for step in steps if step.get('with', {}).get('name') ==
+                          'Film-Streaming-Windows-PERSONAL-UNSIGNED-Installer')
+          assert 'inputs.sign_with_signpath == true' in signed['if']
+          assert 'inputs.sign_with_signpath != true' in personal['if']
+          assert 'Get-AuthenticodeSignature' in steps[exe_verify]['run']
+          assert 'Get-AuthenticodeSignature' in steps[installer_verify]['run']
+          print('SignPath signing order and publication safety checks passed.')
           PY
       - name: Check README download targets match release asset names
         shell: bash
