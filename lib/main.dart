@@ -1672,7 +1672,7 @@ class _PagedGridState extends State<PagedGrid> {
         padding:const EdgeInsets.fromLTRB(16,12,16,18),
         child:Text(widget.title,style:const TextStyle(
           fontSize:21,fontWeight:FontWeight.bold)))),
-      if(busy && items.isEmpty)const SliverFillRemaining(
+      if(busy && (items.isEmpty || !Platform.isWindows))const SliverFillRemaining(
         hasScrollBody:false,
         child:Center(child:CircularProgressIndicator()))
       else if(error.isNotEmpty)SliverFillRemaining(
