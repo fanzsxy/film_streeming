@@ -30,7 +30,6 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   static const sentKey = 'filmstream_auto_sync_sent_v1';
   static const diagnosticKey = 'filmstream_auto_sync_status_v1';
   static const uploadStatusKey = 'filmstream_auto_sync_upload_status_v1';
-  static const lastPrKey = 'filmstream_auto_sync_last_pr_v1';
   static const scanStartedKey = 'filmstream_auto_sync_scan_started_v1';
   static const scanFinishedKey = 'filmstream_auto_sync_scan_finished_v1';
   static const syncTimeKey = 'filmstream_auto_sync_upload_checked_v1';
