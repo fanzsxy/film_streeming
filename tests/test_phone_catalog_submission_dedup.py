@@ -40,6 +40,7 @@ class SourceIdentityTests(unittest.TestCase):
         self.assertEqual(valid_source_genres(["Action"] * 21), [])
 
     @patch.dict(os.environ, {
+        "FILMSTREAM_SYNC_ENABLED": "1",
         "FILMSTREAM_SYNC_KEY": "test-only-app-key",
         "FILMSTREAM_GITHUB_TOKEN": "test-only-server-token",
     })
@@ -77,6 +78,7 @@ class SourceIdentityTests(unittest.TestCase):
         known.assert_called_once()
 
     @patch.dict(os.environ, {
+        "FILMSTREAM_SYNC_ENABLED": "1",
         "FILMSTREAM_SYNC_KEY": "test-only-app-key",
         "FILMSTREAM_GITHUB_TOKEN": "test-only-server-token",
     })
@@ -93,6 +95,34 @@ class SourceIdentityTests(unittest.TestCase):
                                 x_filmstream_sync_key="test-only-app-key")
         self.assertEqual(result["status"], "already_known")
         self.assertEqual(result["submitted"], 0)
+        github.assert_not_called()
+
+    @patch.dict(os.environ, {
+        "FILMSTREAM_SYNC_ENABLED": "0",
+        "FILMSTREAM_SYNC_KEY": "old-extractable-key",
+        "FILMSTREAM_GITHUB_TOKEN": "test-only-server-token",
+    })
+    @patch("backend.phone_catalog_sync.github")
+    def test_disabled_server_rejects_even_old_correct_client_key(self, github):
+        from fastapi import HTTPException
+        with self.assertRaises(HTTPException) as raised:
+            submit_catalog(PhoneImport(items=[{"type": "movie"}]),
+                           x_filmstream_sync_key="old-extractable-key")
+        self.assertEqual(raised.exception.status_code, 503)
+        github.assert_not_called()
+
+    @patch.dict(os.environ, {
+        "FILMSTREAM_SYNC_ENABLED": "1",
+        "FILMSTREAM_SYNC_KEY": "new-server-only-key",
+        "FILMSTREAM_GITHUB_TOKEN": "test-only-server-token",
+    })
+    @patch("backend.phone_catalog_sync.github")
+    def test_wrong_key_never_reaches_github(self, github):
+        from fastapi import HTTPException
+        with self.assertRaises(HTTPException) as raised:
+            submit_catalog(PhoneImport(items=[{"type": "movie"}]),
+                           x_filmstream_sync_key="old-extractable-key")
+        self.assertEqual(raised.exception.status_code, 401)
         github.assert_not_called()
 
     @patch("backend.phone_catalog_sync.github")
