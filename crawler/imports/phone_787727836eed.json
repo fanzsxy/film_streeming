@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "American Doctor",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/american-doctor-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-american-doctor-2026-lk21.jpg",
+      "rating": 8.4,
+      "genres": [
+        "Documentary",
+        "War"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Intern",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/intern-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-intern-2026-lk21.jpg",
+      "rating": 6.3,
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Other Mommy",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/other-mommy-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-other-mommy-2026-lk21.jpg",
+      "rating": 5.3,
+      "genres": [
+        "Horror",
+        "Thriller"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "De Gaulle: Liberte",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/de-gaulle-liberte-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-de-gaulle-liberte-2026-lk21.jpg",
+      "rating": 7.9,
+      "genres": [
+        "Biography",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Ha-Chan, Shake Your Booty!",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/ha-chan-shake-your-booty-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-ha-chan-shake-your-booty-2026-lk21.jpg",
+      "rating": 7.3,
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Babystar",
+      "year": 2025,
+      "url": "https://tv12.lk21official.cc/babystar-2025",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-babystar-2025-lk21.jpg",
+      "rating": 6.1,
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Antique Strategy in the Battle of Longbi",
+      "year": 2024,
+      "url": "https://tv12.lk21official.cc/antique-strategy-battle-longbi-2024",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-antique-strategy-battle-longbi-2024-lk21.jpg",
+      "rating": 8.5,
+      "genres": [
+        "Drama",
+        "Action"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Tales of the Monkey Mountain",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/tales-monkey-mountain-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-tales-monkey-mountain-2026-lk21.jpg",
+      "rating": 6.1,
+      "genres": [
+        "Fantasy"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Ancient Building Town Mausoleum Palace",
+      "year": 2024,
+      "url": "https://tv12.lk21official.cc/ancient-building-town-mausoleum-palace-2024",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-ancient-building-town-mausoleum-palace-2024-lk21.jpg",
+      "rating": 6.8,
+      "genres": [
+        "Action"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Age of the Legend",
+      "year": 2021,
+      "url": "https://tv12.lk21official.cc/age-legend-2021",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-age-legend-2021-lk21.jpg",
+      "rating": 5.8,
+      "genres": [
+        "Action"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Under Siege",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/under-siege-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-under-siege-2026-lk21.jpg",
+      "rating": 6.3,
+      "genres": [
+        "Drama",
+        "History"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Melania Rea",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/melania-rea-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-melania-rea-2026-lk21.jpg",
+      "rating": 4.9,
+      "genres": [
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
