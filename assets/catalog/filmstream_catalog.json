@@ -636544,7 +636544,8 @@
         "Fantasy"
       ],
       "genre_data_source": "lk21_source",
-      "genre_retry_status": "unmatched"
+      "genre_retry_status": "unmatched",
+      "genre_sync_status": "unmatched"
     },
     {
       "title": "Ancient Building Town Mausoleum Palace",
