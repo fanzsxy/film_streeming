@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -36,7 +35,6 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   static const scanFinishedKey = 'filmstream_auto_sync_scan_finished_v1';
   static const syncTimeKey = 'filmstream_auto_sync_upload_checked_v1';
   // Never embed source cookies or TMDB credentials in scanning JS.
-  static const syncKey = String.fromEnvironment('FILMSTREAM_SYNC_KEY');
   static const hosts = <String, String>{
     'movie': 'tv12.lk21official.cc',
     'series': 'tv.lk21online.de',
@@ -551,7 +549,7 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
   Future<void> _syncAfterScan() async {
     try {
       await _queueUnsyncedLocal();
-      await _sendPending();
+      await _reportPending();
       final reviewed = await FilmStreamCatalog.syncReviewedCatalog();
       if(reviewed>0 && mounted) widget.onCatalogUpdated();
     } catch (error) {
@@ -613,80 +611,23 @@ class _StartupCatalogCheckState extends State<StartupCatalogCheck> {
     }
   }
 
-  bool sending=false;
-  Future<void> _sendPending() async {
-    if (sending) return;
-    sending = true;
+  // Public APK/EXE builds must not contain a reusable backend credential.
+  // Keep scanning and queuing locally; an authenticated owner-run submission
+  // path can be added later without compromising the GitHub server token.
+  Future<void> _reportPending() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(pendingKey) ?? '[]';
-      final decoded = jsonDecode(raw);
-      if (decoded is! List || decoded.isEmpty) {
+      final decoded = jsonDecode(prefs.getString(pendingKey) ?? '[]');
+      if (decoded is List && decoded.isNotEmpty) {
+        await _logSync('Pengiriman otomatis GitHub dijeda demi keamanan. '
+            'Judul tetap tersimpan di katalog dan antrean lokal.');
+      } else {
         await _logSync('Tidak ada judul baru menunggu pengiriman; '
             'PR GitHub baru tidak dibuat.');
-        return;
       }
-      if (syncKey.isEmpty) {
-        await _logSync('Kunci pengiriman FILMSTREAM_SYNC_KEY tidak ada '
-            'di APK. Hasil scan tetap disimpan di HP.');
-        return;
-      }
-      final batch = decoded.whereType<Map>().take(100)
-          .map((row) => Map<String, dynamic>.from(row)).toList();
-      if (batch.isEmpty) {
-        await _logSync('Antrean pengiriman berisi data tidak valid; '
-            'perlu diperiksa.');
-        return;
-      }
-      await _logSync('Mengirim ${batch.length} judul ke backend FilmStream...');
-      final response = await http.post(
-        Uri.parse('https://film-streeming-api.vercel.app/catalog/submit'),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Filmstream-Sync-Key': syncKey,
-        },
-        body: jsonEncode({'items': batch}),
-      ).timeout(const Duration(seconds: 30));
-      if (response.statusCode != 200) {
-        await _logSync('Backend menolak pengiriman: HTTP '
-            '${response.statusCode}. Antrean tetap di HP.');
-        return;
-      }
-      final body = jsonDecode(response.body);
-      if (body is! Map ||
-          (body['status'] != 'review_required' &&
-           body['status'] != 'already_known')) {
-        await _logSync('Backend belum mengonfirmasi PR atau data yang ada. '
-            'Antrean tetap di HP.');
-        return;
-      }
-      final confirmedAlready = body['status'] == 'already_known';
-      final oldSent = jsonDecode(prefs.getString(sentKey) ?? '[]');
-      final sent = oldSent is List
-          ? oldSent.whereType<String>().toSet() : <String>{};
-      sent.addAll(batch.map(_recordId));
-      await prefs.setString(sentKey, jsonEncode(sent.toList()));
-      await prefs.setString(pendingKey,
-          jsonEncode(decoded.skip(batch.length).toList()));
-      final prUrl = (body['pull_request_url'] ?? '').toString();
-      if (!confirmedAlready && prUrl.startsWith(
-          'https://github.com/fanzsxy/film_streeming/pull/')) {
-        await prefs.setString(lastPrKey, prUrl);
-      }
-      if (confirmedAlready) {
-        await _logSync('${batch.length} judul sudah dikenal GitHub/backend. '
-            'Tidak perlu membuat PR duplikat.');
-      } else {
-        await _logSync('Backend menerima ${batch.length} judul dan '
-            'membuat PR review: $prUrl');
-        // The scanner runs silently. Confirmation is available only when
-        // the user opens the status dialog from the Info icon.
-      }
-    } catch (error) {
-      await _logSync('Pengiriman backend gagal: '
-          '${error.runtimeType}. Antrean tetap di HP.');
-    } finally {
-      sending = false;
+    } catch (_) {
+      await _logSync('Antrean pengiriman belum dapat dibaca. '
+          'Data katalog lokal tidak dihapus.');
     }
   }
 
