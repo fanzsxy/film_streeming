@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "Chopin, Chopin!",
+      "year": 2025,
+      "url": "https://tv12.lk21official.cc/chopin-chopin-2025",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-chopin-chopin-2025-lk21.jpg",
+      "rating": 6.4,
+      "genres": [
+        "Biography",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Samurai and the Prisoner",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/samurai-prisoner-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-samurai-prisoner-2026-lk21.jpg",
+      "rating": 7.1,
+      "genres": [
+        "Drama",
+        "History"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
