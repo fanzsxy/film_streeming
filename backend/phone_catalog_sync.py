@@ -151,6 +151,11 @@ def known_source_identities(token):
 
 @router.post("/catalog/submit")
 def submit_catalog(payload: PhoneImport, x_filmstream_sync_key: str = Header(default="")):
+    # Opt-in only: old APK/EXE releases contained an extractable shared key.
+    # The server must stay closed until the old key is rotated and an
+    # owner-controlled submission path is configured.
+    if os.environ.get("FILMSTREAM_SYNC_ENABLED") != "1":
+        raise HTTPException(503, "Catalog submission disabled")
     configured = os.environ.get("FILMSTREAM_SYNC_KEY", "")
     token = os.environ.get("FILMSTREAM_GITHUB_TOKEN", "")
     if not configured or not token:

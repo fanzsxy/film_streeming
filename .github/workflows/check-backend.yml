@@ -7,6 +7,10 @@ on:
       - 'tools/import_phone_catalog.py'
       - 'tests/test_phone_catalog_submission_dedup.py'
       - 'tests/test_phone_catalog_import_genres.py'
+      - 'tests/test_sync_secret_build_config.py'
+      - 'lib/startup_catalog_check.dart'
+      - '.github/workflows/build-apk.yml'
+      - '.github/workflows/build-windows.yml'
       - '.github/workflows/check-backend.yml'
   push:
     branches: [main]
@@ -41,3 +45,4 @@ jobs:
           python -m py_compile tools/import_phone_catalog.py
           python -m unittest discover -s tests -p 'test_phone_catalog_submission_dedup.py' -v
           python -m unittest discover -s tests -p 'test_phone_catalog_import_genres.py' -v
+          python -m unittest discover -s tests -p 'test_sync_secret_build_config.py' -v

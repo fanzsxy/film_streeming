@@ -9,57 +9,56 @@ Test locally: `python tests/test_parser.py` (requires beautifulsoup4). The origi
 In Vercel Swagger, use `POST /inspect/player-html` with JSON body `{ "html": "...", "page_url": "https://example.com/page" }`. Submit the actual HTML through a local client rather than pasting large HTML by hand. Never treat an iframe as an MP4/HLS stream.
 
 
-## Android WebView -> GitHub main catalog synchronization
+## Android WebView -> GitHub catalog security (November 2026)
 
-The Android app scans *new* LK21 titles via its embedded WebView, then
-stores title, year, movie/series, source URL, source poster, and genre labels
-in the local catalog overlay. It can also submit newly discovered metadata to
-the **FilmStream backend** at `POST /catalog/submit`.
+The app continues to scan source metadata into its **local** catalog, retain
+unsent entries in `filmstream_auto_sync_pending_v1`, and download changes that
+were reviewed and merged into GitHub. **Automatic uploads from APK/EXE builds
+are paused**: there is no secure way to authenticate the owner with one shared
+secret compiled into every install. The status dialog reports this pause, and
+pending entries are not discarded or falsely marked as sent.
 
-**Do not put a GitHub token in the APK or a Dart source file.**
-The GitHub credential belongs only in server-side Vercel environment variables:
+### Server-only administrative catalog submission
 
-- `FILMSTREAM_GITHUB_TOKEN`: fine-grained GitHub credential restricted to
-  `fanzsxy/film_streeming`, with **Contents (read/write)** and
-  **Pull requests (read/write)**. Keep it out of logs and version control.
-- `FILMSTREAM_SYNC_KEY`: server-side API submission key; set the same value
-  as a **GitHub Actions repository secret** named `FILMSTREAM_SYNC_KEY`.
-  The existing `.github/workflows/build-apk.yml` passes that value to Flutter
-  via `--dart-define` at build time. **Rebuild the APK after changing it.**
-  This app-embedded key is extractable, so it is *not* a GitHub credential or
-  strong proof of identity. Keep the PR review gate on the server.
-- Redeploy the backend after changing Vercel environment variables or
-  `backend/phone_catalog_sync.py`.
+`POST /catalog/submit` still accepts reviewed metadata for manual, owner-run
+submissions. It can open an **import review PR** using GitHub credentials that
+stay on the server. The route is **disabled by default** and needs all three
+server-side environment variables:
 
-### Review workflow
+- `FILMSTREAM_SYNC_ENABLED=1` — explicit opt-in for authorized admin submissions.
+- `FILMSTREAM_SYNC_KEY` — a **new**, randomly generated admin secret. Do not
+  reuse a value that was ever embedded in an APK/EXE.
+- `FILMSTREAM_GITHUB_TOKEN` — fine-grained token restricted to this repository,
+  with Contents (read/write) and Pull requests (read/write) permissions.
 
-1. Open the newly built Android app. Its WebView reads new movie/series
-   listing cards and genre tags; it stores additions immediately on-device.
-2. If the backend is configured and online, the app sends the queued additions
-   to `/catalog/submit`. The server validates source URLs and genre labels
-   and checks the **main catalog and open submissions** for duplicates.
-3. A GitHub PR named `Review N scanned FilmStream catalog titles` is
-   created on an `automation/phone-catalog-*` branch. Review and **merge**
-   that PR. It contains a `crawler/imports/phone_*.json` file, not a direct
-   modification of the main catalog. The app logs the PR URL.
-4. Merging the review PR triggers the existing workflow
-   **Unify FilmStream crawler catalog**, which automatically imports new
-   titles and source genres, then opens a **second catalog PR**.
-5. Review and merge that catalog PR; this updates
-   `assets/catalog/filmstream_catalog.json` on main. Devices can later
-   download reviewed additions via the app's GitHub catalog sync.
+Only send requests from a trusted, owner-controlled script/computer over HTTPS.
+Keep the secret out of logs, command history, Flutter apps, GitHub Action
+build arguments, and public repositories. Existing installed APKs could still
+know the **old** shared secret: rotate/revoke that value on the backend and
+redeploy before enabling administrative submissions. If admin submissions
+are not needed, leave `FILMSTREAM_SYNC_ENABLED` unset.
 
-If the server responds `already_known`, the app clears that submission from
-its retry queue. On HTTP failures, it **retains the local data and queue** for
-a future launch. Incoming metadata is never automatically merged to main
-without a reviewed PR.
+The import workflow remains review-only: an authenticated submission creates a
+PR containing `crawler/imports/phone_*.json`; merging that PR invokes the
+catalog unification workflow, which creates a separate catalog review PR.
+Only after review/merge do applications obtain the catalog update.
 
-### Troubleshooting
+### User impact and recovery
 
-- `Sinkronisasi tidak aktif`: the APK did not receive `FILMSTREAM_SYNC_KEY`.
-- HTTP 401: backend key mismatch. Recheck Vercel and GitHub Actions secrets.
-- HTTP 503: backend token/key missing or GitHub upstream unavailable.
-- No GitHub PR yet: check backend logs and Android local sync status. A source
-  page denial prevents new WebView records; it is not a GitHub sync issue.
-- The backend only forwards **genre labels verified by the scanner**.
-  Existing blank-genre records are not modified.
+- Android scanning, local data, Film/Series/Filter/Search, and remote **read**
+  synchronization remain available.
+- Automatic upload and automatic creation of scanner PRs are temporarily
+  unavailable on new builds. The saved pending entries remain on-device.
+- This change does **not** erase local data or mark pending entries as sent.
+- Enabling secure automatic uploads later requires separate owner
+  authentication (for example a verified GitHub login with narrowly scoped
+  permissions). A new shared API key or a secret fetched without identity
+  verification would **not** solve the vulnerability.
+- To submit metadata now, an owner may prepare a reviewed JSON payload and
+  submit it from a trusted environment using the server-only secret; the
+  application does not yet expose a UI to export its pending queue.
+
+### Regression checks
+
+Run `python -m unittest discover -s tests -p 'test_phone_catalog_submission_dedup.py' -v`
+and `python -m unittest discover -s tests -p 'test_sync_secret_build_config.py' -v`.
