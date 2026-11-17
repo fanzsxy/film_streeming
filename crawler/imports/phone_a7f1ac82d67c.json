@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "ATM 2: Koo ver Error Er Rak",
+      "year": 2013,
+      "url": "https://tv.lk21online.de/atm-2-koo-ver-error-er-rak-2013",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-atm-2-koo-ver-error-er-rak-2013-lk21.jpg",
+      "rating": 7.7,
+      "genres": [
+        "Comedy",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Miracles of the ER",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/miracles-er-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-miracles-er-2026-lk21.jpg",
+      "rating": 7.7,
+      "genres": [
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Rise of the Underdog",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/rise-underdog-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-rise-underdog-2026-lk21.jpg",
+      "rating": 10.0,
+      "genres": [
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Still a Family",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/still-family-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-still-family-2026-lk21.jpg",
+      "rating": 7.2,
+      "genres": [
+        "Drama",
+        "Family"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Francesca Next Door",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/francesca-next-door-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-francesca-next-door-2026-lk21.jpg",
+      "rating": 9.7,
+      "genres": [
+        "Comedy",
+        "Fantasy"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Blossom in Darkness",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/blossom-darkness-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-blossom-darkness-2026-lk21.jpg",
+      "rating": 9.1,
+      "genres": [
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Sword & Silence",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/sword-silence-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-sword-silence-2026-lk21.jpg",
+      "rating": 7.5,
+      "genres": [
+        "Action",
+        "History"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
