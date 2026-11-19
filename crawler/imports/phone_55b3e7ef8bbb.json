@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "You Are the Film",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/you-film-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-you-film-2026-lk21.jpg",
+      "rating": 6.7,
+      "genres": [
+        "Comedy",
+        "Sci-Fi"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Maarnami",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/maarnami-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-maarnami-2026-lk21.jpg",
+      "rating": 7.9,
+      "genres": [
+        "Drama",
+        "Family"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "City Lights",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/city-lights-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-city-lights-2026-lk21.jpg",
+      "rating": 6.8,
+      "genres": [
+        "Drama",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "An Unforgettable Year: Autumn",
+      "year": 2023,
+      "url": "https://tv12.lk21official.cc/unforgettable-year-autumn-2023",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-unforgettable-year-autumn-2023-lk21.jpg",
+      "rating": 5.1,
+      "genres": [
+        "Drama",
+        "Music"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Unthinkable Daughter",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/unthinkable-daughter-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-unthinkable-daughter-2026-lk21.jpg",
+      "rating": 5.4,
+      "genres": [
+        "Documentary",
+        "Crime"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "A Talent for Murder",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/talent-murder-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-talent-murder-2026-lk21.jpg",
+      "rating": 6.6,
+      "genres": [
+        "Biography",
+        "Crime"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Nights Before Christmas",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/nights-before-christmas-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-nights-before-christmas-2026-lk21.jpg",
+      "rating": 8.2,
+      "genres": [
+        "Drama",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Meltdown",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/meltdown-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-meltdown-2026-lk21.jpg",
+      "rating": 6.5,
+      "genres": [
+        "Drama",
+        "Mystery"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Dreamed Adventure",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/dreamed-adventure-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-dreamed-adventure-2026-lk21.jpg",
+      "rating": 6.5,
+      "genres": [
+        "Action",
+        "Adventure"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Beloved",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/beloved-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-beloved-2026-lk21.jpg",
+      "rating": 7.2,
+      "genres": [
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Sweet Enemy",
+      "year": 2017,
+      "url": "https://tv.lk21online.de/sweet-enemy-2017",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-sweet-enemy-2017-lk21.jpg",
+      "rating": 2.0,
+      "genres": [
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "He Who Can't Marry",
+      "year": 2006,
+      "url": "https://tv.lk21online.de/he-who-cant-marry-2006",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-he-who-cant-marry-2006-lk21.jpg",
+      "rating": 8.0,
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Countess of Monte Cristo",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/countess-monte-cristo-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-countess-monte-cristo-2026-lk21.jpg",
+      "rating": 4.4,
+      "genres": [
+        "Action",
+        "Adventure"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
