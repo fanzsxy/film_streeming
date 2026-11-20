@@ -637301,7 +637301,8 @@
         "Action"
       ],
       "genre_data_source": "lk21_source",
-      "genre_sync_status": "unmatched"
+      "genre_sync_status": "unmatched",
+      "genre_retry_status": "unmatched"
     },
     {
       "title": "I Love You Ex",
@@ -637486,7 +637487,8 @@
         "Thriller"
       ],
       "genre_data_source": "lk21_source",
-      "genre_sync_status": "unmatched"
+      "genre_sync_status": "unmatched",
+      "genre_retry_status": "unmatched"
     },
     {
       "title": "Love Destiny",
