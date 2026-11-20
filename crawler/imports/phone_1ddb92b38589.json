@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "L'affaire Abdallah",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/laffaire-abdallah-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-laffaire-abdallah-2026-lk21.jpg",
+      "rating": 7.8,
+      "genres": [
+        "Documentary",
+        "Biography"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Snoopy Presents: 12 Days of Snoopy",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/snoopy-presents-12-days-snoopy-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-snoopy-presents-12-days-snoopy-2026-lk21.jpg",
+      "rating": 7.4,
+      "genres": [
+        "Animation"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The New Fong Sai Yuk: Duel in the City of Death",
+      "year": 2019,
+      "url": "https://tv12.lk21official.cc/new-fong-sai-yuk-duel-city-death-2019",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-new-fong-sai-yuk-duel-city-death-2019-lk21.jpg",
+      "rating": 7.0,
+      "genres": [
+        "Action"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Black Rabbit, White Rabbit",
+      "year": 2025,
+      "url": "https://tv12.lk21official.cc/black-rabbit-white-rabbit-2025",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-black-rabbit-white-rabbit-2025-lk21.jpg",
+      "rating": 6.0,
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "A Newport Christmas",
+      "year": 2025,
+      "url": "https://tv12.lk21official.cc/newport-christmas-2025",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-newport-christmas-2025-lk21.jpg",
+      "rating": 7.1,
+      "genres": [
+        "Drama",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Being Heumann",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/being-heumann-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-being-heumann-2026-lk21.jpg",
+      "rating": 6.9,
+      "genres": [
+        "Biography",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Perfect Lie: Dobbeltspil",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/perfect-lie-dobbeltspil-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-perfect-lie-dobbeltspil-2026-lk21.jpg",
+      "rating": 5.1,
+      "genres": [
+        "Drama",
+        "Thriller"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Love Destiny",
+      "year": 2018,
+      "url": "https://tv.lk21online.de/love-destiny-2018",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-love-destiny-2018-lk21.jpg",
+      "rating": 8.2,
+      "genres": [
+        "Drama",
+        "Fantasy"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Night of Hate Comments",
+      "year": 2019,
+      "url": "https://tv.lk21online.de/night-hate-comments-2019",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-night-hate-comments-2019-lk21.jpg",
+      "rating": 8.8
+    },
+    {
+      "title": "I See You",
+      "year": 2016,
+      "url": "https://tv.lk21online.de/i-see-you-2016",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-i-see-you-2016-lk21.jpg",
+      "rating": 6.5,
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "12 12 12",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/12-12-12-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-12-12-12-2026-lk21.jpg",
+      "rating": 6.6,
+      "genres": [
+        "Action",
+        "Crime"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Rock, Paper, Landmine",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/rock-paper-landmine-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-rock-paper-landmine-2026-lk21.jpg",
+      "rating": 9.0,
+      "genres": [
+        "Drama",
+        "Mystery"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
