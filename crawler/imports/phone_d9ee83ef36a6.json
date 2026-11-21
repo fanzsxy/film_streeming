@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "Best Pancakes in the County",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/best-pancakes-county-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-best-pancakes-county-2026-lk21.jpg",
+      "rating": 4.8,
+      "genres": [
+        "Action",
+        "Crime"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Bangkok Love Stories: Innocence",
+      "year": 2018,
+      "url": "https://tv.lk21online.de/bangkok-love-stories-innocence-2018",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-bangkok-love-stories-innocence-2018-lk21.jpg",
+      "rating": 5.8,
+      "genres": [
+        "Drama",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
