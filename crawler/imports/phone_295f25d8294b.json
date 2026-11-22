@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "Red Code Blue",
+      "year": 2025,
+      "url": "https://tv12.lk21official.cc/red-code-blue-2025",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-red-code-blue-2025-lk21.jpg",
+      "rating": 8.5,
+      "genres": [
+        "Action",
+        "Crime"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Unbearable Christmas",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/unbearable-christmas-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-unbearable-christmas-2026-lk21.jpg",
+      "rating": 5.3,
+      "genres": [
+        "Comedy",
+        "Family"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Fatal Dealz",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/fatal-dealz-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-fatal-dealz-2026-lk21.jpg",
+      "rating": 8.0,
+      "genres": [
+        "Crime",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Lake",
+      "year": 2025,
+      "url": "https://tv12.lk21official.cc/lake-2025",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-lake-2025-lk21.jpg",
+      "rating": 5.2,
+      "genres": [
+        "Horror",
+        "Thriller"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Steps",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/steps-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-steps-2026-lk21.jpg",
+      "rating": 6.9,
+      "genres": [
+        "Animation",
+        "Adventure"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "On Behalf of My Son",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/behalf-my-son-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-behalf-my-son-2026-lk21.jpg",
+      "rating": 6.6,
+      "genres": [
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Soul Snatcher",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/soul-snatcher-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-soul-snatcher-2026-lk21.jpg",
+      "rating": 6.8,
+      "genres": [
+        "Horror"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Heart of Stone",
+      "year": 2019,
+      "url": "https://tv.lk21online.de/heart-stone-2019",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-heart-stone-2019-lk21.jpg",
+      "rating": 7.7,
+      "genres": [
+        "Action",
+        "Crime"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Judgement",
+      "year": 2018,
+      "url": "https://tv.lk21online.de/judgement-2018",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-judgement-2018-lk21.jpg",
+      "rating": 6.5,
+      "genres": [
+        "Crime",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Sleepless Society: Nyctophobia",
+      "year": 2019,
+      "url": "https://tv.lk21online.de/sleepless-society-nyctophobia-2019",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-sleepless-society-nyctophobia-2019-lk21.jpg",
+      "rating": 6.2,
+      "genres": [
+        "Mystery",
+        "Thriller"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Beethoven Virus",
+      "year": 2008,
+      "url": "https://tv.lk21online.de/beethoven-virus-2008",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-beethoven-virus-2008-lk21.jpg",
+      "rating": 6.5,
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
