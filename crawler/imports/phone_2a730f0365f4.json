@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "Korean Hostel in Spain",
+      "year": 2019,
+      "url": "https://tv.lk21online.de/korean-hostel-spain-2019",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-korean-hostel-spain-2019-lk21.jpg",
+      "rating": 9.1
+    },
+    {
+      "title": "Infamia",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/infamia-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-infamia-2026-lk21.jpg",
+      "rating": 7.3,
+      "genres": [
+        "Drama",
+        "Mystery"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Big Issue",
+      "year": 2019,
+      "url": "https://tv.lk21online.de/big-issue-2019",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-big-issue-2019-lk21.jpg",
+      "rating": 5.1,
+      "genres": [
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Legend of White Snake",
+      "year": 2019,
+      "url": "https://tv.lk21online.de/legend-white-snake-2019",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-legend-white-snake-2019-lk21.jpg",
+      "rating": 7.7,
+      "genres": [
+        "Drama",
+        "Fantasy"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "A Couple of Lies",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/couple-lies-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-couple-lies-2026-lk21.jpg",
+      "rating": 6.0,
+      "genres": [
+        "Drama",
+        "Thriller"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Gordon",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/gordon-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-gordon-2026-lk21.jpg",
+      "rating": 6.6,
+      "genres": [
+        "Action",
+        "Biography"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
