@@ -500,17 +500,14 @@ class _WebSourcePageState extends State<WebSourcePage> {
         isAllowedAgeVerificationCallback(u, _googleSignInInProgress)) {
       return true;
     }
-    // Permit top-level redirects only within recognized LK21 source
-    // families. Movie and series pages use the same resolver.
-    const sources = [
-      'nontondrama.my',
-      'nontondrama.vip',
-      'layanfilem.my',
-      'lk21.de',
-      'lk21official.cc',
-      'lk21online.de',
-    ];
-    return sources.any((base) => host == base || host.endsWith('.$base'));
+    // Movie and series redirects share the verified LK21 host policy.
+    if (SourceDomainConfig.isKnownSourceHost(host)) return true;
+    // Preserve the additional legacy redirect families used by series only.
+    if (!_isTv) return false;
+    const legacySeriesSources = ['layanfilem.my', 'lk21.de'];
+    return legacySeriesSources.any(
+      (base) => host == base || host.endsWith('.$base'),
+    );
   }
 
   Future<void> _applyCleanPlayer() async {
