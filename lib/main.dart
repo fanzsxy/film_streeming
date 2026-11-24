@@ -149,9 +149,8 @@ class LocalCatalogMetadata {
   static Uri? sourceFor(Movie movie) {
     final raw = movie.sourceUrl.isNotEmpty ? movie.sourceUrl : _sourceByTmdb[_key(movie.type, movie.id)];
     final uri = raw == null ? null : Uri.tryParse(raw);
-    if (uri == null || uri.scheme != 'https') return null;
-    if (movie.type == 'tv' && uri.host != 'tv9.nontondrama.my' && uri.host != 'tv.nontondrama.vip' && uri.host != 'tv.lk21online.de') return null;
-    if (movie.type == 'movie' && uri.host != 'tv12.lk21official.cc') return null;
+    if (uri == null || uri.scheme != 'https' ||
+        !SourceDomainConfig.isKnownSourceHost(uri.host)) return null;
     return uri;
   }
   static int _stableId(String source) {var hash = 0;for(final unit in source.codeUnits){hash=(hash*31+unit)&0x7fffffff;}return hash==0?1:hash;}
@@ -199,11 +198,9 @@ class LocalCatalogMetadata {
     data['release_date']='${entry.year}-01-01';
     data['first_air_date']='${entry.year}-01-01';
     data['media_type']=entry.type;
-    final active = Uri.tryParse(entry.activeSourceUrl);
-    final original = Uri.tryParse(entry.url);
-    data['source_url'] = entry.type == 'tv' && active?.scheme == 'https' &&
-        active?.host == 'tv.nontondrama.vip' && active?.path == original?.path
-        ? entry.activeSourceUrl : entry.url;
+    // Keep the catalog permalink intact. Domain rotation is handled centrally
+    // when the page is opened, not by rewriting catalog metadata.
+    data['source_url'] = entry.url;
     return Movie.fromJson(data,fallback:entry.type);
   }
   /// Build the very same catalog-backed Movie used in Film/Series grids,
@@ -1812,7 +1809,7 @@ class _ExternalSourcePageState extends State<ExternalSourcePage> {
 // Opens the known film page, or a catalogued page, or the site's normal search UI.
 Future<Uri> resolveSourcePage(Movie movie) async {
   final saved=LocalCatalogMetadata.sourceFor(movie);
-  if(saved!=null)return movie.type == 'tv' ? SourceDomainConfig.seriesPage(saved) : saved;
+  if(saved!=null)return SourceDomainConfig.resolvePage(saved);
   // Prefer exact series detail permalink from the bundled catalog, even when
   // the selected TMDB movie object did not preserve its sourceUrl.
   if(movie.type=='tv'){
@@ -1823,8 +1820,8 @@ Future<Uri> resolveSourcePage(Movie movie) async {
     if(matches.length==1){
       final uri=Uri.tryParse(matches.single.url);
       if(uri!=null && uri.scheme=='https' &&
-         const {'tv9.nontondrama.my','tv.nontondrama.vip','tv.lk21online.de'}.contains(uri.host)){
-        return SourceDomainConfig.seriesPage(uri);
+         SourceDomainConfig.isKnownSourceHost(uri.host)){
+        return SourceDomainConfig.resolvePage(uri);
       }
     }
   }
@@ -1838,7 +1835,7 @@ Future<Uri> resolveSourcePage(Movie movie) async {
       if (record['found'] == true && record['page_url'] is String) {
         final candidate = Uri.tryParse(record['page_url'] as String);
         if (candidate != null && candidate.scheme == 'https' &&
-            candidate.host.endsWith('lk21official.cc')) page = candidate;
+            SourceDomainConfig.isKnownSourceHost(candidate.host)) page = candidate;
       }
     } catch (_) { /* Site search is a deliberate fallback, not a playback success. */ }
   }
@@ -1856,7 +1853,7 @@ Future<Uri> resolveSourcePage(Movie movie) async {
   page ??= Uri.https(
     movie.type == 'tv' ? 'tv.nontondrama.vip' : 'tv12.lk21official.cc',
     '/search', {'s': movie.title});
-  return movie.type == 'tv' ? SourceDomainConfig.seriesPage(page) : page;
+  return SourceDomainConfig.resolvePage(page);
 }
 
 Future<void> recordWebOpen(Movie movie, Uri url, {int season = 0, int episode = 0}) async {

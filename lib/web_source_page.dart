@@ -6,6 +6,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'source_domain_config.dart';
 
 // The callback domain is grounded in a blocked navigation reported by
 // the Android app after Google's consent screen. Do not authorize it except
@@ -474,15 +475,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
     });
   }
 
-  bool _isKnownSeriesSourceHost(String? host) {
-    if (host == null) return false;
-    const hosts = {
-      'tv.lk21online.de',
-      'tv.nontondrama.vip',
-      'tv9.nontondrama.my',
-    };
-    return hosts.contains(host);
-  }
+  bool _isKnownSeriesSourceHost(String? host) =>
+      SourceDomainConfig.isKnownSourceHost(host);
 
   // Guard top-level navigations; iframe/subresource requests are not blocked.
   bool _allowedMainNavigation(String url) {
@@ -506,11 +500,14 @@ class _WebSourcePageState extends State<WebSourcePage> {
         isAllowedAgeVerificationCallback(u, _googleSignInInProgress)) {
       return true;
     }
+    // Movie and series redirects share the verified LK21 host policy.
+    if (SourceDomainConfig.isKnownSourceHost(host)) return true;
+    // Preserve the additional legacy redirect families used by series only.
     if (!_isTv) return false;
-    // Only known source site families may redirect the TOP-LEVEL series page.
-    // Do not allow an arbitrary HTTPS advertising/gambling page to replace it.
-    const sources = ['nontondrama.my', 'nontondrama.vip', 'layanfilem.my', 'lk21.de', 'lk21official.cc'];
-    return sources.any((base) => host == base || host.endsWith('.$base'));
+    const legacySeriesSources = ['layanfilem.my', 'lk21.de'];
+    return legacySeriesSources.any(
+      (base) => host == base || host.endsWith('.$base'),
+    );
   }
 
   Future<void> _applyCleanPlayer() async {
