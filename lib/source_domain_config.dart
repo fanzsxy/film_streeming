@@ -38,8 +38,7 @@ class SourceDomainConfig {
       uri.scheme == 'https' &&
       uri.host.isNotEmpty &&
       uri.userInfo.isEmpty &&
-      !uri.hasPort &&
-      uri.fragment.isEmpty;
+      !uri.hasPort;
 
   static bool _looksLikeLk21Page(List<int> bytes) {
     if (bytes.isEmpty || bytes.length > 2 * 1024 * 1024) return false;
