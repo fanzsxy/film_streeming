@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// an LK21 brand marker. The verified host is cached per original hostname.
 class SourceDomainConfig {
   static const _redirectCacheKey = 'filmstream_lk21_redirect_cache_v1';
-  static const _cacheTtl = Duration(days: 7);
+  static const _cacheTtl = Duration(minutes: 15);
   static const _maxRedirects = 5;
   static const _requestTimeout = Duration(seconds: 8);
 
@@ -36,7 +36,7 @@ class SourceDomainConfig {
 
   static bool _safeHttps(Uri uri) =>
       uri.scheme == 'https' &&
-      uri.host.isNotEmpty &&
+      uri.host.contains('.') &&
       uri.userInfo.isEmpty &&
       !uri.hasPort;
 
@@ -116,7 +116,12 @@ class SourceDomainConfig {
         }
 
         if (status < 200 || status >= 300) return null;
-        if (!redirected) return original;
+        if (!redirected) {
+          // Cache the current host too, so healthy pages do not trigger an
+          // extra preflight request on every title opened in the app.
+          await _saveRedirect(original.host, current.host);
+          return original;
+        }
         final bytes = await response.stream.toBytes().timeout(_requestTimeout);
         if (!_looksLikeLk21Page(bytes)) return null;
         await _saveRedirect(original.host, current.host);
