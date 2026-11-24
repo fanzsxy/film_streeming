@@ -474,15 +474,8 @@ class _WebSourcePageState extends State<WebSourcePage> {
     });
   }
 
-  bool _isKnownSeriesSourceHost(String? host) {
-    if (host == null) return false;
-    const hosts = {
-      'tv.lk21online.de',
-      'tv.nontondrama.vip',
-      'tv9.nontondrama.my',
-    };
-    return hosts.contains(host);
-  }
+  bool _isKnownSeriesSourceHost(String? host) =>
+      SourceDomainConfig.isKnownSourceHost(host);
 
   // Guard top-level navigations; iframe/subresource requests are not blocked.
   bool _allowedMainNavigation(String url) {
@@ -506,10 +499,16 @@ class _WebSourcePageState extends State<WebSourcePage> {
         isAllowedAgeVerificationCallback(u, _googleSignInInProgress)) {
       return true;
     }
-    if (!_isTv) return false;
-    // Only known source site families may redirect the TOP-LEVEL series page.
-    // Do not allow an arbitrary HTTPS advertising/gambling page to replace it.
-    const sources = ['nontondrama.my', 'nontondrama.vip', 'layanfilem.my', 'lk21.de', 'lk21official.cc'];
+    // Permit top-level redirects only within recognized LK21 source
+    // families. Movie and series pages use the same resolver.
+    const sources = [
+      'nontondrama.my',
+      'nontondrama.vip',
+      'layanfilem.my',
+      'lk21.de',
+      'lk21official.cc',
+      'lk21online.de',
+    ];
     return sources.any((base) => host == base || host.endsWith('.$base'));
   }
 
