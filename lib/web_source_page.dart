@@ -6,6 +6,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'source_domain_config.dart';
 
 // The callback domain is grounded in a blocked navigation reported by
 // the Android app after Google's consent screen. Do not authorize it except
