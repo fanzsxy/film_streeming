@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart' as prefs;
+import 'source_domain_config.dart';
 
 /// One entry from the crawler's own film/series catalog.
 class CatalogEntry {
@@ -127,9 +128,7 @@ class FilmStreamCatalog {
       for (final entry in remote) {
         final uri = Uri.tryParse(entry.url);
         if (uri == null || uri.scheme != 'https' || uri.userInfo.isNotEmpty ||
-            uri.hasPort || !{
-              'tv12.lk21official.cc', 'tv.lk21online.de'
-            }.contains(uri.host)) continue;
+            uri.hasPort || !SourceDomainConfig.isKnownSourceHost(uri.host)) continue;
         final urlKey = '${entry.type}:${_normalUrl(entry.url)}';
         final titleKey =
             '${entry.type}:${entry.year}:${entry.title.toLowerCase().trim()}';
@@ -191,7 +190,7 @@ class FilmStreamCatalog {
             entry.year > DateTime.now().year + 2) continue;
         final uri = Uri.tryParse(entry.url);
         if (uri == null || uri.scheme != 'https' || uri.userInfo.isNotEmpty ||
-            uri.hasPort || !{'tv12.lk21official.cc', 'tv.lk21online.de'}.contains(uri.host)) {
+            uri.hasPort || !SourceDomainConfig.isKnownSourceHost(uri.host)) {
           continue;
         }
         final urlKey = '${entry.type}:${_normalUrl(entry.url)}';
