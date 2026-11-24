@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/source_domain_config.dart';
+import 'package:filmstream_personal/source_domain_config.dart';
 
 void main() {
   group('SourceDomainConfig.isKnownSourceHost', () {
