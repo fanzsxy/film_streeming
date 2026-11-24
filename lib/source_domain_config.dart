@@ -1,69 +1,127 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Domain settings hosted in the project repository.
+/// Resolves LK21 page redirects for both films and series.
+///
+/// A new hostname is learned only from an HTTPS redirect issued by a known
+/// LK21 host, and only after the destination returns an HTML page containing
+/// an LK21 brand marker. The verified host is cached per original hostname.
 class SourceDomainConfig {
-  static const _configUrl =
-      'https://raw.githubusercontent.com/fanzsxy/film_streeming/main/config/source_domains.json';
-  static const _fallbackHost = 'tv.lk21online.de';
-  static Future<String>? _hostFuture;
+  static const _redirectCacheKey = 'filmstream_lk21_redirect_cache_v1';
+  static const _cacheTtl = Duration(days: 7);
+  static const _maxRedirects = 5;
+  static const _requestTimeout = Duration(seconds: 8);
 
-  static Future<String> _readHost() async {
+  static const _knownExactHosts = <String>{
+    'tv12.lk21official.cc',
+    'tv13.lk21official.cc',
+    'tv.lk21online.de',
+    'tv9.nontondrama.my',
+    'tv.nontondrama.vip',
+  };
+
+  static bool isKnownSourceHost(String? host) {
+    if (host == null || host.trim().isEmpty) return false;
+    final value = host.toLowerCase();
+    if (_knownExactHosts.contains(value)) return true;
+    // LK21 commonly rotates numbered subdomains while keeping its source
+    // domain. Do not accept arbitrary look-alike domains such as lk21-xxx.cc.
+    return value.endsWith('.lk21official.cc') ||
+        value.endsWith('.lk21online.de') ||
+        value.endsWith('.nontondrama.my') ||
+        value.endsWith('.nontondrama.vip');
+  }
+
+  static bool _safeHttps(Uri uri) =>
+      uri.scheme == 'https' &&
+      uri.host.isNotEmpty &&
+      uri.userInfo.isEmpty &&
+      !uri.hasPort &&
+      uri.fragment.isEmpty;
+
+  static bool _looksLikeLk21Page(List<int> bytes) {
+    if (bytes.isEmpty || bytes.length > 2 * 1024 * 1024) return false;
+    final html = utf8.decode(bytes, allowMalformed: true).toLowerCase();
+    final isHtml = html.contains('<html') || html.contains('<!doctype html');
+    final hasBrand = html.contains('lk21') ||
+        html.contains('layarkaca21') ||
+        html.contains('layar kaca 21');
+    return isHtml && hasBrand;
+  }
+
+  static Future<Map<String, dynamic>> _readCache() async {
     try {
-      final response = await http.get(Uri.parse(_configUrl))
-          .timeout(const Duration(seconds: 5));
-      if (response.statusCode != 200) return _fallbackHost;
-      final data = jsonDecode(response.body);
-      if (data is! Map) return _fallbackHost;
-      final series = data['series'];
-      if (series is! Map) return _fallbackHost;
-      final active = Uri.tryParse((series['active_base_url'] ?? '').toString());
-      // Only hosts explicitly approved in the repository configuration.
-      final allowed = (series['allowed_hosts'] as List? ?? const [])
-          .whereType<String>().toSet();
-      if (active == null || active.scheme != 'https' ||
-          active.userInfo.isNotEmpty || active.hasPort ||
-          !allowed.contains(active.host)) return _fallbackHost;
-      return active.host;
+      final preferences = await SharedPreferences.getInstance();
+      final raw = preferences.getString(_redirectCacheKey);
+      if (raw == null || raw.isEmpty) return {};
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return {};
+      return Map<String, dynamic>.from(decoded);
     } catch (_) {
-      return _fallbackHost;
+      return {};
     }
   }
 
-  static String _titleFromSlug(Uri uri) {
-    final last = uri.pathSegments.where((s) => s.isNotEmpty).lastOrNull ?? '';
-    return Uri.decodeComponent(last)
-        .replaceAll(RegExp(r'-(19|20)[0-9]{2}$'), '')
-        .replaceAll('-', ' ');
+  static Future<void> _saveRedirect(String oldHost, String newHost) async {
+    try {
+      final cache = await _readCache();
+      cache[oldHost.toLowerCase()] = {
+        'host': newHost.toLowerCase(),
+        'checked_at': DateTime.now().millisecondsSinceEpoch,
+      };
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString(_redirectCacheKey, jsonEncode(cache));
+    } catch (_) {
+      // A cache write failure must never block the source page.
+    }
   }
 
-  static bool _trusted(Uri uri, Set<String> hosts) =>
-      uri.scheme == 'https' && uri.userInfo.isEmpty &&
-      !uri.hasPort && hosts.contains(uri.host);
+  static Uri? _cachedDestination(Uri original, Map<String, dynamic> cache) {
+    final record = cache[original.host.toLowerCase()];
+    if (record is! Map) return null;
+    final host = (record['host'] ?? '').toString().toLowerCase();
+    final checkedAt = record['checked_at'];
+    if (host.isEmpty || checkedAt is! num) return null;
+    final age = DateTime.now().millisecondsSinceEpoch - checkedAt.toInt();
+    if (age < 0 || age > _cacheTtl.inMilliseconds) return null;
+    // A destination outside the known families is allowed only because this
+    // exact host was learned from a verified redirect and stored locally.
+    if (host.contains('/') || host.contains(':') || host.contains('@')) {
+      return null;
+    }
+    return original.replace(host: host);
+  }
 
-  /// Inspect HTTP redirects without replacing old permalinks with guessed paths.
-  /// Only follow redirect destinations explicitly approved in source_domains.json.
-  static Future<Uri?> _followTrustedRedirects(
-      Uri original, Set<String> allowed) async {
+  static Future<Uri?> _discoverRedirect(Uri original) async {
     final client = http.Client();
     try {
       var current = original;
-      for (var i = 0; i < 5; i++) {
-        if (!_trusted(current, allowed)) return null;
+      var redirected = false;
+      for (var attempt = 0; attempt <= _maxRedirects; attempt++) {
+        if (!_safeHttps(current)) return null;
         final request = http.Request('GET', current)..followRedirects = false;
-        final response = await client.send(request)
-            .timeout(const Duration(seconds: 6));
+        final response = await client.send(request).timeout(_requestTimeout);
         final status = response.statusCode;
-        if (status >= 200 && status < 300) {
-          // Stop after headers. The WebView loads the real page.
-          return current;
+
+        if (status >= 300 && status < 400) {
+          final location = response.headers['location'];
+          if (location == null || location.trim().isEmpty ||
+              attempt == _maxRedirects) return null;
+          final next = current.resolve(location.trim());
+          if (!_safeHttps(next)) return null;
+          current = next;
+          redirected = true;
+          continue;
         }
-        if (status < 300 || status >= 400) return null;
-        final location = response.headers['location'];
-        if (location == null || location.isEmpty) return null;
-        final next = current.resolve(location);
-        if (!_trusted(next, allowed)) return null;
-        current = next;
+
+        if (status < 200 || status >= 300) return null;
+        if (!redirected) return original;
+        final bytes = await response.stream.toBytes().timeout(_requestTimeout);
+        if (!_looksLikeLk21Page(bytes)) return null;
+        await _saveRedirect(original.host, current.host);
+        return current;
       }
     } catch (_) {
       return null;
@@ -73,18 +131,48 @@ class SourceDomainConfig {
     return null;
   }
 
-  /// WebView must receive the original catalog detail URL so the website can
-  /// redirect it using cookies, JavaScript or HTTP just like a normal browser.
-  /// Do not preflight with an HTTP client or replace a valid detail URL with search.
-  static Future<Uri> seriesPage(Uri original) async {
-    if (original.scheme != 'https' || original.userInfo.isNotEmpty ||
-        original.hasPort) return original;
-    const legacy = {'tv9.nontondrama.my', 'tv.nontondrama.vip'};
-    if (!legacy.contains(original.host)) return original;
-    // The legacy hostname no longer resolves, so no HTTP redirect can happen.
-    // Keep the original detail permalink, query and fragment; replace ONLY
-    // its hostname with the active, explicitly approved source domain.
-    final current = await (_hostFuture ??= _readHost());
-    return original.replace(host:current);
+  /// Return the original page URL unless a verified redirect is available.
+  /// If discovery is temporarily offline, reuse the last verified host for
+  /// up to seven days while preserving the original page path and query.
+  static Future<Uri> resolvePage(Uri original) async {
+    if (!_safeHttps(original) || !isKnownSourceHost(original.host)) {
+      return original;
+    }
+
+    final cache = await _readCache();
+    final cached = _cachedDestination(original, cache);
+    if (cached != null) return cached;
+
+    final discovered = await _discoverRedirect(original);
+    if (discovered != null) return discovered;
+
+    // Keep the existing series fallback for legacy URLs when the redirect
+    // endpoint is unavailable. It is intentionally not used for movie URLs.
+    if (original.host == 'tv9.nontondrama.my' ||
+        original.host == 'tv.nontondrama.vip') {
+      try {
+        final response = await http.get(Uri.parse(
+          'https://raw.githubusercontent.com/fanzsxy/film_streeming/main/config/source_domains.json',
+        )).timeout(const Duration(seconds: 5));
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          final series = data is Map ? data['series'] : null;
+          if (series is Map) {
+            final active = Uri.tryParse(
+              (series['active_base_url'] ?? '').toString(),
+            );
+            final allowed = (series['allowed_hosts'] as List? ?? const [])
+                .whereType<String>().toSet();
+            if (active != null && _safeHttps(active) &&
+                allowed.contains(active.host)) {
+              return original.replace(host: active.host);
+            }
+          }
+        }
+      } catch (_) {
+        // Preserve the catalog permalink if the remote config is unavailable.
+      }
+    }
+    return original;
   }
 }
