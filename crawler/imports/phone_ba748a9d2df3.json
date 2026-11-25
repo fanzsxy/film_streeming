@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "Perfect Liars",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/perfect-liars-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-perfect-liars-2026-lk21.jpg",
+      "rating": 7.0,
+      "genres": [
+        "Drama",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Cool Books",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/cool-books-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-cool-books-2026-lk21.jpg",
+      "rating": 6.9,
+      "genres": [
+        "Comedy"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Crossing a Dawn",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/crossing-dawn-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-crossing-dawn-2026-lk21.jpg",
+      "rating": 6.5,
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Godzilla Minus Zero",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/godzilla-minus-zero-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-godzilla-minus-zero-2026-lk21.jpg",
+      "rating": 7.9,
+      "genres": [
+        "Action",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "The Journey to Gyeong-ju",
+      "year": 2025,
+      "url": "https://tv12.lk21official.cc/journey-gyeong-ju-2025",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-journey-gyeong-ju-2025-lk21.jpg",
+      "rating": 6.6,
+      "genres": [
+        "Action",
+        "Crime"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Anbil Avan",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/anbil-avan-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-anbil-avan-2026-lk21.jpg",
+      "rating": 9.6,
+      "genres": [
+        "Action",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Ark Exitus",
+      "year": 2020,
+      "url": "https://tv12.lk21official.cc/ark-exitus-2020",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-ark-exitus-2020-lk21.jpg",
+      "rating": 7.7,
+      "genres": [
+        "Short",
+        "Action"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Madden",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/madden-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-madden-2026-lk21.jpg",
+      "rating": 6.7,
+      "genres": [
+        "Biography",
+        "Comedy"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Guarding Stars",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/guarding-stars-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-guarding-stars-2026-lk21.jpg",
+      "rating": 6.4,
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Always Lalisa",
+      "year": 2026,
+      "url": "https://tv12.lk21official.cc/always-lalisa-2026",
+      "type": "movie",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-always-lalisa-2026-lk21.jpg",
+      "rating": 7.8,
+      "genres": [
+        "Documentary",
+        "Biography"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Os 12 Signos de Valentina",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/os-12-signos-de-valentina-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-os-12-signos-de-valentina-2026-lk21.jpg",
+      "rating": 5.1,
+      "genres": [
+        "Comedy",
+        "Romance"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Vienna Game",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/vienna-game-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-vienna-game-2026-lk21.jpg",
+      "rating": 6.1,
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
