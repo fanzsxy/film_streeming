@@ -824,7 +824,7 @@ class _HomePageState extends State<HomePage> {
        if(item is! Map)continue;
        final data=Map<String,dynamic>.from(item);
        final movie=Movie.fromJson(data,fallback:(data['media_type']??'movie').toString());
-       if(movie.id<=0||movie.title.trim().isEmpty)continue;
+       if(movie.id==0||movie.title.trim().isEmpty)continue;
        restored['${movie.type}:${movie.id}']=movie;
      }
      if(mounted)setState((){favorites..clear()..addAll(restored);});
