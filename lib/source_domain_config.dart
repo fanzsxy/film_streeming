@@ -27,7 +27,24 @@ class SourceDomainConfig {
 
   static bool isKnownSourceHost(String? host) {
     if (host == null || host.trim().isEmpty) return false;
-    final value = host.trim().toLowerCase().replaceFirst(RegExp(r'\\.
+    final value = host.trim().toLowerCase().replaceFirst(RegExp(r'\.$'), '');
+    // Reject malformed hostnames before applying suffix rules.
+    if (value.length > 253 ||
+        !RegExp(r'^[a-z0-9.-]+$').hasMatch(value) ||
+        value.startsWith('.') || value.endsWith('.') ||
+        value.contains('..')) return false;
+    if (_knownExactHosts.contains(value) ||
+        _verifiedRedirectHosts.contains(value)) return true;
+    // Accept the registered LK21 source domain itself and its subdomains.
+    // The dot boundary prevents look-alike domains such as lk21official.cc.evil.
+    const sourceBases = <String>{
+      'lk21official.cc',
+      'lk21online.de',
+      'nontondrama.my',
+      'nontondrama.vip',
+    };
+    return sourceBases.any((base) => value == base || value.endsWith('.$base'));
+  }
 
   static bool _safeHttps(Uri uri) =>
       uri.scheme == 'https' &&
