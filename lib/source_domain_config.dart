@@ -13,6 +13,8 @@ class SourceDomainConfig {
   static const _cacheTtl = Duration(minutes: 15);
   static const _maxRedirects = 5;
   static const _requestTimeout = Duration(seconds: 8);
+  // Hosts learned from a verified HTTPS redirect and LK21-branded response.
+  static final Set<String> _verifiedRedirectHosts = <String>{};
 
   static const _knownExactHosts = <String>{
     'tv12.lk21official.cc',
@@ -24,14 +26,20 @@ class SourceDomainConfig {
 
   static bool isKnownSourceHost(String? host) {
     if (host == null || host.trim().isEmpty) return false;
-    final value = host.toLowerCase();
-    if (_knownExactHosts.contains(value)) return true;
-    // LK21 commonly rotates numbered subdomains while keeping its source
-    // domain. Do not accept arbitrary look-alike domains such as lk21-xxx.cc.
-    return value.endsWith('.lk21official.cc') ||
-        value.endsWith('.lk21online.de') ||
-        value.endsWith('.nontondrama.my') ||
-        value.endsWith('.nontondrama.vip');
+    final value = host.trim().toLowerCase().replaceFirst(RegExp(r'\.$'), '');
+    if (value.length > 253 ||
+        !RegExp(r'^[a-z0-9.-]+$').hasMatch(value) ||
+        value.startsWith('.') || value.endsWith('.') ||
+        value.contains('..')) return false;
+    if (_knownExactHosts.contains(value) ||
+        _verifiedRedirectHosts.contains(value)) return true;
+    const sourceBases = <String>{
+      'lk21official.cc',
+      'lk21online.de',
+      'nontondrama.my',
+      'nontondrama.vip',
+    };
+    return sourceBases.any((base) => value == base || value.endsWith('.$base'));
   }
 
   static bool _safeHttps(Uri uri) =>
@@ -70,6 +78,9 @@ class SourceDomainConfig {
         'host': newHost.toLowerCase(),
         'checked_at': DateTime.now().millisecondsSinceEpoch,
       };
+      if (oldHost.toLowerCase() != newHost.toLowerCase()) {
+        _verifiedRedirectHosts.add(newHost.toLowerCase());
+      }
       final preferences = await SharedPreferences.getInstance();
       await preferences.setString(_redirectCacheKey, jsonEncode(cache));
     } catch (_) {
@@ -87,8 +98,13 @@ class SourceDomainConfig {
     if (age < 0 || age > _cacheTtl.inMilliseconds) return null;
     // A destination outside the known families is allowed only because this
     // exact host was learned from a verified redirect and stored locally.
-    if (host.contains('/') || host.contains(':') || host.contains('@')) {
+    if (host.contains('/') || host.contains(':') || host.contains('@') ||
+        !RegExp(r'^[a-z0-9.-]+$').hasMatch(host) ||
+        host.startsWith('.') || host.endsWith('.') || host.contains('..')) {
       return null;
+    }
+    if (host != original.host.toLowerCase()) {
+      _verifiedRedirectHosts.add(host);
     }
     return original.replace(host: host);
   }

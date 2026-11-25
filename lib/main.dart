@@ -807,11 +807,48 @@ class _HomePageState extends State<HomePage> {
  Timer? suggestionDebounce;final search=TextEditingController();final searchFocus=FocusNode();
  final homeScroll=ScrollController();
  final favorites=<String,Movie>{};
+ static const _favoritesStorageKey='filmstream_favorites_v1';
  int catalogRefresh=0;
  static const labels=['Beranda','Film','Series','Filter','Favorit'];
  static const genreNames={28:'Action',12:'Adventure',16:'Animasi',35:'Komedi',80:'Kriminal',99:'Dokumenter',18:'Drama',10751:'Keluarga',14:'Fantasi',36:'Sejarah',27:'Horor',10402:'Musik',9648:'Misteri',10749:'Romantis',878:'Sci-Fi',53:'Thriller',10752:'Perang',37:'Western'};
+ @override void initState(){super.initState();_loadFavorites();}
+ Future<void> _loadFavorites() async {
+   try {
+     final prefs=await SharedPreferences.getInstance();
+     final raw=prefs.getString(_favoritesStorageKey);
+     if(raw==null||raw.isEmpty)return;
+     final decoded=jsonDecode(raw);
+     if(decoded is! List)return;
+     final restored=<String,Movie>{};
+     for(final item in decoded){
+       if(item is! Map)continue;
+       final data=Map<String,dynamic>.from(item);
+       final movie=Movie.fromJson(data,fallback:(data['media_type']??'movie').toString());
+       if(movie.id==0||movie.title.trim().isEmpty)continue;
+       restored['${movie.type}:${movie.id}']=movie;
+     }
+     if(mounted)setState((){favorites..clear()..addAll(restored);});
+   }catch(_){/* Keep favorites UI usable if local data is corrupted. */}
+ }
+ Future<void> _persistFavorites() async {
+   try {
+     final prefs=await SharedPreferences.getInstance();
+     final data=favorites.values.map((m)=> <String,dynamic>{
+       'id':m.id,'title':m.title,'overview':m.overview,
+       'poster_path':m.poster,'backdrop_path':m.backdrop,
+       'release_date':m.release,'media_type':m.type,
+       'genre_ids':m.genres,'genre_names':m.genreNames,
+       'source_url':m.sourceUrl,'original_language':m.originalLanguage,
+       'vote_average':m.rating,'popularity':m.popularity,
+     }).toList();
+     await prefs.setString(_favoritesStorageKey,jsonEncode(data));
+   }catch(_){/* Do not crash navigation if preferences are temporarily unavailable. */}
+ }
  @override void dispose(){debounce?.cancel();suggestionDebounce?.cancel();searchFocus.dispose();search.dispose();homeScroll.dispose();super.dispose();}
- void open(Movie m) => Navigator.push(context,MaterialPageRoute(builder:(_)=>DetailPage(movie:m,isFavorite:favorites.containsKey('${m.type}:${m.id}'),onFavorite:(){setState((){final k='${m.type}:${m.id}';if(favorites.containsKey(k)){favorites.remove(k);}else{favorites[k]=m;}});})));
+ void open(Movie m) => Navigator.push(context,MaterialPageRoute(builder:(_)=>DetailPage(movie:m,isFavorite:favorites.containsKey('${m.type}:${m.id}'),onFavorite:(){
+   setState((){final k='${m.type}:${m.id}';if(favorites.containsKey(k)){favorites.remove(k);}else{favorites[k]=m;}});
+   _persistFavorites();
+ })));
  void changeTab(int n) {
    final returningHome = n == 0 && tab != 0;
    debounce?.cancel();
