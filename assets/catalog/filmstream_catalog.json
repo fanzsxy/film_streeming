@@ -637887,7 +637887,8 @@
         "Romance"
       ],
       "genre_data_source": "lk21_source",
-      "genre_sync_status": "unmatched"
+      "genre_sync_status": "unmatched",
+      "genre_retry_status": "ambiguous"
     },
     {
       "title": "Rescue on One's Own",
@@ -637902,7 +637903,8 @@
       "genre_data_source": "lk21_source",
       "tmdb_id": 1267589,
       "original_language": "zh",
-      "genre_sync_status": "no_genres"
+      "genre_sync_status": "no_genres",
+      "genre_retry_status": "no_genres"
     },
     {
       "title": "418",
