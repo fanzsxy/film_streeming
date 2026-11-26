@@ -2014,12 +2014,14 @@ class _DetailPageState extends State<DetailPage> {
    try {
      final data=await Tmdb.get('${widget.movie.type}/${widget.movie.id}/videos');
      final videos=(data['results'] as List? ?? const []).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
-     final youtube=videos.where((v)=>(v['site']??'').toString().toLowerCase()=='youtube' && (v['key']??'').toString().isNotEmpty).toList();
-     youtube.sort((a,b){final aa=(a['type']??'').toString().toLowerCase()=='trailer'?0:1;final bb=(b['type']??'').toString().toLowerCase()=='trailer'?0:1;return aa.compareTo(bb);});
-     if(youtube.isEmpty)return;
-     final key=(youtube.first['key']??'').toString();
+     // Avoid YouTube embeds: many Android WebViews block their iframe/player.
+     // Prefer a directly supported Vimeo trailer when TMDB provides one.
+     final candidates=videos.where((v)=>(v['site']??'').toString().toLowerCase()=='vimeo' && (v['key']??'').toString().isNotEmpty).toList();
+     candidates.sort((a,b){final aa=(a['type']??'').toString().toLowerCase()=='trailer'?0:1;final bb=(b['type']??'').toString().toLowerCase()=='trailer'?0:1;return aa.compareTo(bb);});
+     if(candidates.isEmpty)return;
+     final key=(candidates.first['key']??'').toString();
      final controller=WebViewController()..setJavaScriptMode(JavaScriptMode.unrestricted)..setBackgroundColor(Colors.black);
-     await controller.loadRequest(Uri.parse('https://www.youtube-nocookie.com/embed/${Uri.encodeComponent(key)}?playsinline=1&controls=1&rel=0&autoplay=1&mute=1'));
+     await controller.loadRequest(Uri.parse('https://player.vimeo.com/video/${Uri.encodeComponent(key)}?playsinline=1&autoplay=1&muted=1'));
      if(!mounted)return;
      setState((){_trailerKey=key;_trailerController=controller;});
    }catch(_){/* Trailer is optional; keep the catalog poster fallback. */}
