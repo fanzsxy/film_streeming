@@ -2144,7 +2144,7 @@ class _DetailPageState extends State<DetailPage> {
      appBar:AppBar(title:Text(m.title,maxLines:1,overflow:TextOverflow.ellipsis),actions:[IconButton(tooltip:favorite?'Hapus dari favorit':'Tambahkan ke favorit',icon:Icon(favorite?Icons.favorite:Icons.favorite_border),onPressed:(){widget.onFavorite();setState(()=>favorite=!favorite);})]),
      body:CustomScrollView(slivers:[
        SliverToBoxAdapter(child:ColoredBox(color:Colors.black,child:SizedBox(width:double.infinity,height:playerHeight,child:Center(child:_sourceStarted
-         ? SizedBox(width:width,height:width*9/16,child:KeyedSubtree(key:ValueKey('source-${m.id}-$_chosenServer'),child:inlineSource(m,resolved:sourceFuture,initialServer:_chosenServer,showServerControls:false,onSynopsisFound:_receiveSynopsis,onGenresFound:_receiveGenres))))
+         ? SizedBox(width:width,height:width*9/16,child:KeyedSubtree(key:ValueKey('source-${m.id}-$_chosenServer'),child:inlineSource(m,resolved:sourceFuture,initialServer:_chosenServer,showServerControls:false,onSynopsisFound:_receiveSynopsis,onGenresFound:_receiveGenres)))
          : _trailerController!=null
            ? WebViewWidget(key:ValueKey(_trailerKey),controller:_trailerController!)
            : Stack(fit:StackFit.expand,children:[if(m.backdrop.isNotEmpty)Image.network(filmstreamHeroImageUrl(m.backdrop),fit:BoxFit.contain,errorBuilder:(_,__,___)=>const SizedBox.shrink()) else if(m.poster.isNotEmpty)Image.network(filmstreamImageUrl(m.poster),fit:BoxFit.contain,errorBuilder:(_,__,___)=>const SizedBox.shrink()),const Center(child:Icon(Icons.movie_outlined,size:54,color:Colors.white70))])))),
