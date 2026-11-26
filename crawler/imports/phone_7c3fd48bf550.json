@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "The Princess Weiyoung",
+      "year": 2016,
+      "url": "https://tv.lk21online.de/princess-weiyoung-2016",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-princess-weiyoung-2016-lk21.jpg",
+      "rating": 7.6,
+      "genres": [
+        "Drama",
+        "History"
+      ],
+      "genre_data_source": "lk21_source"
+    },
+    {
+      "title": "Nine to Six",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/nine-six-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-nine-six-2026-lk21.jpg",
+      "rating": 8.8,
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
