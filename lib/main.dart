@@ -2136,16 +2136,17 @@ class _DetailPageState extends State<DetailPage> {
    );
  }
  Widget _androidMovieDetail(Movie m) {
+   final screenHeight=MediaQuery.sizeOf(context).height;
    final width=MediaQuery.sizeOf(context).width;
-   final playerHeight=(width*9/16).clamp(190.0,430.0);
+   final playerHeight=(_sourceStarted?screenHeight*.72:width*9/16).clamp(_sourceStarted?420.0:190.0,_sourceStarted?900.0:430.0).toDouble();
    final genres=m.genreNames.isNotEmpty?m.genreNames:m.genres.map((id)=>_FilmstreamFilterState.genres[id]).whereType<String>().toList();
    return Scaffold(
      appBar:AppBar(title:Text(m.title,maxLines:1,overflow:TextOverflow.ellipsis),actions:[IconButton(tooltip:favorite?'Hapus dari favorit':'Tambahkan ke favorit',icon:Icon(favorite?Icons.favorite:Icons.favorite_border),onPressed:(){widget.onFavorite();setState(()=>favorite=!favorite);})]),
      body:CustomScrollView(slivers:[
        SliverToBoxAdapter(child:ColoredBox(color:Colors.black,child:SizedBox(width:double.infinity,height:playerHeight,child:Center(child:_sourceStarted
-         ? SizedBox(width:width,height:playerHeight,child:KeyedSubtree(key:ValueKey('source-${m.id}-$_chosenServer'),child:inlineSource(m,resolved:sourceFuture,initialServer:_chosenServer,showServerControls:false,onSynopsisFound:_receiveSynopsis,onGenresFound:_receiveGenres))))
+         ? SizedBox(width:width,height:width*9/16,child:KeyedSubtree(key:ValueKey('source-${m.id}-$_chosenServer'),child:inlineSource(m,resolved:sourceFuture,initialServer:_chosenServer,showServerControls:false,onSynopsisFound:_receiveSynopsis,onGenresFound:_receiveGenres))))
          : _trailerController!=null
-           ? WebViewWidget(controller:_trailerController!)
+           ? WebViewWidget(key:ValueKey(_trailerKey),controller:_trailerController!)
            : Stack(fit:StackFit.expand,children:[if(m.backdrop.isNotEmpty)Image.network(filmstreamHeroImageUrl(m.backdrop),fit:BoxFit.contain,errorBuilder:(_,__,___)=>const SizedBox.shrink()) else if(m.poster.isNotEmpty)Image.network(filmstreamImageUrl(m.poster),fit:BoxFit.contain,errorBuilder:(_,__,___)=>const SizedBox.shrink()),const Center(child:Icon(Icons.movie_outlined,size:54,color:Colors.white70))])))),
        SliverToBoxAdapter(child:Padding(padding:const EdgeInsets.fromLTRB(20,18,20,28),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
          Text(m.title,style:const TextStyle(fontSize:29,fontWeight:FontWeight.w800,height:1.12)),
