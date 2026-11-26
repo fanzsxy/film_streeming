@@ -504,6 +504,17 @@ class _WebSourcePageState extends State<WebSourcePage> {
         isAllowedAgeVerificationCallback(u, _googleSignInInProgress)) {
       return true;
     }
+    // Permit the official YouTube player and its canonical redirect hosts.
+    // Match exact domains or their subdomains; do not allow arbitrary Google
+    // domains or non-HTTPS navigation as a side effect.
+    const youtubeHosts = [
+      'youtube.com',
+      'youtube-nocookie.com',
+      'youtu.be',
+    ];
+    if (youtubeHosts.any((base) => host == base || host.endsWith('.$base'))) {
+      return true;
+    }
     // Movie and series redirects share the verified LK21 host policy.
     if (SourceDomainConfig.isKnownSourceHost(host)) return true;
     // Preserve the additional legacy redirect families used by series only.
