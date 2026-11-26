@@ -2147,7 +2147,7 @@ class _DetailPageState extends State<DetailPage> {
          ? SizedBox(width:width,height:width*9/16,child:KeyedSubtree(key:ValueKey('source-${m.id}-$_chosenServer'),child:inlineSource(m,resolved:sourceFuture,initialServer:_chosenServer,showServerControls:false,onSynopsisFound:_receiveSynopsis,onGenresFound:_receiveGenres)))
          : _trailerController!=null
            ? WebViewWidget(key:ValueKey(_trailerKey),controller:_trailerController!)
-           : Stack(fit:StackFit.expand,children:[if(m.backdrop.isNotEmpty)Image.network(filmstreamHeroImageUrl(m.backdrop),fit:BoxFit.contain,errorBuilder:(_,__,___)=>const SizedBox.shrink()) else if(m.poster.isNotEmpty)Image.network(filmstreamImageUrl(m.poster),fit:BoxFit.contain,errorBuilder:(_,__,___)=>const SizedBox.shrink()),const Center(child:Icon(Icons.movie_outlined,size:54,color:Colors.white70))])))),
+           : Stack(fit:StackFit.expand,children:[if(m.backdrop.isNotEmpty)Image.network(filmstreamHeroImageUrl(m.backdrop),fit:BoxFit.contain,errorBuilder:(_,__,___)=>const SizedBox.shrink()) else if(m.poster.isNotEmpty)Image.network(filmstreamImageUrl(m.poster),fit:BoxFit.contain,errorBuilder:(_,__,___)=>const SizedBox.shrink()),const Center(child:Icon(Icons.movie_outlined,size:54,color:Colors.white70))]))))),
        SliverToBoxAdapter(child:Padding(padding:const EdgeInsets.fromLTRB(20,18,20,28),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
          Text(m.title,style:const TextStyle(fontSize:29,fontWeight:FontWeight.w800,height:1.12)),
          const SizedBox(height:10),
