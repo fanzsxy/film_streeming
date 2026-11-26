@@ -2019,7 +2019,7 @@ class _DetailPageState extends State<DetailPage> {
      if(youtube.isEmpty)return;
      final key=(youtube.first['key']??'').toString();
      final controller=WebViewController()..setJavaScriptMode(JavaScriptMode.unrestricted)..setBackgroundColor(Colors.black);
-     await controller.loadRequest(Uri.parse('https://www.youtube-nocookie.com/embed/${Uri.encodeComponent(key)}?playsinline=1&rel=0&autoplay=1'));
+     await controller.loadRequest(Uri.parse('https://www.youtube-nocookie.com/embed/${Uri.encodeComponent(key)}?playsinline=1&controls=1&rel=0&autoplay=1&mute=1'));
      if(!mounted)return;
      setState((){_trailerKey=key;_trailerController=controller;});
    }catch(_){/* Trailer is optional; keep the catalog poster fallback. */}
