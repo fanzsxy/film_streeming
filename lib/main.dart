@@ -25,7 +25,6 @@ import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
 const tmdbToken = String.fromEnvironment('TMDB_TOKEN');
@@ -1930,7 +1929,7 @@ Future<void> recordWebProgress(Movie movie, Uri page, int positionMs, int durati
     updatedAt:DateTime.now().millisecondsSinceEpoch,completed:completed));
 }
 
-Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? resolved, VoidCallback? onFullscreenExit, ValueChanged<String>? onSynopsisFound, ValueChanged<List<String>>? onGenresFound, String initialServer = '', bool showServerControls = true}) =>
+Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? resolved, VoidCallback? onFullscreenExit, ValueChanged<String>? onSynopsisFound, ValueChanged<List<String>>? onGenresFound}) =>
   FutureBuilder<Uri>(
     future: resolved ?? resolveSourcePage(movie),
     builder: (context, snapshot) {
@@ -1964,8 +1963,7 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
         onPlayerReady: null,
         onPlayIntent: (page) => recordPlayerTap(movie, page, season:season, episode:episode),
         onVideoProgress: (pos, dur, ended) => recordWebProgress(movie, snapshot.data!, pos, dur, ended, season:season, episode:episode),
-        onFullscreenExit: onFullscreenExit, onSynopsisFound: onSynopsisFound,
-        initialServer: initialServer, showServerControls: showServerControls);
+        onFullscreenExit: onFullscreenExit, onSynopsisFound: onSynopsisFound);
     },
   );
 
@@ -2002,27 +2000,10 @@ class _DetailPageState extends State<DetailPage> {
  void _receiveGenres(List<String> names){if(!mounted)return;final clean=names.where((name)=>name.trim().isNotEmpty).toSet().toList();if(clean.join('|')!=sourceGenres.join('|'))setState(()=>sourceGenres=clean);}
  void _receiveSynopsis(String text){final clean=text.trim();if(clean.isEmpty||!mounted)return;_sourceSynopsisTimeout?.cancel();_sourceSynopsisPending=false;final old=sourceSynopsis.trim();if(old.isNotEmpty && old.length>=clean.length && !old.endsWith('...') && !old.endsWith('…'))return;if(clean!=old)setState(()=>sourceSynopsis=clean);}
  final videoUrl=TextEditingController(),subtitleUrl=TextEditingController(),sourcePage=TextEditingController();late bool favorite;late Future<Map<String,dynamic>> details; late Future<Uri> sourceFuture;
- String? _trailerKey; WebViewController? _trailerController; String _chosenServer=''; bool _sourceStarted=false;
- static const _androidServerChoices=['P2P','CAST','HYDRAX'];
- @override void initState(){super.initState();_sourceSynopsisTimeout=Timer(const Duration(seconds:24),(){if(mounted)setState(()=>_sourceSynopsisPending=false);});favorite=widget.isFavorite;details=widget.movie.id>0?Tmdb.bilingualDetail('${widget.movie.type}/${widget.movie.id}'):Future.value(<String,dynamic>{}); if(Platform.isAndroid && widget.movie.type=='movie') _loadTrailer(); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}
+ @override void initState(){super.initState();_sourceSynopsisTimeout=Timer(const Duration(seconds:24),(){if(mounted)setState(()=>_sourceSynopsisPending=false);});favorite=widget.isFavorite;details=widget.movie.id>0?Tmdb.bilingualDetail('${widget.movie.type}/${widget.movie.id}'):Future.value(<String,dynamic>{}); sourceFuture=widget.initialPage != null && widget.movie.type=='movie' ? Future.value(widget.initialPage!) : resolveSourcePage(widget.movie); if(widget.movie.type=='tv' && widget.initialSeason!=null && widget.initialEpisode!=null){selectedSeason=widget.initialSeason;playingSeason=widget.initialSeason;playingEpisode=widget.initialEpisode;episodeSourceFuture=widget.initialPage!=null?Future.value(widget.initialPage!):resolveSourcePage(widget.movie);}
    if (Platform.isWindows && widget.movie.type=='movie') {
      sourceFuture.then((url)=>_recordWindowsOpened(url)).catchError((Object _){});
    }
- }
- Future<void> _loadTrailer() async {
-   if(widget.movie.id<=0)return;
-   try {
-     final data=await Tmdb.get('${widget.movie.type}/${widget.movie.id}/videos');
-     final videos=(data['results'] as List? ?? const []).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
-     final youtube=videos.where((v)=>(v['site']??'').toString().toLowerCase()=='youtube' && (v['key']??'').toString().isNotEmpty).toList();
-     youtube.sort((a,b){final aa=(a['type']??'').toString().toLowerCase()=='trailer'?0:1;final bb=(b['type']??'').toString().toLowerCase()=='trailer'?0:1;return aa.compareTo(bb);});
-     if(youtube.isEmpty)return;
-     final key=(youtube.first['key']??'').toString();
-     final controller=WebViewController()..setJavaScriptMode(JavaScriptMode.unrestricted)..setBackgroundColor(Colors.black);
-     await controller.loadRequest(Uri.parse('https://www.youtube-nocookie.com/embed/${Uri.encodeComponent(key)}?playsinline=1&controls=1&rel=0&autoplay=1&mute=1'));
-     if(!mounted)return;
-     setState((){_trailerKey=key;_trailerController=controller;});
-   }catch(_){/* Trailer is optional; keep the catalog poster fallback. */}
  }
  @override void dispose(){_sourceSynopsisTimeout?.cancel();videoUrl.dispose();subtitleUrl.dispose();sourcePage.dispose();detailScroll.dispose();super.dispose();}
  // Windows WebView2 does not expose reliable cross-origin video progress.
@@ -2135,40 +2116,8 @@ class _DetailPageState extends State<DetailPage> {
      },
    );
  }
- Widget _androidMovieDetail(Movie m) {
-   final screenHeight=MediaQuery.sizeOf(context).height;
-   final width=MediaQuery.sizeOf(context).width;
-   final playerHeight=(_sourceStarted?screenHeight*.72:width*9/16).clamp(_sourceStarted?420.0:190.0,_sourceStarted?900.0:430.0).toDouble();
-   final genres=m.genreNames.isNotEmpty?m.genreNames:m.genres.map((id)=>_FilmstreamFilterState.genres[id]).whereType<String>().toList();
-   return Scaffold(
-     appBar:AppBar(title:Text(m.title,maxLines:1,overflow:TextOverflow.ellipsis),actions:[IconButton(tooltip:favorite?'Hapus dari favorit':'Tambahkan ke favorit',icon:Icon(favorite?Icons.favorite:Icons.favorite_border),onPressed:(){widget.onFavorite();setState(()=>favorite=!favorite);})]),
-     body:CustomScrollView(slivers:[
-       SliverToBoxAdapter(child:ColoredBox(color:Colors.black,child:SizedBox(width:double.infinity,height:playerHeight,child:Center(child:_sourceStarted
-         ? SizedBox(width:width,height:width*9/16,child:KeyedSubtree(key:ValueKey('source-${m.id}-$_chosenServer'),child:inlineSource(m,resolved:sourceFuture,initialServer:_chosenServer,showServerControls:false,onSynopsisFound:_receiveSynopsis,onGenresFound:_receiveGenres)))
-         : _trailerController!=null
-           ? WebViewWidget(key:ValueKey(_trailerKey),controller:_trailerController!)
-           : Stack(fit:StackFit.expand,children:[if(m.backdrop.isNotEmpty)Image.network(filmstreamHeroImageUrl(m.backdrop),fit:BoxFit.contain,errorBuilder:(_,__,___)=>const SizedBox.shrink()) else if(m.poster.isNotEmpty)Image.network(filmstreamImageUrl(m.poster),fit:BoxFit.contain,errorBuilder:(_,__,___)=>const SizedBox.shrink()),const Center(child:Icon(Icons.movie_outlined,size:54,color:Colors.white70))]))))),
-       SliverToBoxAdapter(child:Padding(padding:const EdgeInsets.fromLTRB(20,18,20,28),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-         Text(m.title,style:const TextStyle(fontSize:29,fontWeight:FontWeight.w800,height:1.12)),
-         const SizedBox(height:10),
-         Wrap(spacing:9,runSpacing:8,crossAxisAlignment:WrapCrossAlignment.center,children:[Container(padding:const EdgeInsets.symmetric(horizontal:16,vertical:9),decoration:BoxDecoration(color:const Color(0xff62492e),borderRadius:BorderRadius.circular(10)),child:Text(m.type=='tv'?'SERIES':'FILM',style:const TextStyle(fontWeight:FontWeight.w700))),Text(m.year,style:const TextStyle(color:Colors.white70,fontSize:16)),const Icon(Icons.star_rounded,color:Color(0xffe5aa55),size:20),Text(m.rating.toStringAsFixed(1),style:const TextStyle(fontSize:16,fontWeight:FontWeight.w700))]),
-         const SizedBox(height:20),
-         if(genres.isNotEmpty)...[const Text('Genre',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),const SizedBox(height:10),Wrap(spacing:8,runSpacing:8,children:genres.map((g)=>Container(padding:const EdgeInsets.symmetric(horizontal:16,vertical:10),decoration:BoxDecoration(border:Border.all(color:const Color(0xff4a4144)),borderRadius:BorderRadius.circular(12)),child:Text(g,style:const TextStyle(fontSize:15)))).toList()),const SizedBox(height:22)],
-         const Text('Pilih Server',style:TextStyle(fontSize:19,fontWeight:FontWeight.bold)),const SizedBox(height:10),
-         Wrap(spacing:10,runSpacing:10,children:_androidServerChoices.map((name){final active=_chosenServer==name;return ChoiceChip(label:Text(name),selected:active,showCheckmark:true,onSelected:_sourceStarted?null:(_)=>setState(()=>_chosenServer=active?'':name),selectedColor:const Color(0xff70404a),backgroundColor:const Color(0xff292a30),side:BorderSide(color:active?const Color(0xffedabae):Colors.white24),labelStyle:TextStyle(color:active?Colors.white:Colors.white70,fontWeight:FontWeight.w600));}).toList()),
-         const SizedBox(height:16),
-         SizedBox(width:double.infinity,height:56,child:FilledButton.icon(onPressed:_chosenServer.isEmpty?null:()=>setState(()=>_sourceStarted=!_sourceStarted),icon:Icon(_sourceStarted?Icons.close:Icons.play_arrow),label:Text(_sourceStarted?'Tutup Player':'Putar',style:const TextStyle(fontSize:18,fontWeight:FontWeight.w700)))),
-         if(_chosenServer.isEmpty)const Padding(padding:EdgeInsets.only(top:8),child:Text('Pilih server terlebih dahulu untuk mengaktifkan tombol Putar.',style:TextStyle(color:Colors.white54,fontSize:12))),
-         const SizedBox(height:22),
-         const Text('Sinopsis',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),const SizedBox(height:8),
-         Text(sourceSynopsis.isNotEmpty?sourceSynopsis:(m.overview.isNotEmpty?m.overview:'Sinopsis belum tersedia.'),style:const TextStyle(fontSize:16,height:1.55)),
-       ]))),
-     ]),
-   );
- }
  @override Widget build(BuildContext context) {
    final m = widget.movie;
-   if(Platform.isAndroid && m.type=='movie')return _androidMovieDetail(m);
    return Scaffold(
      appBar: AppBar(title: Text(m.title, maxLines: 1, overflow: TextOverflow.ellipsis),
        actions: [IconButton(icon: Icon(favorite ? Icons.favorite : Icons.favorite_border),
