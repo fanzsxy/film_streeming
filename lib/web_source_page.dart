@@ -504,6 +504,17 @@ class _WebSourcePageState extends State<WebSourcePage> {
         isAllowedAgeVerificationCallback(u, _googleSignInInProgress)) {
       return true;
     }
+    // Permit the official YouTube player and its canonical redirect hosts.
+    // Match exact domains or their subdomains; do not allow arbitrary Google
+    // domains or non-HTTPS navigation as a side effect.
+    const youtubeHosts = [
+      'youtube.com',
+      'youtube-nocookie.com',
+      'youtu.be',
+    ];
+    if (youtubeHosts.any((base) => host == base || host.endsWith('.$base'))) {
+      return true;
+    }
     // Movie and series redirects share the verified LK21 host policy.
     if (SourceDomainConfig.isKnownSourceHost(host)) return true;
     // Preserve the additional legacy redirect families used by series only.
@@ -1288,17 +1299,27 @@ class _WebSourcePageState extends State<WebSourcePage> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) { if (!didPop) _back(); },
       child: Scaffold(
-        appBar: AppBar(
+        backgroundColor: Colors.black,
+        appBar: _focused ? null : AppBar(
           title: Text(widget.title, maxLines: 1, overflow: TextOverflow.ellipsis),
           leading: IconButton(tooltip: 'Kembali ke katalog', icon: const Icon(Icons.arrow_back), onPressed: _back),
           actions: [
             IconButton(tooltip: 'Kembali satu halaman situs', icon: const Icon(Icons.history), onPressed: _siteBack),
-            IconButton(tooltip: _focused ? 'Halaman lengkap' : 'Fokus player', icon: Icon(_focused ? Icons.crop_free : Icons.smart_display_outlined), onPressed: () => _setFocused(!_focused)),
+            IconButton(tooltip: 'Fokus player', icon: const Icon(Icons.smart_display_outlined), onPressed: () => _setFocused(true)),
             IconButton(tooltip: 'Refresh', icon: const Icon(Icons.refresh), onPressed: () => _controller.reload()),
             IconButton(tooltip: 'Buka browser', icon: const Icon(Icons.open_in_browser), onPressed: _external),
           ],
         ),
-        body: Column(children: [Expanded(child: _playerBody()), _flutterServers()]),
+        body: _focused
+          ? Stack(children: [
+              Center(child: AspectRatio(aspectRatio: 16/9, child: _playerBody())),
+              Positioned(top: 6,left: 6,child: SafeArea(child: IconButton(
+                tooltip: 'Kembali ke detail film',onPressed:_back,
+                style:IconButton.styleFrom(backgroundColor:Colors.black54),
+                icon:const Icon(Icons.close,color:Colors.white),
+              ))),
+            ])
+          : Column(children: [Expanded(child: _playerBody()), _flutterServers()]),
       ),
     );
   }
