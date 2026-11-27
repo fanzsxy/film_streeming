@@ -4,6 +4,7 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'source_domain_config.dart';
@@ -59,13 +60,15 @@ class WebSourcePage extends StatefulWidget {
   final bool embedded;
   final int tmdbId, season, episode;
   final String mediaType, year;
+  final String initialServer;
+  final bool showServerControls;
   final ValueChanged<Uri>? onPlayerReady;
   final ValueChanged<Uri>? onPlayIntent;
   final void Function(int positionMs, int durationMs, bool ended)? onVideoProgress;
   final VoidCallback? onFullscreenExit;
   final ValueChanged<String>? onSynopsisFound;
   const WebSourcePage({super.key, required this.title, required this.url, this.focused = false,
-    this.embedded = false, this.tmdbId = 0, this.mediaType = 'movie', this.year = '', this.season = 0, this.episode = 0, this.onPlayerReady, this.onPlayIntent, this.onVideoProgress, this.onFullscreenExit, this.onSynopsisFound});
+    this.embedded = false, this.tmdbId = 0, this.mediaType = 'movie', this.year = '', this.season = 0, this.episode = 0, this.initialServer = '', this.showServerControls = true, this.onPlayerReady, this.onPlayIntent, this.onVideoProgress, this.onFullscreenExit, this.onSynopsisFound});
   @override
   State<WebSourcePage> createState() => _WebSourcePageState();
 }
@@ -138,6 +141,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   List<Map<String,dynamic>> _sourceEpisodes = const [];
   String _selectedServer = '';
   bool _changingServer = false;
+  bool _initialServerApplied = false;
   final List<String> _titleAliases = [];
   final List<String> _searchQueries = [];
   final Set<String> _searchedTitles = {};
@@ -586,6 +590,13 @@ class _WebSourcePageState extends State<WebSourcePage> {
         if (selected.isNotEmpty) _selectedServer = selected;
         else if (!names.contains(_selectedServer)) _selectedServer = names.isEmpty ? '' : names.first;
       });
+      final requested=widget.initialServer.trim().toUpperCase();
+      if(!_initialServerApplied && requested.isNotEmpty){
+        _initialServerApplied=true;
+        if(names.contains(requested) && requested!=_selectedServer){
+          unawaited(_switchServer(requested));
+        }
+      }
     } catch (_) { /* Site DOM may not expose a server chooser. */ }
   }
 
@@ -618,7 +629,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
   }
 
   Widget _flutterServers() {
-    if (!_focused || !_revealed || _search || _serverNames.isEmpty) return const SizedBox.shrink();
+    if (!widget.showServerControls || !_focused || !_revealed || _search || _serverNames.isEmpty) return const SizedBox.shrink();
     return Container(
       width: double.infinity, color: const Color(0xff17171c),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
@@ -1270,7 +1281,7 @@ class _WebSourcePageState extends State<WebSourcePage> {
               child: _playerBody(),
             )
           : AspectRatio(aspectRatio: 16 / 9, child: _playerBody()),
-      _flutterServers(),
+      if(widget.showServerControls) _flutterServers(),
       _flutterSourceDetails(),
     ]));
     return PopScope(
