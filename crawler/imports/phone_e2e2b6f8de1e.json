@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "Ramen Daisuki Koizumi San",
+      "year": 2015,
+      "url": "https://tv.lk21online.de/ramen-daisuki-koizumi-san-2015",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-ramen-daisuki-koizumi-san-2015-lk21.jpg",
+      "rating": 7.0,
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
