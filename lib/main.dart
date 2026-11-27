@@ -1964,7 +1964,7 @@ Widget inlineSource(Movie movie, {int season = 0, int episode = 0, Future<Uri>? 
         onPlayIntent: (page) => recordPlayerTap(movie, page, season:season, episode:episode),
         onVideoProgress: (pos, dur, ended) => recordWebProgress(movie, snapshot.data!, pos, dur, ended, season:season, episode:episode),
         onFullscreenExit: onFullscreenExit, onSynopsisFound: onSynopsisFound,
-        onGenresFound: onGenresFound);
+        onFullscreenExit: onFullscreenExit, onSynopsisFound: onSynopsisFound);
     },
   );
 
