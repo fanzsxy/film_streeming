@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "source": "FilmStream Android WebView",
+  "items": [
+    {
+      "title": "I Kill the Bear",
+      "year": 2026,
+      "url": "https://tv.lk21online.de/i-kill-bear-2026",
+      "type": "series",
+      "poster_url": "https://poster.assetsy.de/wp-content/uploads/2026/11/film-i-kill-bear-2026-lk21.jpg",
+      "rating": 6.5,
+      "genres": [
+        "Comedy"
+      ],
+      "genre_data_source": "lk21_source"
+    }
+  ]
+}
